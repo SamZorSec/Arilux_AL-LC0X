@@ -1,108 +1,157 @@
 /*
- *  Arilux AL-LC03
- *  Alternative firmware
- *
- *  Work in progress...
- */
-#include <ESP8266WiFi.h>    // https://github.com/esp8266/Arduino
-#include <ArduinoOTA.h>
+    Arilux AL-LC03
+    Alternative firmware
 
-// Analog output
-// http://esp8266.github.io/Arduino/versions/2.0.0/doc/reference.html
-const PROGMEM uint8_t   PWM_RANGE     = 255; // 0-255, 1023 by default
-const PROGMEM uint16_t  PWM_FREQUENCY = 500; // 1 [kHz] by default
-
-// RGB pins
-const PROGMEM uint8_t   GREEN_PIN     = 5;
-const PROGMEM uint8_t   RED_PIN       = 14;
-const PROGMEM uint8_t   BLUE_PIN      = 12;
-
-// IR pin
-const PROGMEM uint8_t   IR_PIN         = 4;
+    Work in progress...
+*/
 
 #define IR_REMOTE
-#ifdef IR_REMOTE
-  #include <IRremoteESP8266.h> // https://github.com/markszabo/IRremoteESP8266
-  IRrecv irRecv(IR_PIN);
-#endif
-
-//#define DEBUG_SERIAL
 #define DEBUG_TELNET
-#ifdef DEBUG_TELNET
-  WiFiServer telnetServer(23);
-  WiFiClient telnetClient;
+
+#include <ESP8266WiFi.h>      // https://github.com/esp8266/Arduino
+#include <PubSubClient.h>     // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
+#ifdef IR_REMOTE
+#include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
 #endif
 
-/*
- * IR Remote
- * Encoding: NEC
- * +------+------+------+------+
- * |  UP  | Down | OFF  |  ON  |
- * +------+------+------+------+
- * |  R   |  G   |  B   |  W   |
- * +------+------+------+------+
- * |  1   |  2   |  3   |FLASH |
- * +------+------+------+------+
- * |  4   |  5   |  6   |STROBE|
- * +------+------+------+------+
- * |  7   |  8   |  9   | FADE |
- * +------+------+------+------+
- * |  10  |  11  |  12  |SMOOTH|
- * +------+------+------+------+
- */
-#ifdef IR_REMOTE
-const unsigned int  IR_CODE_KEY_UP      = 0xFF906F;
-const unsigned int  IR_CODE_KEY_DOWN    = 0xFFB847;
-const unsigned int  IR_CODE_KEY_OFF     = 0xFFF807;
-const unsigned int  IR_CODE_KEY_ON      = 0xFFB04F;
-const unsigned int  IR_CODE_KEY_R       = 0xFF9867;
-const unsigned int  IR_CODE_KEY_G       = 0xFFD827;
-const unsigned int  IR_CODE_KEY_B       = 0xFF8877;
-const unsigned int  IR_CODE_KEY_W       = 0xFFA857;
-const unsigned int  IR_CODE_KEY_1       = 0xFFE817;
-const unsigned int  IR_CODE_KEY_2       = 0xFF48B7;
-const unsigned int  IR_CODE_KEY_3       = 0xFF6897;
-const unsigned int  IR_CODE_KEY_FLASH   = 0xFFB24D;
-const unsigned int  IR_CODE_KEY_4       = 0xFF02FD;
-const unsigned int  IR_CODE_KEY_5       = 0xFF32CD;
-const unsigned int  IR_CODE_KEY_6       = 0xFF20DF;
-const unsigned int  IR_CODE_KEY_STROBE  = 0xFF00FF;
-const unsigned int  IR_CODE_KEY_7       = 0xFF50AF;
-const unsigned int  IR_CODE_KEY_8       = 0xFF7887;
-const unsigned int  IR_CODE_KEY_9       = 0xFF708F;
-const unsigned int  IR_CODE_KEY_FADE    = 0xFF58A7;
-const unsigned int  IR_CODE_KEY_10      = 0xFF38C7;
-const unsigned int  IR_CODE_KEY_11      = 0xFF28D7;
-const unsigned int  IR_CODE_KEY_12      = 0xFFF00F;
-const unsigned int  IR_CODE_KEY_SMOOTH  = 0xFF30CF;
+#include <ArduinoOTA.h>
+#include "Arilux.h"
+
+// in a terminal: telnet arilux.local
+#ifdef DEBUG_TELNET
+  WiFiServer  telnetServer(23);
+  WiFiClient  telnetClient;
 #endif
 
 // Macros for debugging
-#ifdef DEBUG_SERIAL
-  #define DEBUG_PRINT(x)    Serial.print(x)
-  #define DEBUG_PRINTLN(x)  Serial.println(x)
-#else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
-#endif
 #ifdef DEBUG_TELNET
-  #define DEBUG_PRINT(x)    telnetClient.print(x)
-  #define DEBUG_PRINTLN(x)  telnetClient.println(x)
+  #define     DEBUG_PRINT(x)    telnetClient.print(x)
+  #define     DEBUG_PRINTLN(x)  telnetClient.println(x)
 #else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
+  #define     DEBUG_PRINT(x)
+  #define     DEBUG_PRINTLN(x)
 #endif
 
 // Wi-Fi
-const char* WIFI_SSID = "";
-const char* WIFI_PASSWORD = "";
+const char*   WIFI_SSID     = "[REDACTED]";
+const char*   WIFI_PASSWORD = "[REDACTED]";
+
+// MQTT topics
+const char*   ARILUX_MQTT_STATE_STATE_TOPIC         = "arilux/state/state";
+const char*   ARILUX_MQTT_STATE_COMMAND_TOPIC       = "arilux/state/set";
+const char*   ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC    = "arilux/brightness/state";
+const char*   ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC  = "arilux/brightness/set";
+const char*   ARILUX_MQTT_COLOR_STATE_TOPIC         = "arilux/color/state";
+const char*   ARILUX_MQTT_COLOR_COMMAND_TOPIC       = "arilux/color/set";
+
+// MQTT payloads
+const char*   ARILUX_MQTT_STATE_ON_PAYLOAD          = "ON";
+const char*   ARILUX_MQTT_STATE_OFF_PAYLOAD         = "OFF";
+
+// MQTT buffer
+char msgBuffer[12];
+
+// MQTT
+const char*   MQTT_CLIENT_ID                        = "arilux";
+const char*   MQTT_SERVER_IP                        = "[REDACTED]";
+const int     MQTT_SERVER_PORT                      = 1883;
+const char*   MQTT_USER                             = "[REDACTED]";
+const char*   MQTT_PASSWORD                         = "[REDACTED]";
+
+volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
+
+Arilux        arilux;
+#ifdef IR_REMOTE
+  IRrecv      irRecv(ARILUX_IR_PIN);
+#endif
+WiFiClient    wifiClient;
+PubSubClient  mqttClient(wifiClient);
 
 /*
- * Function called to handle Telnet clients
- * https://www.youtube.com/watch?v=j9yW10OcahI
- */
+   Function called when a MQTT message arrived
+   @param p_topic   The topic of the MQTT message
+   @param p_payload The payload of the MQTT message
+   @param p_length  The length of the payload
+*/
+void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
+  // concat the payload into a string
+  String payload;
+  for (uint8_t i = 0; i < p_length; i++) {
+    payload.concat((char)p_payload[i]);
+  }
+
+  // handle the MQTT topic of the received message
+  if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
+    if (payload.equals(String(ARILUX_MQTT_STATE_ON_PAYLOAD))) {
+      if (arilux.turnOn())
+        cmd = ARILUX_CMD_STATE_CHANGED;
+    } else if (payload.equals(String(ARILUX_MQTT_STATE_OFF_PAYLOAD))) {
+      if (arilux.turnOff())
+        cmd = ARILUX_CMD_STATE_CHANGED;
+    }
+  } else if (String(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC).equals(p_topic)) {
+    if (arilux.setBrightness(payload.toInt()))
+      cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
+  } else if (String(ARILUX_MQTT_COLOR_COMMAND_TOPIC).equals(p_topic)) {
+    // get the position of the first and second commas
+    uint8_t firstIndex = payload.indexOf(',');
+    uint8_t lastIndex = payload.lastIndexOf(',');
+
+    if (arilux.setColor(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1, lastIndex).toInt(), payload.substring(lastIndex + 1).toInt()))
+      cmd = ARILUX_CMD_COLOR_CHANGED;
+  }
+}
+
+/*
+  Function called to connect/reconnect to the MQTT broker
+*/
+void connectMQTT(void) {
+  while (!mqttClient.connected()) {
+    if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)) {
+      DEBUG_PRINTLN(F("INFO: The client is successfully connected to the MQTT broker"));
+    } else {
+      DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
+      DEBUG_PRINT(F("Username: "));
+      DEBUG_PRINTLN(MQTT_USER);
+      DEBUG_PRINT(F("Password: "));
+      DEBUG_PRINTLN(MQTT_PASSWORD);
+      DEBUG_PRINT(F("Broker: "));
+      DEBUG_PRINTLN(MQTT_SERVER_IP);
+
+      delay(1000);
+      ESP.reset();
+    }
+  }
+
+  if (mqttClient.subscribe(ARILUX_MQTT_STATE_COMMAND_TOPIC)) {
+    DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded. Topic: "));
+    DEBUG_PRINTLN(ARILUX_MQTT_STATE_COMMAND_TOPIC);
+  } else {
+    DEBUG_PRINT(F("ERROR: Sending the MQTT subscribe failed. Topic: "));
+    DEBUG_PRINTLN(ARILUX_MQTT_STATE_COMMAND_TOPIC);
+  }
+  if (mqttClient.subscribe(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC)) {
+    DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded. Topic: "));
+    DEBUG_PRINTLN(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC);
+  } else {
+    DEBUG_PRINT(F("ERROR: Sending the MQTT subscribe failed. Topic: "));
+    DEBUG_PRINTLN(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC);
+  }
+  if (mqttClient.subscribe(ARILUX_MQTT_COLOR_COMMAND_TOPIC)) {
+    DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded. Topic: "));
+    DEBUG_PRINTLN(ARILUX_MQTT_COLOR_COMMAND_TOPIC);
+  } else {
+    DEBUG_PRINT(F("ERROR: Sending the MQTT subscribe failed. Topic: "));
+    DEBUG_PRINTLN(ARILUX_MQTT_COLOR_COMMAND_TOPIC);
+  }
+}
+
+/*
+   Function called to handle Telnet clients
+   https://www.youtube.com/watch?v=j9yW10OcahI
+*/
 #ifdef DEBUG_TELNET
-void handleTelnet() {
+void handleTelnet(void) {
   if (telnetServer.hasClient()) {
     if (!telnetClient || !telnetClient.connected()) {
       if (telnetClient) {
@@ -117,84 +166,108 @@ void handleTelnet() {
 #endif
 
 /*
- * Function called to handle received IR codes from the remote
- */
+   Function called to handle received IR codes from the remote
+*/
 #ifdef IR_REMOTE
-void handleIRRemote() {
+void handleIRRemote(void) {
   decode_results  results;
 
   if (irRecv.decode(&results)) {
-    switch(results.value) {
-      case IR_CODE_KEY_UP:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_UP"));
+    switch (results.value) {
+      case ARILUX_IR_CODE_KEY_UP:
+        if (arilux.increaseBrightness())
+          cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
         break;
-      case IR_CODE_KEY_DOWN:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_DOWN"));
+      case ARILUX_IR_CODE_KEY_DOWN:
+        if (arilux.decreaseBrightness())
+          cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
         break;
-      case IR_CODE_KEY_OFF:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_OFF"));
+      case ARILUX_IR_CODE_KEY_OFF:
+        if (arilux.turnOff())
+          cmd = ARILUX_CMD_STATE_CHANGED;
         break;
-      case IR_CODE_KEY_ON:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_ON"));
+      case ARILUX_IR_CODE_KEY_ON:
+        if (arilux.turnOn())
+          cmd = ARILUX_CMD_STATE_CHANGED;
         break;
-      case IR_CODE_KEY_R:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_R"));
+      case ARILUX_IR_CODE_KEY_R:
+        if (arilux.setColor(255, 0, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_G:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_G"));
+      case ARILUX_IR_CODE_KEY_G:
+        if (arilux.setColor(0, 255, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_B:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_B"));
+      case ARILUX_IR_CODE_KEY_B:
+        if (arilux.setColor(0, 0, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_W:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_W"));
+      case ARILUX_IR_CODE_KEY_W:
+        if (arilux.setColor(255, 255, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_1:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_1"));
+      case ARILUX_IR_CODE_KEY_1:
+        if (arilux.setColor(255, 51, 51))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_2:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_2"));
+      case ARILUX_IR_CODE_KEY_2:
+        if (arilux.setColor(102, 204, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_3:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_3"));
+      case ARILUX_IR_CODE_KEY_3:
+        if (arilux.setColor(0, 102, 204))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_FLASH:
+      case ARILUX_IR_CODE_KEY_FLASH:
+        // TODO
         DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_FLASH"));
         break;
-      case IR_CODE_KEY_4:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_4"));
+      case ARILUX_IR_CODE_KEY_4:
+        if (arilux.setColor(255, 102, 102))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_5:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_5"));
+      case ARILUX_IR_CODE_KEY_5:
+        if (arilux.setColor(0, 255, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_6:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_6"));
+      case ARILUX_IR_CODE_KEY_6:
+        if (arilux.setColor(153, 0, 153))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_STROBE:
+      case ARILUX_IR_CODE_KEY_STROBE:
+        // TODO
         DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_STROBE"));
         break;
-      case IR_CODE_KEY_7:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_7"));
+      case ARILUX_IR_CODE_KEY_7:
+        if (arilux.setColor(255, 255, 102))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_8:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_8"));
+      case ARILUX_IR_CODE_KEY_8:
+        if (arilux.setColor(51, 153, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_9:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_9"));
+      case ARILUX_IR_CODE_KEY_9:
+        if (arilux.setColor(255, 0, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_FADE:
+      case ARILUX_IR_CODE_KEY_FADE:
+        // TODO
         DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_FADE"));
         break;
-      case IR_CODE_KEY_10:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_10"));
+      case ARILUX_IR_CODE_KEY_10:
+        if (arilux.setColor(255, 255, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_11:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_11"));
+      case ARILUX_IR_CODE_KEY_11:
+        if (arilux.setColor(0, 128, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_12:
-        DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_12"));
+      case ARILUX_IR_CODE_KEY_12:
+        if (arilux.setColor(255, 102, 178))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
         break;
-      case IR_CODE_KEY_SMOOTH:
+      case ARILUX_IR_CODE_KEY_SMOOTH:
+        // TODO
         DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_SMOOTH"));
         break;
       default:
@@ -206,69 +279,147 @@ void handleIRRemote() {
 }
 #endif
 
+/*
+   Function called to handle commands due to changes
+*/
+void handleCMD(void) {
+  switch (cmd) {
+    case ARILUX_CMD_NOT_DEFINED:
+      break;
+    case ARILUX_CMD_STATE_CHANGED:
+      if (arilux.getState()) {
+        if (mqttClient.publish(ARILUX_MQTT_STATE_STATE_TOPIC, ARILUX_MQTT_STATE_ON_PAYLOAD, true)) {
+          DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
+          DEBUG_PRINT(ARILUX_MQTT_STATE_STATE_TOPIC);
+          DEBUG_PRINT(F(". Payload: "));
+          DEBUG_PRINTLN(ARILUX_MQTT_STATE_ON_PAYLOAD);
+        } else {
+          DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
+        }
+      } else {
+        if (mqttClient.publish(ARILUX_MQTT_STATE_STATE_TOPIC, ARILUX_MQTT_STATE_OFF_PAYLOAD, true)) {
+          DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
+          DEBUG_PRINT(ARILUX_MQTT_STATE_STATE_TOPIC);
+          DEBUG_PRINT(F(". Payload: "));
+          DEBUG_PRINTLN(ARILUX_MQTT_STATE_OFF_PAYLOAD);
+        } else {
+          DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
+        }
+      }
+      cmd = ARILUX_CMD_NOT_DEFINED;
+      break;
+    case ARILUX_CMD_BRIGHTNESS_CHANGED:
+      snprintf(msgBuffer, sizeof(msgBuffer), "%d", arilux.getBrightness());
+      if (mqttClient.publish(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, msgBuffer, true)) {
+        DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
+        DEBUG_PRINT(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC);
+        DEBUG_PRINT(F(". Payload: "));
+        DEBUG_PRINTLN(msgBuffer);
+      } else {
+        DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
+      }
+      cmd = ARILUX_CMD_NOT_DEFINED;
+      break;
+    case ARILUX_CMD_COLOR_CHANGED:
+      snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d,%d", arilux.getRedValue(), arilux.getGreenValue(), arilux.getBlueValue());
+      if (mqttClient.publish(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer, true)) {
+        DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
+        DEBUG_PRINT(ARILUX_MQTT_COLOR_STATE_TOPIC);
+        DEBUG_PRINT(F(". Payload: "));
+        DEBUG_PRINTLN(msgBuffer);
+      } else {
+        DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
+      }
+      cmd = ARILUX_CMD_NOT_DEFINED;
+      break;
+    default:
+      break;
+  }
+}
+
+/*
+   Function called to setup the connection to the WiFi AP
+*/
 void setupWiFi() {
   delay(10);
-  //DEBUG_PRINT(F("INFO: Connecting to: "));
-  //DEBUG_PRINTLN(WIFI_SSID);
+
+  Serial.print(F("INFO: Connecting to: "));
+  Serial.println(WIFI_SSID);
+
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    //DEBUG_PRINT(".");
+    Serial.print(".");
   }
 
   randomSeed(micros());
 
-  //DEBUG_PRINTLN();
-  //DEBUG_PRINTLN(F("INFO: WiFi connected"));
-  //DEBUG_PRINT(F("INFO: IP address: "));
-  //DEBUG_PRINTLN(WiFi.localIP());
+  Serial.println();
+  Serial.println(F("INFO: WiFi connected"));
+  Serial.print(F("INFO: IP address: "));
+  Serial.println(WiFi.localIP());
 }
 
 void setup() {
-#ifdef DEBUG_SERIAL
   Serial.begin(115200);
-#endif
+
 #ifdef DEBUG_TELNET
+  // start the Telnet server
   telnetServer.begin();
   telnetServer.setNoDelay(true);
 #endif
 
-  // Wi-Fi
+  // setup the Wi-Fi
   setupWiFi();
 
-  // set the PWM frequency and range
-  analogWriteFreq(PWM_FREQUENCY);
-  analogWriteRange(PWM_RANGE);
+  // init the Arilux LED controller
+  if (arilux.init())
+    cmd = ARILUX_CMD_STATE_CHANGED;
 
-  // init the pins as OUTPUT
-  pinMode(RED_PIN,    OUTPUT);
-  pinMode(GREEN_PIN,  OUTPUT);
-  pinMode(BLUE_PIN,   OUTPUT);
-
+#ifdef IR_REMOTE
   // start the IR receiver
-  pinMode(IR_PIN,     INPUT);
   irRecv.enableIRIn();
+#endif
 
+  // init MQTT
+  mqttClient.setServer(MQTT_SERVER_IP, MQTT_SERVER_PORT);
+  mqttClient.setCallback(callback);
+  connectMQTT();
 
-  ArduinoOTA.setHostname("esp8266");
+  // set hostname and start OTA
+  ArduinoOTA.setHostname("arilux");
   ArduinoOTA.begin();
 }
 
 void loop() {
-  ArduinoOTA.handle();
-
 #ifdef DEBUG_TELNET
   // handle Telnet connection for debugging
   handleTelnet();
 #endif
 
-yield();
+  yield();
 
 #ifdef IR_REMOTE
   // handle received IR codes from the remote
   handleIRRemote();
 #endif
 
-yield();
+  yield();
+
+  // handle commands
+  handleCMD();
+
+  yield();
+
+  if (!mqttClient.connected()) {
+    connectMQTT();
+  }
+  mqttClient.loop();
+
+  yield();
+
+  ArduinoOTA.handle();
+
+  yield();
 }
