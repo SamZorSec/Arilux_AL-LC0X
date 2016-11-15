@@ -28,7 +28,7 @@ ESP-12F layout: [https://cdn.solarbotics.com/products/photos/ec129f72948c266ec15
 
 The FTDI from the left gives power and it's connected to an USB charger (VCC, GND). The FTDI from the right is connected to the computer and is used to reprogram the ESP8266 (RX, TX, GND).
 
-![Layout](images/Layout.jpg)
+![Layout](images/Layout.JPG)
 
 ### Settings for the Arduino IDE
 
@@ -49,20 +49,23 @@ The FTDI from the left gives power and it's connected to an USB charger (VCC, GN
 The LED controller can be controlled with the IR remote included with the Arilux AL-LC03. The functionalities `Flash`, `Strobe`, `Fade` and `Smooth`are not implemented yet.
 ### MQTT
 State
+
 | #          | Topic                 | Payload   |
-| -----------|-----------------------|-----------|
+|------------|-----------------------|-----------|
 | State      | `arilux/state/state`  | `ON`/`OFF`|
 | Command    | `arilux/state/set`    | `ON`/`OFF`|
 
 Brightness
+
 | #          | Topic                      | Payload   |
-| -----------|----------------------------|-----------|
+|------------|----------------------------|-----------|
 | State      | `arilux/brightness/state`  |  `0-255`  |
 | Command    | `arilux/brightness/set`    |  `0-255`  |
 
 Color
+
 | #          | Topic                 | Payload             |
-| -----------|-----------------------|---------------------|
+|------------|-----------------------|---------------------|
 | State      | `arilux/color/state`  | `0-255,0-255,0-255` |
 | Command    | `arilux/color/set`    | `0-255,0-255,0-255` |
 
