@@ -1,21 +1,70 @@
 /*
-    Arilux AL-LC03
-    Alternative firmware
+  Alternative firmware for Arilux AL-LC03, based on the MQTT protocol and a TLS connection
 
-    Work in progress...
+  This firmware can be easily interfaced with Home Assistant, with the MQTT light
+  component: https://home-assistant.io/components/light.mqtt/
+
+  CloudMQTT (free until 10 connections): https://www.cloudmqtt.com
+
+  Libraries :
+    - ESP8266 core for Arduino :  https://github.com/esp8266/Arduino
+    - PubSubClient:               https://github.com/knolleary/pubsubclient
+    - IRremoteESP8266:            https://github.com/markszabo/IRremoteESP8266
+
+  Sources :
+    - File > Examples > ES8266WiFi > WiFiClient
+    - File > Examples > PubSubClient > mqtt_auth
+    - https://io.adafruit.com/blog/security/2016/07/05/adafruit-io-security-esp8266/
+
+  MQTT topics and payloads:
+    State:
+      - State:    arilux/state/state        ON/OFF
+      - Command:  arilux/state/set          ON/OFF
+    Brightness:
+      - State:    arilux/brightness/state   0-255
+      - Command:  arilux/brightness/set     0-255
+    Color:
+      - State:    arilux/color/state        0-255,0-255,0-255
+      - Command:  arilux/color/set          0-255,0-255,0-255
+
+  Configuration (Home Assistant) :
+    light:
+      - platform: mqtt
+        name: 'Arilux RGB Led Controller'
+        state_topic: 'arilux/state/state'
+        command_topic: 'arilux/state/set'
+        brightness_state_topic: 'arilux/brightness/state'
+        brightness_command_topic: 'arilux/brightness/set'
+        rgb_state_topic: 'arilux/color/state'
+        rgb_command_topic: 'arilux/color/set'
+
+  Demo: https://www.youtube.com/watch?v=IKh0inaLvAU
+
+  Samuel M. - v1.0 - 11.2016
+  If you like this example, please add a star! Thank you!
+  https://github.com/mertenats/Arilux_AL-LC03
 */
 
+
 #define IR_REMOTE
-#define DEBUG_TELNET
+// TLS support, make sure to edit the fingerprint and the MQTT broker IP address if
+// you are not using CloudMQTT
+#define TLS
+//#define DEBUG_TELNET
 
-#include <ESP8266WiFi.h>      // https://github.com/esp8266/Arduino
-#include <PubSubClient.h>     // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
+#include <ESP8266WiFi.h>        // https://github.com/esp8266/Arduino
+#include <PubSubClient.h>       // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 #ifdef IR_REMOTE
-#include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
+  #include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
 #endif
-
 #include <ArduinoOTA.h>
 #include "Arilux.h"
+
+#ifdef TLS
+  // SHA1 fingerprint of the certificate
+  // openssl x509 -fingerprint -in  <certificate>.crt
+  const char* fingerprint = "A5 02 FF 13 99 9F 8B 39 8E F1 83 4F 11 23 65 0B 32 36 FC 07";
+#endif
 
 // in a terminal: telnet arilux.local
 #ifdef DEBUG_TELNET
@@ -53,20 +102,54 @@ char msgBuffer[12];
 
 // MQTT
 const char*   MQTT_CLIENT_ID                        = "arilux";
-const char*   MQTT_SERVER_IP                        = "[REDACTED]";
-const int     MQTT_SERVER_PORT                      = 1883;
+const char*   MQTT_SERVER_IP                        = "m21.cloudmqtt.com";
+const int     MQTT_SERVER_PORT                      = [REDACTED];
 const char*   MQTT_USER                             = "[REDACTED]";
 const char*   MQTT_PASSWORD                         = "[REDACTED]";
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
-Arilux        arilux;
+Arilux              arilux;
 #ifdef IR_REMOTE
-  IRrecv      irRecv(ARILUX_IR_PIN);
+  IRrecv            irRecv(ARILUX_IR_PIN);
 #endif
-WiFiClient    wifiClient;
-PubSubClient  mqttClient(wifiClient);
+#ifdef TLS
+  WiFiClientSecure  wifiClient;
+#else
+  WiFiClient        wifiClient;
+#endif
+PubSubClient        mqttClient(wifiClient);
 
+///////////////////////////////////////////////////////////////////////////
+//  SSL/TLS
+///////////////////////////////////////////////////////////////////////////
+/*
+  Function called to verify the fingerprint of the MQTT server certificate
+ */
+#ifdef TLS
+void verifyFingerprint() {
+  DEBUG_PRINT(F("INFO: Connecting to "));
+  DEBUG_PRINTLN(MQTT_SERVER_IP);
+
+  if (!wifiClient.connect(MQTT_SERVER_IP, MQTT_SERVER_PORT)) {
+    DEBUG_PRINTLN(F("ERROR: Connection failed. Halting execution"));
+    delay(1000);
+    ESP.reset();
+  }
+
+  if (wifiClient.verify(fingerprint, MQTT_SERVER_IP)) {
+    DEBUG_PRINTLN(F("INFO: Connection secure"));
+  } else {
+    DEBUG_PRINTLN(F("ERROR: Connection insecure! Halting execution"));
+    delay(1000);
+    ESP.reset();
+  }
+}
+#endif
+
+///////////////////////////////////////////////////////////////////////////
+//  MQTT
+///////////////////////////////////////////////////////////////////////////
 /*
    Function called when a MQTT message arrived
    @param p_topic   The topic of the MQTT message
@@ -146,6 +229,9 @@ void connectMQTT(void) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////
+//   TELNET
+///////////////////////////////////////////////////////////////////////////
 /*
    Function called to handle Telnet clients
    https://www.youtube.com/watch?v=j9yW10OcahI
@@ -165,6 +251,9 @@ void handleTelnet(void) {
 }
 #endif
 
+///////////////////////////////////////////////////////////////////////////
+//  IR REMOTE
+///////////////////////////////////////////////////////////////////////////
 /*
    Function called to handle received IR codes from the remote
 */
@@ -279,6 +368,9 @@ void handleIRRemote(void) {
 }
 #endif
 
+///////////////////////////////////////////////////////////////////////////
+//  CMD
+///////////////////////////////////////////////////////////////////////////
 /*
    Function called to handle commands due to changes
 */
@@ -337,6 +429,9 @@ void handleCMD(void) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////
+//  WiFi
+///////////////////////////////////////////////////////////////////////////
 /*
    Function called to setup the connection to the WiFi AP
 */
@@ -361,6 +456,9 @@ void setupWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+///////////////////////////////////////////////////////////////////////////
+//  SETUP() AND LOOP()
+///////////////////////////////////////////////////////////////////////////
 void setup() {
   Serial.begin(115200);
 
@@ -380,6 +478,11 @@ void setup() {
 #ifdef IR_REMOTE
   // start the IR receiver
   irRecv.enableIRIn();
+#endif
+
+#ifdef TLS
+  // check the fingerprint of io.adafruit.com's SSL cert
+  verifyFingerprint();
 #endif
 
   // init MQTT
