@@ -7,6 +7,8 @@
 #define ARILUX_RED_PIN            14
 #define ARILUX_GREEN_PIN          5
 #define ARILUX_BLUE_PIN           12
+#define ARILUX_WHITE1_PIN           13
+#define ARILUX_WHITE2_PIN           15
 #define ARILUX_IR_PIN             4
 
 #define ARILUX_PWM_RANGE          255
@@ -63,13 +65,17 @@ enum {
   ARILUX_CMD_NOT_DEFINED,
   ARILUX_CMD_STATE_CHANGED,
   ARILUX_CMD_BRIGHTNESS_CHANGED,
-  ARILUX_CMD_COLOR_CHANGED
+  ARILUX_CMD_COLOR_CHANGED,
+  ARILUX_CMD_WHITE_CHANGED,
+  ARILUX_CMD_PING
 };
 
 typedef struct Color {
   uint8_t red;
   uint8_t green;
   uint8_t blue;
+  uint8_t white1;
+  uint8_t white2;
 };
 
 class Arilux {
@@ -86,15 +92,24 @@ class Arilux {
     uint8_t getRedValue(void);
     uint8_t getGreenValue(void);
     uint8_t getBlueValue(void);
+    uint8_t getWhite1Value(void);
+    uint8_t getWhite2Value(void);
+    
     uint8_t setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue);
+    uint8_t setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2);
+    uint8_t setWhite(uint8_t p_white1, uint8_t p_white2);
   private:
     uint8_t m_redPin;
     uint8_t m_greenPin;
     uint8_t m_bluePin;
+    uint8_t m_white1Pin;
+    uint8_t m_white2Pin;
     uint8_t m_state;
     uint8_t m_brightness;
     Color   m_color;
     uint8_t setState(uint8_t p_state);
     uint8_t setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_retain);
+    uint8_t setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2, uint8_t p_retain);
+    uint8_t setWhite(uint8_t p_white1, uint8_t p_white2, uint8_t p_retain);
 };
 #endif
