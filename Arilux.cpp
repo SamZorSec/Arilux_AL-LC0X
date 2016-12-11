@@ -3,27 +3,36 @@
 Arilux::Arilux(void):
   m_redPin(ARILUX_RED_PIN),
   m_greenPin(ARILUX_GREEN_PIN),
-  m_bluePin(ARILUX_BLUE_PIN),
-  m_white1Pin(ARILUX_WHITE1_PIN),
-  m_white2Pin(ARILUX_WHITE2_PIN)
+  m_bluePin(ARILUX_BLUE_PIN)
+#ifdef RGBW
+  ,m_white1Pin(ARILUX_WHITE1_PIN)
+#ifdef RGBWW
+  ,m_white2Pin(ARILUX_WHITE2_PIN)
+#endif
+#endif
 {
   m_state = false;
-  m_brightness = ARILUX_PWM_RANGE;
+  m_brightness = ARILUX_PWM_RANGE/3;
   m_color.red = ARILUX_PWM_RANGE;
   m_color.green = ARILUX_PWM_RANGE;
   m_color.blue = ARILUX_PWM_RANGE;
   m_color.white1 = ARILUX_PWM_RANGE;
   m_color.white2 = ARILUX_PWM_RANGE;
+  
+
 }
 
 uint8_t Arilux::init(void) {
   pinMode(m_redPin, OUTPUT);
   pinMode(m_greenPin, OUTPUT);
   pinMode(m_bluePin, OUTPUT);
-  
+
+#ifdef RGBW
   pinMode(m_white1Pin, OUTPUT);
+#ifdef RGBWW
   pinMode(m_white2Pin, OUTPUT);
-  
+#endif
+#endif
   analogWriteFreq(ARILUX_PWM_FREQUENCY);
   analogWriteRange(ARILUX_PWM_RANGE);
 
@@ -43,6 +52,10 @@ uint8_t Arilux::turnOn(void) {
 
 uint8_t Arilux::turnOff(void) {
   return setState(false);
+}
+
+char *Arilux::getColorString(void) {
+  return (char *)ARILUX_COLOSTRING;
 }
 
 uint8_t Arilux::setState(uint8_t p_state) {
@@ -88,9 +101,12 @@ uint8_t Arilux::setBrightness(uint8_t p_brightness) {
   analogWrite(m_redPin, map(m_color.red, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_greenPin, map(m_color.green, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_bluePin, map(m_color.blue, 0, ARILUX_PWM_RANGE, 0, m_brightness));
+#ifdef RGBW
   analogWrite(m_white1Pin, map(m_color.white1, 0, ARILUX_PWM_RANGE, 0, m_brightness));
+#ifdef RGBWW
   analogWrite(m_white2Pin, map(m_color.white2, 0, ARILUX_PWM_RANGE, 0, m_brightness));
-
+#endif
+#endif
   return true;
 }
 
@@ -144,9 +160,12 @@ uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p
   analogWrite(m_redPin, map(p_red, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_greenPin, map(p_green, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_bluePin, map(p_blue, 0, ARILUX_PWM_RANGE, 0, m_brightness));
+#ifdef RGBW
   analogWrite(m_white1Pin, map(p_white1, 0, ARILUX_PWM_RANGE, 0, m_brightness));
+#ifdef RGBWW
   analogWrite(m_white2Pin, map(p_white2, 0, ARILUX_PWM_RANGE, 0, m_brightness));
-
+#endif
+#endif
   return true;
 }
 uint8_t Arilux::setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_retain) {

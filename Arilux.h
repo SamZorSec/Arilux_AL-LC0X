@@ -3,14 +3,33 @@
 #define _ARILUX_H_
 
 #include <ESP8266WiFi.h>          // https://github.com/esp8266/Arduino
-
+//lc08
+//#define RGBWW
+//lc02 lc04
+//#define RGBW
+//lc03
+#if defined(RGBWW)
+#define ARILUX_RED_PIN            5
+#define ARILUX_GREEN_PIN          4
+#define ARILUX_BLUE_PIN           14
+#define ARILUX_WHITE1_PIN           12 
+#define ARILUX_WHITE2_PIN           13 
+#define ARILUX_IR_PIN
+#define ARILUX_COLOSTRING "RGBWW"             
+#elif defined(RGBW)
 #define ARILUX_RED_PIN            14
 #define ARILUX_GREEN_PIN          5
 #define ARILUX_BLUE_PIN           12
-#define ARILUX_WHITE1_PIN           13
-#define ARILUX_WHITE2_PIN           15
+#define ARILUX_WHITE1_PIN           13 
 #define ARILUX_IR_PIN             4
-
+#define ARILUX_COLOSTRING "RGBW"
+#else
+#define ARILUX_RED_PIN            14
+#define ARILUX_GREEN_PIN          5
+#define ARILUX_BLUE_PIN           12
+#define ARILUX_IR_PIN             4
+#define ARILUX_COLOSTRING "RGB"
+#endif
 #define ARILUX_PWM_RANGE          255
 #define ARILUX_PWM_FREQUENCY      500
 
@@ -94,6 +113,7 @@ class Arilux {
     uint8_t getBlueValue(void);
     uint8_t getWhite1Value(void);
     uint8_t getWhite2Value(void);
+    char * getColorString(void);
     
     uint8_t setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue);
     uint8_t setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2);
@@ -102,8 +122,12 @@ class Arilux {
     uint8_t m_redPin;
     uint8_t m_greenPin;
     uint8_t m_bluePin;
+#ifdef RGBW
     uint8_t m_white1Pin;
+#ifdef RGBWW
     uint8_t m_white2Pin;
+#endif
+#endif
     uint8_t m_state;
     uint8_t m_brightness;
     Color   m_color;
