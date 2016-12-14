@@ -20,8 +20,8 @@ uint8_t Arilux::init(void) {
   analogWriteFreq(ARILUX_PWM_FREQUENCY);
   analogWriteRange(ARILUX_PWM_RANGE);
 
-  if (!turnOn())
-    return false;
+//  if (!turnOn())
+//    return false;
 
   return true;
 }
