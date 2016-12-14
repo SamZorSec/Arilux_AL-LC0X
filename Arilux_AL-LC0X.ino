@@ -48,7 +48,11 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 
-  Samuel M. - v1.0 - 11.2016
+  Versions :
+    - 1.0 : Initial version
+    - 1.1 : Add support for RF remote
+    
+  Samuel M. - v1.1 - 12.2016
   If you like this example, please add a star! Thank you!
   https://github.com/mertenats/Arilux_AL-LC03
 */

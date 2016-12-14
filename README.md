@@ -1,14 +1,19 @@
-# Arilux AL-LC03 LED controller
+# Arilux AL-LC0X LED controller
 ## Alternative firmware
-Alternative firmware for Arilux AL-LC03 LED controllers, based on the MQTT protocol and a TLS connection.
+Alternative firmware for Arilux AL-LC0X LED controllers, based on the MQTT protocol and a TLS connection.
 The LED controller is a cheap product commercialized by [Banggood.com](http://www.banggood.com/ARILUX-AL-LC03-Super-Mini-LED-WIFI-APP-Controller-Remote-Control-For-RGB-LED-Strip-DC-9-12V-p-1060223.html) and can be easily reprogrammed.
+
+This firmware was tested with the Arilux AL-LC03 (IR remote) and the Arilux AL-LC09 (RF remote) models.
 
 ![Arilux](images/Arilux.png)
 
 ## Features
 - Remote control over the MQTT protocol
-- Remote control over IR codes
-- TLS support
+- Remote control over IR codes (`#define IR_REMOTE` uncomment)
+- Remote control over RF codes (`#define RF_REMOTE`uncomment)
+- TLS support (`#define TLS`uncomment)
+- Debugging over Telnet (`#define DEBUG_TELNET` uncomment)
+- Native support for Home Assistant
 
 ## Demonstration
 
@@ -47,6 +52,10 @@ The FTDI from the left gives power and it's connected to an USB charger (VCC, GN
 ## Control
 ### IR
 The LED controller can be controlled with the IR remote included with the Arilux AL-LC03. The functionalities `Flash`, `Strobe`, `Fade` and `Smooth`are not implemented yet.
+
+### RF
+The LED controller can be controlled with the RF remote included with the Arilux AL-LC09. The functionalities `Mode+`, `Mode-`, `Speed+`, `Speed-` and `toggle`are not implemented yet.
+
 ### MQTT
 State
 
@@ -89,12 +98,21 @@ light:
     rgb_command_topic: 'arilux/color/set'
 ```
 
-## TODO
+## Todo
+### IR remote
 - Flash
 - Strobe
 - Fade
 - Smooth
 
+### RF remote
+- Mode+
+- Mode-
+- Speed+
+- Speed-
+- Toggle
+
+## Licence
 > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -105,5 +123,8 @@ light:
 
 ## Home Assistant Community Discussion Forum
 For further information and to join the discussion for this firmware please go to the Home Assistant Community Discussion Forum [Alternative firmware for Arilux AL-LC03 for use with MQTT and Home Assistant](https://community.home-assistant.io/t/alternative-firmware-for-arilux-al-lc03-for-use-with-mqtt-and-home-assistant-rgb-light-strip-controller/6328/16). I would be happy to answer any of your queries there.
+
+## Contributor
+- [KmanOz](https://github.com/KmanOz) : Codes for the RF remote (Arilux AL-LC09)
 
 *If you like the content of this repo, please add a star! Thank you!*
