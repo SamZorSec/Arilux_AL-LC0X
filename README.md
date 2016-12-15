@@ -3,8 +3,6 @@
 Alternative firmware for Arilux AL-LC0X LED controllers, based on the MQTT protocol and a TLS connection.
 The LED controller is a cheap product commercialized by [Banggood.com](http://www.banggood.com/ARILUX-AL-LC03-Super-Mini-LED-WIFI-APP-Controller-Remote-Control-For-RGB-LED-Strip-DC-9-12V-p-1060223.html) and can be easily reprogrammed.
 
-This firmware was tested with the Arilux AL-LC03 (IR remote) and the Arilux AL-LC09 (RF remote) models.
-
 ![Arilux](images/Arilux.png)
 
 ## Features
@@ -14,6 +12,10 @@ This firmware was tested with the Arilux AL-LC03 (IR remote) and the Arilux AL-L
 - TLS support (`#define TLS`uncomment)
 - Debugging over Telnet (`#define DEBUG_TELNET` uncomment)
 - Native support for Home Assistant
+
+## Supported devices
+- Arilux AL-LC03 (RGB, IR remote, ~8$ on [AliExpress](https://www.aliexpress.com/item/Excellent-Quality-ARILUX-AL-LC03-Mini-Wifi-LED-RGB-APP-Controller-LED-Strip-Light-With-24/32716788750.html?spm=2114.13010608.0.0.9j2dMi))
+- Arilux AL-LC09 (RGB, RF remote, ~12$ on [Banggood](http://www.banggood.com/ARILUX-AL-LC09-Super-Mini-LED-WIFI-APP-Controller-RF-Remote-Control-For-RGB-LED-Strip-DC9-28V-p-1081344.html))
 
 ## Demonstration
 
