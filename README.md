@@ -7,22 +7,45 @@ The LED controller is a cheap product commercialized by [Banggood.com](http://ww
 
 ## Features
 - Remote control over the MQTT protocol
-- Remote control over IR codes (`#define IR_REMOTE` uncomment)
-- Remote control over RF codes (`#define RF_REMOTE`uncomment)
-- TLS support (`#define TLS`uncomment)
-- Debugging over Telnet (`#define DEBUG_TELNET` uncomment)
+- Remote control with the included IR control (uncomment `#define IR_REMOTE` in config.h)
+- Remote control with the included RF control (uncomment `#define RF_REMOTE` in config.h)
+- TLS support (uncomment `#define TLS` in config.h)
+- Debugging over Telnet (uncomment `#define DEBUG_TELNET` in config.h)
 - Native support for Home Assistant
 
 ## Supported devices
-- Arilux AL-LC03 (RGB, IR remote, ~8$ on [AliExpress](https://www.aliexpress.com/item/Excellent-Quality-ARILUX-AL-LC03-Mini-Wifi-LED-RGB-APP-Controller-LED-Strip-Light-With-24/32716788750.html?spm=2114.13010608.0.0.9j2dMi))
-- Arilux AL-LC09 (RGB, RF remote, ~12$ on [Banggood](http://www.banggood.com/ARILUX-AL-LC09-Super-Mini-LED-WIFI-APP-Controller-RF-Remote-Control-For-RGB-LED-Strip-DC9-28V-p-1081344.html))
+- Arilux AL-LC01 (RGB, ~$8 on [Banggood](http://www.banggood.com/ARILUX-AL-LC01-Super-Mini-LED-WIFI-Smart-RGB-Controller-For-RGB-LED-Strip-Light-DC-9-12V-p-1058603.html?rmmds=search))
+- Arilux AL-LC02 (RGBW, ~$11 on [Banggood](http://www.banggood.com/ARILUX-AL-LC02-Super-Mini-LED-WIFI-APP-Controller-Dimmer-for-RGBW-LED-Strip-Light-DC-9-12V-p-1060222.html))
+- Arilux AL-LC03 (RGB, IR remote, ~$12 on [Banggood](http://www.banggood.com/ARILUX-AL-LC03-Super-Mini-LED-WIFI-APP-Controller-Remote-Control-For-RGB-LED-Strip-DC-9-12V-p-1060223.html))
+- Arilux AL-LC04 (RGBW, IR remote, ~$13 on [Banggood](http://www.banggood.com/ARILUX-AL-LC04-Super-Mini-LED-WIFI-APP-Controller-Remote-Control-For-RGBW-LED-Strip-DC-9-12V-p-1060231.html))
+- Arilux AL-LC08 (RGBWW, ~$12 on [Banggood](http://www.banggood.com/ARILUX-AL-LC08-Super-Mini-LED-WIFI-APP-Controller-Dimmer-for-RGBWW-LED-Strip-Light-DC-5-28V-p-1081241.html))
+- Arilux AL-LC09 (RGB, RF remote, ~$12 on [Banggood](http://www.banggood.com/ARILUX-AL-LC09-Super-Mini-LED-WIFI-APP-Controller-RF-Remote-Control-For-RGB-LED-Strip-DC9-28V-p-1081344.html))
 
 ## Demonstration
 
 [![Arilux AL-LC03 + IR + MQTT + Home Assistant](images/Youtube.png)](https://www.youtube.com/watch?v=IKh0inaLvAU "Arilux AL-LC03 + IR + MQTT + Home Assistant")
 
 ## Flash the firmware
-### Schematic
+Whichever option you choose, ensure your Arduino IDE settings match the following:
+
+### Settings for the Arduino IDE
+
+| Parameter       | Value                    |
+| ----------------|--------------------------|
+| Board           | Generic ESP8266 Module   |
+| Flash Mode      | DIO                      |
+| Flash Frequency | 40 MHz                   |
+| Upload Using    | Serial                   |
+| CPU Frequency   | 80 MHz                   |
+| Flash Size      | 1M (64K SPIFFS)          |
+| Reset Method    | ck                       |
+| Upload Speed    | 115200                   |
+| Port            | COMX, /dev/ttyUSB0, etc. |
+
+Ensure you copy `config.example.h` to `config.h` and change settings to match your environment before flashing.
+
+### Option 1
+#### Schematic
 - VCC (Arilux) -> VCC (3.3 [V])
 - RX  (Arilux) -> TX  (FTDI)
 - TX  (Arilux) -> RX  (FTDI)
@@ -37,48 +60,46 @@ The FTDI from the left gives power and it's connected to an USB charger (VCC, GN
 
 ![Layout](images/Layout.JPG)
 
-### Settings for the Arduino IDE
+### Option 2
+Using the following image, connect RX, TX and GND of a single FTDI to the shown pins on the underside of the board. Plug in the wall power supply and flash using the above settings.
 
-| Parameter       | Value                    |
-| ----------------|--------------------------|
-| Board           | Generic ESP8266 Module   |
-| Flash Mode      | DIO                      |  
-| Flash Frequency | 40 MHz                   |  
-| Upload Using    | Serial                   |  
-| CPU Frequency   | 80 MHz                   |  
-| Flash Size      | 512K (64K SPIFFS)        |  
-| Reset Method    | ck                       |  
-| Upload Speed    | 115200                   |  
-| Port            | COMX, /dev/ttyUSB0, etc. |
+![Option 2 Layout](images/option2.jpg)
 
 ## Control
 ### IR
-The LED controller can be controlled with the IR remote included with the Arilux AL-LC03. The functionalities `Flash`, `Strobe`, `Fade` and `Smooth`are not implemented yet.
+The LED controller can be controlled with the IR remote included with the Arilux AL-LC03. The functionalities `Flash`, `Strobe`, `Fade` and `Smooth` are not implemented yet.
 
 ### RF
-The LED controller can be controlled with the RF remote included with the Arilux AL-LC09. The functionalities `Mode+`, `Mode-`, `Speed+`, `Speed-` and `toggle`are not implemented yet.
+The LED controller can be controlled with the RF remote included with the Arilux AL-LC09. The functionalities `Mode+`, `Mode-`, `Speed+`, `Speed-` and `toggle` are not implemented yet.
 
 ### MQTT
 State
 
-| #          | Topic                 | Payload   |
-|------------|-----------------------|-----------|
-| State      | `arilux/state/state`  | `ON`/`OFF`|
-| Command    | `arilux/state/set`    | `ON`/`OFF`|
+| #          | Topic                             | Payload   |
+|------------|-----------------------------------|-----------|
+| State      | `rgb(w/ww)/<chipid>/state/state`  | `ON`/`OFF`|
+| Command    | `rgb(w/ww)/<chipid>/state/set`    | `ON`/`OFF`|
 
 Brightness
 
-| #          | Topic                      | Payload   |
-|------------|----------------------------|-----------|
-| State      | `arilux/brightness/state`  |  `0-255`  |
-| Command    | `arilux/brightness/set`    |  `0-255`  |
+| #          | Topic                                  | Payload   |
+|------------|----------------------------------------|-----------|
+| State      | `rgb(w/ww)/<chipid>/brightness/state`  |  `0-255`  |
+| Command    | `rgb(w/ww)/<chipid>/brightness/set`    |  `0-255`  |
 
 Color
 
-| #          | Topic                 | Payload             |
-|------------|-----------------------|---------------------|
-| State      | `arilux/color/state`  | `0-255,0-255,0-255` |
-| Command    | `arilux/color/set`    | `0-255,0-255,0-255` |
+| #          | Topic                             | Payload             |
+|------------|-----------------------------------|---------------------|
+| State      | `rgb(w/ww)/<chipid>/color/state`  | `0-255,0-255,0-255` |
+| Command    | `rgb(w/ww)/<chipid>/color/set`    | `0-255,0-255,0-255` |
+
+White
+
+| #          | Topic                                  | Payload         |
+|------------|----------------------------------------|-----------------|
+| State      | `rgb(w/ww)/<chipid>/white/state`       |  `0-255,0-255`  |
+| Command    | `rgb(w/ww)/<chipid>/white/set`         |  `0-255,0-255`  |
 
 ### Configuration for Home Assistant
 configuration.yaml
@@ -92,15 +113,18 @@ mqtt:
 light:
   - platform: mqtt
     name: 'Arilux RGB Led Controller'
-    state_topic: 'arilux/state/state'
-    command_topic: 'arilux/state/set'
-    brightness_state_topic: 'arilux/brightness/state'
-    brightness_command_topic: 'arilux/brightness/set'
-    rgb_state_topic: 'arilux/color/state'
-    rgb_command_topic: 'arilux/color/set'
+    state_topic: 'rgb(w/ww)/<chipid>/state/state'
+    command_topic: 'rgb(w/ww)/<chipid>/state/set'
+    brightness_state_topic: 'rgb(w/ww)/<chipid>/brightness/state'
+    brightness_command_topic: 'rgb(w/ww)/<chipid>/brightness/set'
+    rgb_state_topic: 'rgb(w/ww)/<chipid>/color/state'
+    rgb_command_topic: 'rgb(w/ww)/<chipid>/color/set'
 ```
 
 ## Todo
+- [Home Assistant MQTT Discovery support](https://github.com/mertenats/Arilux_AL-LC03/pull/7)
+- Effects like FastLED has. [Example](https://github.com/bruhautomation/ESP-MQTT-Digital-LEDs) with video.
+
 ### IR remote
 - Flash
 - Strobe
@@ -127,6 +151,8 @@ light:
 For further information and to join the discussion for this firmware please go to the Home Assistant Community Discussion Forum [Alternative firmware for Arilux AL-LC03 for use with MQTT and Home Assistant](https://community.home-assistant.io/t/alternative-firmware-for-arilux-al-lc03-for-use-with-mqtt-and-home-assistant-rgb-light-strip-controller/6328/16). I would be happy to answer any of your queries there.
 
 ## Contributor
-- [KmanOz](https://github.com/KmanOz) : Codes for the RF remote (Arilux AL-LC09)
+- [KmanOz](https://github.com/KmanOz): Codes for the RF remote (Arilux AL-LC09)
+- [DanGunvald](https://github.com/DanGunvald): RGBW/RGBWW support
+- [robbiet480](https://github.com/robbiet480): General cleanup and merging of RGBW/RGBWW code
 
 *If you like the content of this repo, please add a star! Thank you!*
