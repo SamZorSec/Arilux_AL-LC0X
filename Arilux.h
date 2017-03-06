@@ -3,11 +3,6 @@
 #define _ARILUX_H_
 
 #include <ESP8266WiFi.h>          // https://github.com/esp8266/Arduino
-//lc08
-//#define RGBWW
-//lc02 lc04
-//#define RGBW
-//lc03
 #if defined(RGBWW)
 #define ARILUX_RED_PIN            5
 #define ARILUX_GREEN_PIN          4
