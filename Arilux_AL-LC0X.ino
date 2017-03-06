@@ -253,6 +253,7 @@ void connectMQTT(void) {
           root["payload_on"] = ARILUX_MQTT_STATE_ON_PAYLOAD;
           root["payload_off"] = ARILUX_MQTT_STATE_OFF_PAYLOAD;
           root.printTo(configBuf, sizeof(configBuf));
+          mqttClient.publish(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf, true)
         #endif
       } else {
         DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
