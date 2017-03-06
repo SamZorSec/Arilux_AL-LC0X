@@ -7,10 +7,10 @@ The LED controller is a cheap product commercialized by [Banggood.com](http://ww
 
 ## Features
 - Remote control over the MQTT protocol
-- Remote control over IR codes (`#define IR_REMOTE` uncomment)
-- Remote control over RF codes (`#define RF_REMOTE`uncomment)
-- TLS support (`#define TLS`uncomment)
-- Debugging over Telnet (`#define DEBUG_TELNET` uncomment)
+- Remote control with the included IR control (uncomment `#define IR_REMOTE` in config.h)
+- Remote control with the included RF control (uncomment `#define RF_REMOTE` in config.h)
+- TLS support (uncomment `#define TLS` in config.h)
+- Debugging over Telnet (uncomment `#define DEBUG_TELNET` in config.h)
 - Native support for Home Assistant
 
 ## Supported devices
@@ -41,6 +41,8 @@ Whichever option you choose, ensure your Arduino IDE settings match the followin
 | Reset Method    | ck                       |
 | Upload Speed    | 115200                   |
 | Port            | COMX, /dev/ttyUSB0, etc. |
+
+Ensure you copy `config.example.h` to `config.h` and change settings to match your environment before flashing.
 
 ### Option 1
 #### Schematic
