@@ -55,13 +55,7 @@
   https://github.com/mertenats/Arilux_AL-LC03
 */
 
-
-//#define IR_REMOTE
-// TLS support, make sure to edit the fingerprint and the MQTT broker IP address if
-// you are not using CloudMQTT
-//#define TLS
-//#define DEBUG_TELNET
-
+#include "config.h"
 #include <ESP8266WiFi.h>        // https://github.com/esp8266/Arduino
 #include <PubSubClient.h>       // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 #ifdef IR_REMOTE
@@ -69,12 +63,6 @@
 #endif
 #include <ArduinoOTA.h>
 #include "Arilux.h"
-
-#ifdef TLS
-  // SHA1 fingerprint of the certificate
-  // openssl x509 -fingerprint -in  <certificate>.crt
-  const char* fingerprint = "A5 02 FF 13 99 9F 8B 39 8E F1 83 4F 11 23 65 0B 32 36 FC 07";
-#endif
 
 // in a terminal: telnet arilux.local
 #ifdef DEBUG_TELNET
@@ -85,17 +73,20 @@
 // Macros for debugging
 #ifdef DEBUG_TELNET
   #define     DEBUG_PRINT(x)    telnetClient.print(x)
+  #define     DEBUG_PRINT_WITH_FMT(x, fmt)    telnetClient.print(x, fmt)
   #define     DEBUG_PRINTLN(x)  telnetClient.println(x)
+  #define     DEBUG_PRINTLN_WITH_FMT(x, fmt)  telnetClient.println(x, fmt)
 #else
   #define     DEBUG_PRINT(x)    Serial.print(x)
+  #define     DEBUG_PRINT_WITH_FMT(x, fmt)    Serial.print(x, fmt)
   #define     DEBUG_PRINTLN(x)  Serial.println(x)
+  #define     DEBUG_PRINTLN_WITH_FMT(x, fmt)  Serial.println(x, fmt)
 #endif
 
-// Wi-Fi
-const char*   WIFI_SSID     = "Netgear";
-const char*   WIFI_PASSWORD = "0stem4dder";
 #define HOST "ARILUX%s"
 char chipid[12];
+
+char          MQTT_CLIENT_ID[32];
 
 // MQTT topics
 char   ARILUX_MQTT_STATE_STATE_TOPIC[44];
@@ -106,35 +97,28 @@ char   ARILUX_MQTT_COLOR_STATE_TOPIC[44];
 char   ARILUX_MQTT_COLOR_COMMAND_TOPIC[44];
 char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
 char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
+char   ARILUX_MQTT_STATUS_TOPIC[44];
 
-#define DEFARILUX_MQTT_STATE_STATE_TOPIC "%s/%s/state/state"
-#define DEFARILUX_MQTT_STATE_COMMAND_TOPIC  "%s/%s/state/set"
-#define DEFARILUX_MQTT_BRIGHTNESS_STATE_TOPIC "%s/%s/brightness/state"
-#define DEFARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC "%s/%s/brightness/set"
-#define DEFARILUX_MQTT_COLOR_STATE_TOPIC  "%s/%s/color/state"
-#define DEFARILUX_MQTT_COLOR_COMMAND_TOPIC  "%s/%s/color/set"
-#define DEFARILUX_MQTT_WHITE_STATE_TOPIC  "%s/%s/white/state"
-#define DEFARILUX_MQTT_WHITE_COMMAND_TOPIC  "%s/%s/white/set"
+#define DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC "%s/%s/state/state"
+#define DEFAULT_ARILUX_MQTT_STATE_COMMAND_TOPIC  "%s/%s/state/set"
+#define DEFAULT_ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC "%s/%s/brightness/state"
+#define DEFAULT_ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC "%s/%s/brightness/set"
+#define DEFAULT_ARILUX_MQTT_COLOR_STATE_TOPIC  "%s/%s/color/state"
+#define DEFAULT_ARILUX_MQTT_COLOR_COMMAND_TOPIC  "%s/%s/color/set"
+#define DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC  "%s/%s/white/state"
+#define DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC  "%s/%s/white/set"
+#define DEFAULT_ARILUX_MQTT_STATUS_TOPIC  "%s/%s/status"
 const char*   TOPICPING =  "ping";
 const char*   TOPICPONG = "pong";
 
 
 // MQTT payloads
-const char*   ARILUX_MQTT_STATE_WHITE015_PAYLOAD         = "4";
-const char*   ARILUX_MQTT_STATE_WHITE001_PAYLOAD         = "3";
 const char*   ARILUX_MQTT_STATE_WHITEFULLON_PAYLOAD         = "2";
 const char*   ARILUX_MQTT_STATE_ON_PAYLOAD          = "1";
 const char*   ARILUX_MQTT_STATE_OFF_PAYLOAD         = "0";
 
 // MQTT buffer
 char msgBuffer[32];
-
-// MQTT
-char          MQTT_CLIENT_ID[32];
-const char*   MQTT_SERVER_IP                        = "192.168.1.200";
-const int     MQTT_SERVER_PORT                      = 1883;
-const char*   MQTT_USER                             = "";
-const char*   MQTT_PASSWORD                         = "";
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
@@ -158,15 +142,15 @@ PubSubClient        mqttClient(wifiClient);
 #ifdef TLS
 void verifyFingerprint() {
   DEBUG_PRINT(F("INFO: Connecting to "));
-  DEBUG_PRINTLN(MQTT_SERVER_IP);
+  DEBUG_PRINTLN(MQTT_SERVER);
 
-  if (!wifiClient.connect(MQTT_SERVER_IP, MQTT_SERVER_PORT)) {
+  if (!wifiClient.connect(MQTT_SERVER, MQTT_PORT)) {
     DEBUG_PRINTLN(F("ERROR: Connection failed. Halting execution"));
     delay(1000);
     ESP.reset();
   }
 
-  if (wifiClient.verify(fingerprint, MQTT_SERVER_IP)) {
+  if (wifiClient.verify(fingerprint, MQTT_SERVER)) {
     DEBUG_PRINTLN(F("INFO: Connection secure"));
   } else {
     DEBUG_PRINTLN(F("ERROR: Connection insecure! Halting execution"));
@@ -232,19 +216,20 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
 volatile unsigned long lastmqttreconnect = 0;
 void connectMQTT(void) {
   if (!mqttClient.connected()) {
-    if (lastmqttreconnect + 1000 < millis()) {  
-      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)) {
+    if (lastmqttreconnect + 1000 < millis()) {
+      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS, ARILUX_MQTT_STATUS_TOPIC, 0, 1, "dead")) {
         DEBUG_PRINTLN(F("INFO: The client is successfully connected to the MQTT broker"));
+        mqttClient.publish(ARILUX_MQTT_STATUS_TOPIC, "alive", true);
       } else {
         DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
         DEBUG_PRINT(F("Username: "));
         DEBUG_PRINTLN(MQTT_USER);
         DEBUG_PRINT(F("Password: "));
-        DEBUG_PRINTLN(MQTT_PASSWORD);
+        DEBUG_PRINTLN(MQTT_PASS);
         DEBUG_PRINT(F("Broker: "));
-        DEBUG_PRINTLN(MQTT_SERVER_IP);
+        DEBUG_PRINTLN(MQTT_SERVER);
       }
-  
+
       if (mqttClient.subscribe(ARILUX_MQTT_STATE_COMMAND_TOPIC)) {
         DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded. Topic: "));
         DEBUG_PRINTLN(ARILUX_MQTT_STATE_COMMAND_TOPIC);
@@ -416,7 +401,8 @@ void handleIRRemote(void) {
         DEBUG_PRINTLN(F("INFO: IR_CODE_KEY_SMOOTH"));
         break;
       default:
-        DEBUG_PRINTLN(F("ERROR: IR code not defined"));
+        DEBUG_PRINT(F("ERROR: IR code not defined: "));
+        DEBUG_PRINTLN_WITH_FMT(results.value, HEX);
         break;
     }
     irRecv.resume();
@@ -569,23 +555,24 @@ void setup() {
   // check the fingerprint of io.adafruit.com's SSL cert
   verifyFingerprint();
 #endif
-  sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, DEFARILUX_MQTT_STATE_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC,DEFARILUX_MQTT_STATE_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC,DEFARILUX_MQTT_BRIGHTNESS_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC,DEFARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC,DEFARILUX_MQTT_COLOR_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC,DEFARILUX_MQTT_COLOR_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC,DEFARILUX_MQTT_WHITE_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC,DEFARILUX_MQTT_WHITE_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  mqttClient.setServer(MQTT_SERVER_IP, MQTT_SERVER_PORT);
+  sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_STATE_COMMAND_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC,DEFAULT_ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC,DEFAULT_ARILUX_MQTT_COLOR_STATE_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_COLOR_COMMAND_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC,DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_STATUS_TOPIC,DEFAULT_ARILUX_MQTT_STATUS_TOPIC,arilux.getColorString(),chipid);
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(callback);
   connectMQTT();
 
   // set hostname and start OTA
   ArduinoOTA.setHostname(MQTT_CLIENT_ID);
    ArduinoOTA.onStart([]() {
-      arilux.setAll(0,0,0,0,0);  
-  
+      arilux.setAll(0,0,0,0,0);
+
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
