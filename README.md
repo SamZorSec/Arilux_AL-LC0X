@@ -151,6 +151,8 @@ light:
 For further information and to join the discussion for this firmware please go to the Home Assistant Community Discussion Forum [Alternative firmware for Arilux AL-LC03 for use with MQTT and Home Assistant](https://community.home-assistant.io/t/alternative-firmware-for-arilux-al-lc03-for-use-with-mqtt-and-home-assistant-rgb-light-strip-controller/6328/16). I would be happy to answer any of your queries there.
 
 ## Contributor
-- [KmanOz](https://github.com/KmanOz) : Codes for the RF remote (Arilux AL-LC09)
+- [KmanOz](https://github.com/KmanOz): Codes for the RF remote (Arilux AL-LC09)
+- [DanGunvald](https://github.com/DanGunvald): RGBW/RGBWW support
+- [robbiet480](https://github.com/robbiet480): General cleanup and merging of RGBW/RGBWW code
 
 *If you like the content of this repo, please add a star! Thank you!*
