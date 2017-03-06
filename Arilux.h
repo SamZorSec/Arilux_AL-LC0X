@@ -1,3 +1,4 @@
+#include "config.h"
 #pragma once
 #ifndef _ARILUX_H_
 #define _ARILUX_H_
