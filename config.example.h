@@ -29,6 +29,10 @@
 #define MQTT_USER                "user"
 #define MQTT_PASS                "pass"
 
+// Enable Home Assistant MQTT discovery support
+#define HOME_ASSISTANT_MQTT_DISCOVERY
+#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX    "homeassistant"
+
 #ifdef TLS
   // SHA1 fingerprint of the certificate
   // openssl x509 -fingerprint -in <certificate>.crt
