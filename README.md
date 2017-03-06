@@ -26,20 +26,7 @@ The LED controller is a cheap product commercialized by [Banggood.com](http://ww
 [![Arilux AL-LC03 + IR + MQTT + Home Assistant](images/Youtube.png)](https://www.youtube.com/watch?v=IKh0inaLvAU "Arilux AL-LC03 + IR + MQTT + Home Assistant")
 
 ## Flash the firmware
-### Schematic
-- VCC (Arilux) -> VCC (3.3 [V])
-- RX  (Arilux) -> TX  (FTDI)
-- TX  (Arilux) -> RX  (FTDI)
-- GPIO0 (Arilux) -> GND (FTDI)
-- GND (Arilux) -> GND (FTDI)
-
-Note: To enter in programming mode, you need to put GPIO0 to LOW while powering the board. It's not possible to reprogram the module without soldering the wire to the ESP8266 module.
-
-ESP-12F layout: [https://cdn.solarbotics.com/products/photos/ec129f72948c266ec1502ae5a4d514ba/29240-IMG_0808.jpg](https://cdn.solarbotics.com/products/photos/ec129f72948c266ec1502ae5a4d514ba/29240-IMG_0808.jpg)
-
-The FTDI from the left gives power and it's connected to an USB charger (VCC, GND). The FTDI from the right is connected to the computer and is used to reprogram the ESP8266 (RX, TX, GND).
-
-![Layout](images/Layout.JPG)
+Whichever option you choose, ensure your Arduino IDE settings match the following:
 
 ### Settings for the Arduino IDE
 
@@ -54,6 +41,27 @@ The FTDI from the left gives power and it's connected to an USB charger (VCC, GN
 | Reset Method    | ck                       |
 | Upload Speed    | 115200                   |
 | Port            | COMX, /dev/ttyUSB0, etc. |
+
+### Option 1
+#### Schematic
+- VCC (Arilux) -> VCC (3.3 [V])
+- RX  (Arilux) -> TX  (FTDI)
+- TX  (Arilux) -> RX  (FTDI)
+- GPIO0 (Arilux) -> GND (FTDI)
+- GND (Arilux) -> GND (FTDI)
+
+Note: To enter in programming mode, you need to put GPIO0 to LOW while powering the board. It's not possible to reprogram the module without soldering the wire to the ESP8266 module.
+
+ESP-12F layout: [https://cdn.solarbotics.com/products/photos/ec129f72948c266ec1502ae5a4d514ba/29240-IMG_0808.jpg](https://cdn.solarbotics.com/products/photos/ec129f72948c266ec1502ae5a4d514ba/29240-IMG_0808.jpg)
+
+The FTDI from the left gives power and it's connected to an USB charger (VCC, GND). The FTDI from the right is connected to the computer and is used to reprogram the ESP8266 (RX, TX, GND).
+
+![Layout](images/Layout.JPG)
+
+### Option 2
+Using the following image, connect RX, TX and GND of a single FTDI to the shown pins on the underside of the board. Plug in the wall power supply and flash using the above settings.
+
+![Option 2 Layout](images/option2.jpg)
 
 ## Control
 ### IR
