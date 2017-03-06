@@ -50,7 +50,11 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 
-  Samuel M. - v1.0 - 11.2016
+  Versions :
+    - 1.0 : Initial version
+    - 1.1 : Add support for RF remote
+
+  Samuel M. - v1.1 - 12.2016
   If you like this example, please add a star! Thank you!
   https://github.com/mertenats/Arilux_AL-LC03
 */
@@ -59,7 +63,10 @@
 #include <ESP8266WiFi.h>        // https://github.com/esp8266/Arduino
 #include <PubSubClient.h>       // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 #ifdef IR_REMOTE
-#include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
+  #include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
+#endif
+#ifdef RF_REMOTE
+  #include <RCSwitch.h>         // https://github.com/sui77/rc-switch
 #endif
 #include <ArduinoOTA.h>
 #include "Arilux.h"
@@ -125,6 +132,9 @@ volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 Arilux              arilux;
 #ifdef IR_REMOTE
   IRrecv            irRecv(ARILUX_IR_PIN);
+#endif
+#ifdef RF_REMOTE
+  RCSwitch          rcSwitch = RCSwitch();
 #endif
 #ifdef TLS
   WiFiClientSecure  wifiClient;
@@ -411,6 +421,111 @@ void handleIRRemote(void) {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////
+//  RF REMOTE
+///////////////////////////////////////////////////////////////////////////
+/*
+   Function called to handle received RF codes from the remote
+*/
+#ifdef RF_REMOTE
+void handleRFRemote(void) {
+  if (rcSwitch.available()) {
+    int value = rcSwitch.getReceivedValue();
+
+    switch (value) {
+      case ARILUX_RF_CODE_KEY_BRIGHT_PLUS:
+        if (arilux.increaseBrightness())
+          cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_BRIGHT_MINUS:
+        if (arilux.decreaseBrightness())
+          cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_OFF:
+        if (arilux.turnOff())
+          cmd = ARILUX_CMD_STATE_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_ON:
+        if (arilux.turnOn())
+          cmd = ARILUX_CMD_STATE_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_RED:
+        if (arilux.setColor(255, 0, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_GREEN:
+        if (arilux.setColor(0, 255, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_BLUE:
+        if (arilux.setColor(0, 0, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_WHITE:
+        if (arilux.setColor(255, 255, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_ORANGE:
+        if (arilux.setColor(255, 165, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_LTGRN:
+        if (arilux.setColor(144, 238, 144))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_LTBLUE:
+        if (arilux.setColor(173, 216, 230))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_AMBER:
+        if (arilux.setColor(255, 194, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_CYAN:
+        if (arilux.setColor(0, 255, 255))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_PURPLE:
+        if (arilux.setColor(128, 0, 128))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_YELLOW:
+        if (arilux.setColor(255, 255, 0))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_PINK:
+        if (arilux.setColor(255, 192, 203))
+          cmd = ARILUX_CMD_COLOR_CHANGED;
+        break;
+      case ARILUX_RF_CODE_KEY_TOGGLE:
+        // TODO
+        DEBUG_PRINTLN(F("INFO: ARILUX_RF_CODE_KEY_TOGGLE"));
+        break;
+      case ARILUX_RF_CODE_KEY_SPEED_PLUS:
+        // TODO
+        DEBUG_PRINTLN(F("INFO: ARILUX_RF_CODE_KEY_SPEED_PLUS"));
+        break;
+      case ARILUX_RF_CODE_KEY_MODE_PLUS:
+        // TODO
+        DEBUG_PRINTLN(F("INFO: ARILUX_RF_CODE_KEY_MODE_PLUS"));
+        break;
+      case ARILUX_RF_CODE_KEY_SPEED_MINUS:
+        // TODO
+        DEBUG_PRINTLN(F("INFO: ARILUX_RF_CODE_KEY_SPEED_MINUS"));
+        break;
+      case ARILUX_RF_CODE_KEY_MODE_MINUS:
+        // TODO
+        DEBUG_PRINTLN(F("INFO: ARILUX_RF_CODE_KEY_MODE_MINUS"));
+        break;
+      default:
+        DEBUG_PRINTLN(F("ERROR: RF code not defined"));
+        break;
+    }
+    rcSwitch.resetAvailable();
+  }
+}
+#endif
+
+///////////////////////////////////////////////////////////////////////////
 //  CMD
 ///////////////////////////////////////////////////////////////////////////
 /*
@@ -551,6 +666,11 @@ void setup() {
   irRecv.enableIRIn();
 #endif
 
+#ifdef RF_REMOTE
+  // start the RF receiver
+  rcSwitch.enableReceive(ARILUX_RF_PIN);
+#endif
+
 #ifdef TLS
   // check the fingerprint of io.adafruit.com's SSL cert
   verifyFingerprint();
@@ -594,6 +714,14 @@ void loop() {
   // handle received IR codes from the remote
   handleIRRemote();
 #endif
+
+#ifdef RF_REMOTE
+  // handle received RF codes from the remote
+  handleRFRemote();
+#endif
+
+  yield();
+
   // handle commands
   handleCMD();
   yield();
@@ -601,4 +729,5 @@ void loop() {
   mqttClient.loop();
   yield();
   ArduinoOTA.handle();
+  yield();
 }
