@@ -33,22 +33,22 @@
 #define ARILUX_BRIGHTNESS_STEP    25
 
 /*
- * IR Remote
- * Encoding: NEC
- * +------+------+------+------+
- * |  UP  | Down | OFF  |  ON  |
- * +------+------+------+------+
- * |  R   |  G   |  B   |  W   |
- * +------+------+------+------+
- * |  1   |  2   |  3   |FLASH |
- * +------+------+------+------+
- * |  4   |  5   |  6   |STROBE|
- * +------+------+------+------+
- * |  7   |  8   |  9   | FADE |
- * +------+------+------+------+
- * |  10  |  11  |  12  |SMOOTH|
- * +------+------+------+------+
- */
+   IR Remote
+   Encoding: NEC
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
 
 #ifdef IR_REMOTE
 #define ARILUX_IR_CODE_KEY_UP           0xFF906F
@@ -78,25 +78,25 @@
 #endif
 
 /*
- * RF Remote
- * Encoding: Chinese Protocol 1
- * Codes provided by KmanOz (https://github.com/KmanOz)
- * +--------+--------+--------+
- * |   ON   | Toggle |   OFF  |
- * +--------+--------+--------+
- * | Speed+ | Mode+  | Bright+|
- * +--------+--------+--------+
- * | Speed- | Mode-  | Bright-|
- * +--------+--------+--------+
- * |  RED   | GREEN  |  BLUE  |
- * +--------+--------+--------+
- * | ORANGE | LT GRN | LT BLUE|
- * +--------+--------+--------+
- * | AMBER  |  CYAN  | PURPLE |
- * +--------+--------+--------+
- * | YELLOW |  PINK  | WHITE  |
- * +--------+--------+--------+
- */
+   RF Remote
+   Encoding: Chinese Protocol 1
+   Codes provided by KmanOz (https://github.com/KmanOz)
+   +--------+--------+--------+
+   |   ON   | Toggle |   OFF  |
+   +--------+--------+--------+
+   | Speed+ | Mode+  | Bright+|
+   +--------+--------+--------+
+   | Speed- | Mode-  | Bright-|
+   +--------+--------+--------+
+   |  RED   | GREEN  |  BLUE  |
+   +--------+--------+--------+
+   | ORANGE | LT GRN | LT BLUE|
+   +--------+--------+--------+
+   | AMBER  |  CYAN  | PURPLE |
+   +--------+--------+--------+
+   | YELLOW |  PINK  | WHITE  |
+   +--------+--------+--------+
+*/
 
 #ifdef RF_REMOTE
 #define ARILUX_RF_CODE_KEY_ON           7808513

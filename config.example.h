@@ -39,8 +39,8 @@
 #define HOST                                  "ARILUX%s"
 
 #ifdef TLS
-  // SHA1 fingerprint of the certificate
-  // openssl x509 -fingerprint -in <certificate>.crt
-  // Default value is the CloudMQTT certificate fingerprint
-  const char* fingerprint = "A5 02 FF 13 99 9F 8B 39 8E F1 83 4F 11 23 65 0B 32 36 FC 07";
+// SHA1 fingerprint of the certificate
+// openssl x509 -fingerprint -in <certificate>.crt
+// Default value is the CloudMQTT certificate fingerprint
+const char* fingerprint = "A5 02 FF 13 99 9F 8B 39 8E F1 83 4F 11 23 65 0B 32 36 FC 07";
 #endif

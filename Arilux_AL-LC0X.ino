@@ -8,31 +8,31 @@
 #include <ESP8266WiFi.h>        // https://github.com/esp8266/Arduino
 #include <PubSubClient.h>       // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 #ifdef IR_REMOTE
-  #include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
+#include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
 #endif
 #ifdef RF_REMOTE
-  #include <RCSwitch.h>         // https://github.com/sui77/rc-switch
+#include <RCSwitch.h>         // https://github.com/sui77/rc-switch
 #endif
 #include <ArduinoOTA.h>
 #include "Arilux.h"
 
 // in a terminal: telnet arilux.local
 #ifdef DEBUG_TELNET
-  WiFiServer  telnetServer(23);
-  WiFiClient  telnetClient;
+WiFiServer  telnetServer(23);
+WiFiClient  telnetClient;
 #endif
 
 // Macros for debugging
 #ifdef DEBUG_TELNET
-  #define     DEBUG_PRINT(x)    telnetClient.print(x)
-  #define     DEBUG_PRINT_WITH_FMT(x, fmt)    telnetClient.print(x, fmt)
-  #define     DEBUG_PRINTLN(x)  telnetClient.println(x)
-  #define     DEBUG_PRINTLN_WITH_FMT(x, fmt)  telnetClient.println(x, fmt)
+#define     DEBUG_PRINT(x)    telnetClient.print(x)
+#define     DEBUG_PRINT_WITH_FMT(x, fmt)    telnetClient.print(x, fmt)
+#define     DEBUG_PRINTLN(x)  telnetClient.println(x)
+#define     DEBUG_PRINTLN_WITH_FMT(x, fmt)  telnetClient.println(x, fmt)
 #else
-  #define     DEBUG_PRINT(x)    Serial.print(x)
-  #define     DEBUG_PRINT_WITH_FMT(x, fmt)    Serial.print(x, fmt)
-  #define     DEBUG_PRINTLN(x)  Serial.println(x)
-  #define     DEBUG_PRINTLN_WITH_FMT(x, fmt)  Serial.println(x, fmt)
+#define     DEBUG_PRINT(x)    Serial.print(x)
+#define     DEBUG_PRINT_WITH_FMT(x, fmt)    Serial.print(x, fmt)
+#define     DEBUG_PRINTLN(x)  Serial.println(x)
+#define     DEBUG_PRINTLN_WITH_FMT(x, fmt)  Serial.println(x, fmt)
 #endif
 
 char   chipid[12];
@@ -48,8 +48,8 @@ char   ARILUX_MQTT_COLOR_COMMAND_TOPIC[44];
 char   ARILUX_MQTT_STATUS_TOPIC[44];
 
 #if defined(RGBW) || defined (RGBWW)
-  char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
-  char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
+char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
+char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
 #endif
 
 #define DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC        "%s/%s/state/state"
@@ -61,8 +61,8 @@ char   ARILUX_MQTT_STATUS_TOPIC[44];
 #define DEFAULT_ARILUX_MQTT_STATUS_TOPIC             "%s/%s/status"
 
 #if defined(RGBW) || defined (RGBWW)
-  #define DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC    "%s/%s/white/state"
-  #define DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC  "%s/%s/white/set"
+#define DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC    "%s/%s/white/state"
+#define DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC  "%s/%s/white/set"
 #endif
 
 // MQTT buffer
@@ -72,15 +72,15 @@ volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
 Arilux              arilux;
 #ifdef IR_REMOTE
-  IRrecv            irRecv(ARILUX_IR_PIN);
+IRrecv            irRecv(ARILUX_IR_PIN);
 #endif
 #ifdef RF_REMOTE
-  RCSwitch          rcSwitch = RCSwitch();
+RCSwitch          rcSwitch = RCSwitch();
 #endif
 #ifdef TLS
-  WiFiClientSecure  wifiClient;
+WiFiClientSecure  wifiClient;
 #else
-  WiFiClient        wifiClient;
+WiFiClient        wifiClient;
 #endif
 PubSubClient        mqttClient(wifiClient);
 
@@ -89,7 +89,7 @@ PubSubClient        mqttClient(wifiClient);
 ///////////////////////////////////////////////////////////////////////////
 /*
   Function called to verify the fingerprint of the MQTT server certificate
- */
+*/
 #ifdef TLS
 void verifyFingerprint() {
   DEBUG_PRINT(F("INFO: Connecting to "));
@@ -138,7 +138,7 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
     } else if (payload.equals(String(ARILUX_MQTT_STATE_WHITE_ON_PAYLOAD))) {
       if (arilux.turnOn())
         cmd = ARILUX_CMD_STATE_CHANGED;
-      arilux.setWhite(255,255);
+      arilux.setWhite(255, 255);
       arilux.setBrightness(255);
     }
   } else if (String(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC).equals(p_topic)) {
@@ -151,11 +151,11 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
 
     if (arilux.setColor(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1, lastIndex).toInt(), payload.substring(lastIndex + 1).toInt()))
       cmd = ARILUX_CMD_COLOR_CHANGED;
-    } else if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
-      uint8_t firstIndex = payload.indexOf(',');
-      if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
-        cmd = ARILUX_CMD_WHITE_CHANGED;
-    }
+  } else if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
+    uint8_t firstIndex = payload.indexOf(',');
+    if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
+      cmd = ARILUX_CMD_WHITE_CHANGED;
+  }
 }
 
 /*
@@ -185,9 +185,9 @@ void connectMQTT(void) {
       subscribeToMQTTTopic(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC);
       subscribeToMQTTTopic(ARILUX_MQTT_COLOR_COMMAND_TOPIC);
 
-      #if defined(RGBW) || defined (RGBWW)
-        subscribeToMQTTTopic(ARILUX_MQTT_WHITE_COMMAND_TOPIC);
-      #endif
+#if defined(RGBW) || defined (RGBWW)
+      subscribeToMQTTTopic(ARILUX_MQTT_WHITE_COMMAND_TOPIC);
+#endif
 
       lastmqttreconnect = millis();
     }
@@ -539,11 +539,11 @@ void setup() {
   Serial.begin(115200);
   delay(500);
 
-  #ifdef DEBUG_TELNET
-    // Start the Telnet server
-    telnetServer.begin();
-    telnetServer.setNoDelay(true);
-  #endif
+#ifdef DEBUG_TELNET
+  // Start the Telnet server
+  telnetServer.begin();
+  telnetServer.setNoDelay(true);
+#endif
 
   sprintf(chipid, "%08X", ESP.getChipId());
   sprintf(MQTT_CLIENT_ID, HOST, chipid);
@@ -559,33 +559,33 @@ void setup() {
   if (arilux.init())
     cmd = ARILUX_CMD_STATE_CHANGED;
 
-  #ifdef IR_REMOTE
-    // Start the IR receiver
-    irRecv.enableIRIn();
-  #endif
+#ifdef IR_REMOTE
+  // Start the IR receiver
+  irRecv.enableIRIn();
+#endif
 
-  #ifdef RF_REMOTE
-    // Start the RF receiver
-    rcSwitch.enableReceive(ARILUX_RF_PIN);
-  #endif
+#ifdef RF_REMOTE
+  // Start the RF receiver
+  rcSwitch.enableReceive(ARILUX_RF_PIN);
+#endif
 
-  #ifdef TLS
-    // Check the fingerprint of CloudMQTT's SSL cert
-    verifyFingerprint();
-  #endif
+#ifdef TLS
+  // Check the fingerprint of CloudMQTT's SSL cert
+  verifyFingerprint();
+#endif
 
-  sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_STATE_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC,DEFAULT_ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC,DEFAULT_ARILUX_MQTT_COLOR_STATE_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_COLOR_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  sprintf(ARILUX_MQTT_STATUS_TOPIC,DEFAULT_ARILUX_MQTT_STATUS_TOPIC,arilux.getColorString(),chipid);
+  sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_STATE_COMMAND_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, DEFAULT_ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC, DEFAULT_ARILUX_MQTT_COLOR_STATE_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_COLOR_COMMAND_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_STATUS_TOPIC, DEFAULT_ARILUX_MQTT_STATUS_TOPIC, arilux.getColorString(), chipid);
 
-  #if defined(RGBW) || defined (RGBWW)
-    sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC,DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC,arilux.getColorString(),chipid);
-    sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC,DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC,arilux.getColorString(),chipid);
-  #endif
+#if defined(RGBW) || defined (RGBWW)
+  sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC, DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC, arilux.getColorString(), chipid);
+#endif
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(callback);
@@ -611,20 +611,20 @@ void setup() {
 }
 
 void loop() {
-  #ifdef DEBUG_TELNET
-    // Handle Telnet connection for debugging
-    handleTelnet();
-  #endif
+#ifdef DEBUG_TELNET
+  // Handle Telnet connection for debugging
+  handleTelnet();
+#endif
 
-  #ifdef IR_REMOTE
-    // Handle received IR codes from the remote
-    handleIRRemote();
-  #endif
+#ifdef IR_REMOTE
+  // Handle received IR codes from the remote
+  handleIRRemote();
+#endif
 
-  #ifdef RF_REMOTE
-    // Handle received RF codes from the remote
-    handleRFRemote();
-  #endif
+#ifdef RF_REMOTE
+  // Handle received RF codes from the remote
+  handleRFRemote();
+#endif
 
   yield();
 
@@ -647,32 +647,32 @@ void loop() {
 
 void flash(bool success) {
   if (success) {
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,255,0,0,0);
+    arilux.setAll(0, 255, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,255,0,0,0);
+    arilux.setAll(0, 255, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,255,0,0,0);
+    arilux.setAll(0, 255, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
   } else {
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(255,0,0,0,0);
+    arilux.setAll(255, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(255,0,0,0,0);
+    arilux.setAll(255, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(255,0,0,0,0);
+    arilux.setAll(255, 0, 0, 0, 0);
     delay(300);
-    arilux.setAll(0,0,0,0,0);
+    arilux.setAll(0, 0, 0, 0, 0);
   }
 }
