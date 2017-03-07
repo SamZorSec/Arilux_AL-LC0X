@@ -65,7 +65,6 @@ char msgBuffer[32];
 char friendlyName[32];
 char configBuf[512];
 StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
-#define MQTT_MAX_PACKET_SIZE 768
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
@@ -184,10 +183,10 @@ void connectMQTT(void) {
           root["brightness_command_topic"] = ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC;
           root["rgb_state_topic"] = ARILUX_MQTT_COLOR_STATE_TOPIC;
           root["rgb_command_topic"] = ARILUX_MQTT_COLOR_COMMAND_TOPIC;
-          root["payload_on"] = ARILUX_MQTT_STATE_ON_PAYLOAD;
-          root["payload_off"] = ARILUX_MQTT_STATE_OFF_PAYLOAD;
+          root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
+          root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
           root.printTo(configBuf, sizeof(configBuf));
-          mqttClient.publish(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf, true)
+          publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf);
         #endif
         flash(true);
       } else {
@@ -567,7 +566,7 @@ void setup() {
 
   sprintf(chipid, "%08X", ESP.getChipId());
   sprintf(MQTT_CLIENT_ID, HOST, chipid);
-  sprintf(friendlyName, "Arilux %s LED Controller %s", arilux.getColorString(), chipid);
+  sprintf(friendlyName, "Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipid);
   Serial.print("Hostname:");
   Serial.println(MQTT_CLIENT_ID);
   WiFi.hostname(MQTT_CLIENT_ID);
@@ -610,7 +609,7 @@ void setup() {
 #endif
 
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-  sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/%s_%s",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,chipid,arilux.getColorString());
+  sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,chipid,arilux.getColorString());
 #endif
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
