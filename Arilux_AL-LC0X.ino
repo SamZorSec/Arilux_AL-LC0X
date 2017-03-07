@@ -134,10 +134,17 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
       cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
   } else if (String(ARILUX_MQTT_COLOR_COMMAND_TOPIC).equals(p_topic)) {
     // Get the position of the first and second commas
-    uint8_t firstIndex = payload.indexOf(',');
-    uint8_t lastIndex = payload.lastIndexOf(',');
+    int commaIndex = payload.indexOf(',');
+    //  Search for the next comma just after the first
+    int secondCommaIndex = payload.indexOf(',', commaIndex + 1);
+    String firstValue = payload.substring(0, commaIndex);
+    String secondValue = payload.substring(commaIndex + 1, secondCommaIndex);
+    String thirdValue = payload.substring(secondCommaIndex + 1); // To the end of the string
+    int r = firstValue.toInt();
+    int g = secondValue.toInt();
+    int b = thirdValue.toInt();
 
-    if (arilux.setColor(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1, lastIndex).toInt(), payload.substring(lastIndex + 1).toInt()))
+    if (arilux.setColor(r, g, b))
       cmd = ARILUX_CMD_COLOR_CHANGED;
   } else if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
     uint8_t firstIndex = payload.indexOf(',');
