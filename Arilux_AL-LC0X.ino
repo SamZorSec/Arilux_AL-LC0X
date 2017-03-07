@@ -609,7 +609,7 @@ void setup() {
 #endif
 
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-  sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,arilux.getColorString(),chipid);
+  sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s/config",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,arilux.getColorString(),chipid);
 #endif
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
