@@ -1,23 +1,57 @@
-// Uncomment the #defines that make sense for your model
-// LC01, LC03 and LC09 are RGB devices
-#define RGB
-// LC02, LC04 and LC10 are RGBW devices
+// Uncomment the block for your model
+// Begin LC01 block, uncomment starting below this line
+// #define RGB
+// #define DEVICE_MODEL                           "LC01"
+// End LC01 block, stop uncommenting above this line
+
+// Begin LC02 block, uncomment starting below this line
 // #define RGBW
-// LC08 and LC11 are RGBWW devices
+// #define DEVICE_MODEL                           "LC02"
+// End LC02 block, stop uncommenting above this line
+
+// Begin LC03 block, uncomment starting below this line
+// #define RGB
+// #define IR_REMOTE
+// #define DEVICE_MODEL                           "LC03"
+// End LC03 block, stop uncommenting above this line
+
+// Begin LC04 block, uncomment starting below this line
+// #define RGBW
+// #define IR_REMOTE
+// #define DEVICE_MODEL                           "LC04"
+// End LC04 block, stop uncommenting above this line
+
+// Begin LC08 block, uncomment starting below this line
 // #define RGBWW
+// #define DEVICE_MODEL                           "LC08"
+// End LC08 block, stop uncommenting above this line
 
-// LC03 and LC04 support IR control
-#define IR_REMOTE
-
-// LC09, LC10 and LC11 support RF control
+// Begin LC09 block, uncomment starting below this line
+// #define RGB
 // #define RF_REMOTE
+// #define DEVICE_MODEL                           "LC09"
+// End LC09 block, stop uncommenting above this line
 
-// TLS support, make sure to edit the fingerprint and the MQTT broker IP address if
-// you are not using CloudMQTT
-// #define TLS
+// Begin LC10 block, uncomment starting below this line
+// #define RGBW
+// #define RF_REMOTE
+// #define DEVICE_MODEL                           "LC10"
+// End LC10 block, stop uncommenting above this line
 
-// Enable console output via telnet
-// #define DEBUG_TELNET
+// Begin LC11 block, uncomment starting below this line
+// #define RGBWW
+// #define RF_REMOTE
+// #define DEVICE_MODEL                           "LC11"
+// End LC11 block, stop uncommenting above this line
+
+// If you can't find your model above, you can use the defines below instead.
+
+// #define RGB
+// #define RGBW
+// #define RGBWW
+// #define IR_REMOTE
+// #define RF_REMOTE
+// #define DEVICE_MODEL                           "LC0X"
 
 // Wi-Fi
 #define WIFI_SSID                              ""
@@ -55,6 +89,13 @@
 // Base hostname, used for the MQTT Client ID and OTA hostname.
 // If you leave %s in place it will be replaced with the Chip ID.
 #define HOST                                   "ARILUX%s"
+
+// Enable console output via telnet
+// #define DEBUG_TELNET
+
+// TLS support, make sure to edit the fingerprint and the MQTT broker IP address if
+// you are not using CloudMQTT
+// #define TLS
 
 #ifdef TLS
 // SHA1 fingerprint of the certificate
