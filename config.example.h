@@ -96,9 +96,4 @@
 // TLS support, make sure to edit the fingerprint and the MQTT broker IP address if
 // you are not using CloudMQTT
 // #define TLS
-
-#ifdef TLS
-// SHA1 fingerprint of the certificate
-// openssl x509 -fingerprint -in <certificate>.crt
-const char* fingerprint = "A5 02 FF 13 99 9F 8B 39 8E F1 83 4F 11 23 65 0B 32 36 FC 07";
-#endif
+// #define TLS_FINGERPRINT                     "A5 02 FF 13 99 9F 8B 39 8E F1 83 4F 11 23 65 0B 32 36 FC 07"

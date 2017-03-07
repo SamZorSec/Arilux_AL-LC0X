@@ -89,7 +89,7 @@ void verifyFingerprint() {
     ESP.reset();
   }
 
-  if (wifiClient.verify(fingerprint, MQTT_SERVER)) {
+  if (wifiClient.verify(TLS_FINGERPRINT, MQTT_SERVER)) {
     DEBUG_PRINTLN(F("INFO: Connection secure"));
   } else {
     DEBUG_PRINTLN(F("ERROR: Connection insecure! Halting execution"));
