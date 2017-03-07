@@ -1,3 +1,4 @@
+#include "config.h"
 #pragma once
 #ifndef _ARILUX_H_
 #define _ARILUX_H_
@@ -7,23 +8,20 @@
 #define ARILUX_RED_PIN            5
 #define ARILUX_GREEN_PIN          4
 #define ARILUX_BLUE_PIN           14
-#define ARILUX_WHITE1_PIN           12
-#define ARILUX_WHITE2_PIN           13
-#define ARILUX_IR_PIN
-#define ARILUX_COLOSTRING "RGBWW"
+#define ARILUX_WHITE1_PIN         12
+#define ARILUX_WHITE2_PIN         13
+#define ARILUX_COLOR_STRING       "RGBWW"
 #elif defined(RGBW)
-#define ARILUX_RED_PIN            14
-#define ARILUX_GREEN_PIN          5
+#define ARILUX_RED_PIN            5
+#define ARILUX_GREEN_PIN          14
 #define ARILUX_BLUE_PIN           12
-#define ARILUX_WHITE1_PIN           13
-#define ARILUX_IR_PIN             4
-#define ARILUX_COLOSTRING "RGBW"
+#define ARILUX_WHITE1_PIN         13
+#define ARILUX_COLOR_STRING       "RGBW"
 #else
 #define ARILUX_RED_PIN            14
 #define ARILUX_GREEN_PIN          5
 #define ARILUX_BLUE_PIN           12
-#define ARILUX_IR_PIN             4
-#define ARILUX_COLOSTRING "RGB"
+#define ARILUX_COLOR_STRING       "RGB"
 #endif
 
 #define ARILUX_IR_PIN             4
@@ -35,22 +33,22 @@
 #define ARILUX_BRIGHTNESS_STEP    25
 
 /*
- * IR Remote
- * Encoding: NEC
- * +------+------+------+------+
- * |  UP  | Down | OFF  |  ON  |
- * +------+------+------+------+
- * |  R   |  G   |  B   |  W   |
- * +------+------+------+------+
- * |  1   |  2   |  3   |FLASH |
- * +------+------+------+------+
- * |  4   |  5   |  6   |STROBE|
- * +------+------+------+------+
- * |  7   |  8   |  9   | FADE |
- * +------+------+------+------+
- * |  10  |  11  |  12  |SMOOTH|
- * +------+------+------+------+
- */
+   IR Remote
+   Encoding: NEC
+   +------+------+------+------+
+   |  UP  | Down | OFF  |  ON  |
+   +------+------+------+------+
+   |  R   |  G   |  B   |  W   |
+   +------+------+------+------+
+   |  1   |  2   |  3   |FLASH |
+   +------+------+------+------+
+   |  4   |  5   |  6   |STROBE|
+   +------+------+------+------+
+   |  7   |  8   |  9   | FADE |
+   +------+------+------+------+
+   |  10  |  11  |  12  |SMOOTH|
+   +------+------+------+------+
+*/
 
 #ifdef IR_REMOTE
 #define ARILUX_IR_CODE_KEY_UP           0xFF906F
@@ -80,25 +78,25 @@
 #endif
 
 /*
- * RF Remote
- * Encoding: Chinese Protocol 1
- * Codes provided by KmanOz (https://github.com/KmanOz)
- * +--------+--------+--------+
- * |   ON   | Toggle |   OFF  |
- * +--------+--------+--------+
- * | Speed+ | Mode+  | Bright+|
- * +--------+--------+--------+
- * | Speed- | Mode-  | Bright-|
- * +--------+--------+--------+
- * |  RED   | GREEN  |  BLUE  |
- * +--------+--------+--------+
- * | ORANGE | LT GRN | LT BLUE|
- * +--------+--------+--------+
- * | AMBER  |  CYAN  | PURPLE |
- * +--------+--------+--------+
- * | YELLOW |  PINK  | WHITE  |
- * +--------+--------+--------+
- */
+   RF Remote
+   Encoding: Chinese Protocol 1
+   Codes provided by KmanOz (https://github.com/KmanOz)
+   +--------+--------+--------+
+   |   ON   | Toggle |   OFF  |
+   +--------+--------+--------+
+   | Speed+ | Mode+  | Bright+|
+   +--------+--------+--------+
+   | Speed- | Mode-  | Bright-|
+   +--------+--------+--------+
+   |  RED   | GREEN  |  BLUE  |
+   +--------+--------+--------+
+   | ORANGE | LT GRN | LT BLUE|
+   +--------+--------+--------+
+   | AMBER  |  CYAN  | PURPLE |
+   +--------+--------+--------+
+   | YELLOW |  PINK  | WHITE  |
+   +--------+--------+--------+
+*/
 
 #ifdef RF_REMOTE
 #define ARILUX_RF_CODE_KEY_ON           7808513
