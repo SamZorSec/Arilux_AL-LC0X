@@ -12,8 +12,8 @@
 #define ARILUX_WHITE2_PIN         13
 #define ARILUX_COLOR_STRING       "RGBWW"
 #elif defined(RGBW)
-#define ARILUX_RED_PIN            14
-#define ARILUX_GREEN_PIN          5
+#define ARILUX_RED_PIN            5
+#define ARILUX_GREEN_PIN          14
 #define ARILUX_BLUE_PIN           12
 #define ARILUX_WHITE1_PIN         13
 #define ARILUX_COLOR_STRING       "RGBW"
