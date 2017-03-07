@@ -37,6 +37,7 @@ WiFiClient  telnetClient;
 
 char   chipid[12];
 char   MQTT_CLIENT_ID[32];
+char   MQTT_TOPIC_PREFIX[32];
 
 // MQTT topics
 char   ARILUX_MQTT_STATE_STATE_TOPIC[44];
@@ -50,19 +51,6 @@ char   ARILUX_MQTT_STATUS_TOPIC[44];
 #if defined(RGBW) || defined (RGBWW)
 char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
 char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
-#endif
-
-#define DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC        "%s/%s/state/state"
-#define DEFAULT_ARILUX_MQTT_STATE_COMMAND_TOPIC      "%s/%s/state/set"
-#define DEFAULT_ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC   "%s/%s/brightness/state"
-#define DEFAULT_ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC "%s/%s/brightness/set"
-#define DEFAULT_ARILUX_MQTT_COLOR_STATE_TOPIC        "%s/%s/color/state"
-#define DEFAULT_ARILUX_MQTT_COLOR_COMMAND_TOPIC      "%s/%s/color/set"
-#define DEFAULT_ARILUX_MQTT_STATUS_TOPIC             "%s/%s/status"
-
-#if defined(RGBW) || defined (RGBWW)
-#define DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC    "%s/%s/white/state"
-#define DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC  "%s/%s/white/set"
 #endif
 
 // MQTT buffer
@@ -129,13 +117,13 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
 
   // Handle the MQTT topic of the received message
   if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
-    if (payload.equals(String(ARILUX_MQTT_STATE_ON_PAYLOAD))) {
+    if (payload.equals(String(MQTT_STATE_ON_PAYLOAD))) {
       if (arilux.turnOn())
         cmd = ARILUX_CMD_STATE_CHANGED;
-    } else if (payload.equals(String(ARILUX_MQTT_STATE_OFF_PAYLOAD))) {
+    } else if (payload.equals(String(MQTT_STATE_OFF_PAYLOAD))) {
       if (arilux.turnOff())
         cmd = ARILUX_CMD_STATE_CHANGED;
-    } else if (payload.equals(String(ARILUX_MQTT_STATE_WHITE_ON_PAYLOAD))) {
+    } else if (payload.equals(String(MQTT_STATE_ON_WHITE_PAYLOAD))) {
       if (arilux.turnOn())
         cmd = ARILUX_CMD_STATE_CHANGED;
       arilux.setWhite(255, 255);
@@ -480,9 +468,9 @@ void handleCMD(void) {
       break;
     case ARILUX_CMD_STATE_CHANGED:
       if (arilux.getState()) {
-        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, ARILUX_MQTT_STATE_ON_PAYLOAD);
+        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_ON_PAYLOAD);
       } else {
-        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, ARILUX_MQTT_STATE_OFF_PAYLOAD);
+        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_OFF_PAYLOAD);
       }
       cmd = ARILUX_CMD_NOT_DEFINED;
       break;
@@ -574,17 +562,19 @@ void setup() {
   verifyFingerprint();
 #endif
 
-  sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, DEFAULT_ARILUX_MQTT_STATE_STATE_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_STATE_COMMAND_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, DEFAULT_ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC, DEFAULT_ARILUX_MQTT_COLOR_STATE_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_COLOR_COMMAND_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_STATUS_TOPIC, DEFAULT_ARILUX_MQTT_STATUS_TOPIC, arilux.getColorString(), chipid);
+  sprintf(MQTT_TOPIC_PREFIX, MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipid);
+
+  sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC, MQTT_STATE_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, MQTT_BRIGHTNESS_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC, MQTT_BRIGHTNESS_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC, MQTT_COLOR_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC, MQTT_COLOR_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_STATUS_TOPIC, MQTT_STATUS_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
 
 #if defined(RGBW) || defined (RGBWW)
-  sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC, DEFAULT_ARILUX_MQTT_WHITE_STATE_TOPIC, arilux.getColorString(), chipid);
-  sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC, DEFAULT_ARILUX_MQTT_WHITE_COMMAND_TOPIC, arilux.getColorString(), chipid);
+  sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC, MQTT_WHITE_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC, MQTT_WHITE_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
 #endif
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
