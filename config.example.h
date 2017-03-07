@@ -45,7 +45,6 @@
 // End LC11 block, stop uncommenting above this line
 
 // If you can't find your model above, you can use the defines below instead.
-
 // #define RGB
 // #define RGBW
 // #define RGBWW
@@ -85,6 +84,10 @@
 #define MQTT_WHITE_STATE_TOPIC_TEMPLATE        "%s/white/state"
 #define MQTT_WHITE_COMMAND_TOPIC_TEMPLATE      "%s/white/set"
 #endif
+
+// Enable Home Assistant MQTT discovery support
+#define HOME_ASSISTANT_MQTT_DISCOVERY
+#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 
 // Base hostname, used for the MQTT Client ID and OTA hostname.
 // If you leave %s in place it will be replaced with the Chip ID.
