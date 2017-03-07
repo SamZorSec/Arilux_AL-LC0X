@@ -13,7 +13,7 @@ The controllers are also known to sell under different manufacturer names such a
 - TLS support (uncomment `#define TLS` in `config.h` and change the fingerprint if not using CloudMQTT)
 - Debug printing over Telnet (uncomment `#define DEBUG_TELNET` in `config.h`)
 - ArduinoOTA support for over-the-air firmware updates
-- Native support for Home Assistant
+- Native support for Home Assistant, including MQTT discovery.
 
 ## Supported devices
 | Model | Color Support | Voltages | Remote | Price | Link                                                                                                                                                     |
@@ -124,6 +124,21 @@ White is only supported for RGBW/RGBWW models (LC02, LC04, LC08, LC10, LC11).
 The firmware will publish a [MQTT Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-9-last-will-and-testament) at `rgb(w/ww)/<chipid>/status`.
 When the device successfully connects it will publish `alive` to that topic and when it disconnects `dead` will automatically be published.
 
+#### Discovery
+
+This firmware supports [Home Assistant's MQTT discovery functionality](https://home-assistant.io/docs/mqtt/discovery/), added in 0.38.
+This allows for instant setup and use of your device without requiring any manual configuration in Home Assistant.
+There are a few one time steps that you need to take to get this working.
+
+1. Add `discovery: true` to your `mqtt` configuration in Home Assistant, if it isn't there already.
+2. In your Ardunino libraries folder, find PubSubClient and open PubSubClient.h for editing. Change `MQTT_MAX_PACKET_SIZE` to 512.
+3. Uncomment the `HOME_ASSISTANT_MQTT_DISCOVERY` and `HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX` definitions in your `config.h` file.
+  - You can change the discovery prefix (default is `homeassistant`) by changing `HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX`.
+    Make sure this matches your Home Assistant MQTT configuration.
+4. Upload the firmware once more after making the previous changes.
+
+From now on your device will announce itself to Home Assistant with all of the proper configuration information.
+
 ### Configuration for Home Assistant
 configuration.yaml
 ```yaml
@@ -132,6 +147,7 @@ mqtt:
   username: '[REDACTED]'
   password: '[REDACTED]'
   port: '[REDACTED]'
+  discovery: true
 
 light:
   - platform: mqtt
@@ -145,8 +161,6 @@ light:
 ```
 
 ## Todo
-- [Home Assistant MQTT Discovery support](https://github.com/mertenats/Arilux_AL-LC03/pull/7)
-
 ### IR remote
 - Flash
 - Strobe
