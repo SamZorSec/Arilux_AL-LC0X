@@ -8,23 +8,20 @@
 #define ARILUX_RED_PIN            5
 #define ARILUX_GREEN_PIN          4
 #define ARILUX_BLUE_PIN           14
-#define ARILUX_WHITE1_PIN           12
-#define ARILUX_WHITE2_PIN           13
-#define ARILUX_IR_PIN
-#define ARILUX_COLOSTRING "RGBWW"
+#define ARILUX_WHITE1_PIN         12
+#define ARILUX_WHITE2_PIN         13
+#define ARILUX_COLOR_STRING       "RGBWW"
 #elif defined(RGBW)
 #define ARILUX_RED_PIN            14
 #define ARILUX_GREEN_PIN          5
 #define ARILUX_BLUE_PIN           12
-#define ARILUX_WHITE1_PIN           13
-#define ARILUX_IR_PIN             4
-#define ARILUX_COLOSTRING "RGBW"
+#define ARILUX_WHITE1_PIN         13
+#define ARILUX_COLOR_STRING       "RGBW"
 #else
 #define ARILUX_RED_PIN            14
 #define ARILUX_GREEN_PIN          5
 #define ARILUX_BLUE_PIN           12
-#define ARILUX_IR_PIN             4
-#define ARILUX_COLOSTRING "RGB"
+#define ARILUX_COLOR_STRING       "RGB"
 #endif
 
 #define ARILUX_IR_PIN             4

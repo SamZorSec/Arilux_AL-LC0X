@@ -18,8 +18,6 @@ Arilux::Arilux(void):
   m_color.blue = ARILUX_PWM_RANGE;
   m_color.white1 = ARILUX_PWM_RANGE;
   m_color.white2 = ARILUX_PWM_RANGE;
-  
-
 }
 
 uint8_t Arilux::init(void) {
@@ -35,9 +33,6 @@ uint8_t Arilux::init(void) {
 #endif
   analogWriteFreq(ARILUX_PWM_FREQUENCY);
   analogWriteRange(ARILUX_PWM_RANGE);
-
-//  if (!turnOn())
-//    return false;
 
   return true;
 }
@@ -55,7 +50,7 @@ uint8_t Arilux::turnOff(void) {
 }
 
 char *Arilux::getColorString(void) {
-  return (char *)ARILUX_COLOSTRING;
+  return (char *)ARILUX_COLOR_STRING;
 }
 
 uint8_t Arilux::setState(uint8_t p_state) {
@@ -77,7 +72,7 @@ uint8_t Arilux::getBrightness(void) {
 uint8_t Arilux::increaseBrightness(void) {
   if (!m_state)
     return false;
-    
+
   if (m_brightness < (ARILUX_PWM_RANGE - ARILUX_BRIGHTNESS_STEP))
     return setBrightness(m_brightness + ARILUX_BRIGHTNESS_STEP);
   return false;
@@ -86,7 +81,7 @@ uint8_t Arilux::increaseBrightness(void) {
 uint8_t Arilux::decreaseBrightness(void) {
   if (!m_state)
     return false;
-    
+
   if (m_brightness > (1 + ARILUX_BRIGHTNESS_STEP))
     return setBrightness(m_brightness - ARILUX_BRIGHTNESS_STEP);
   return false;
@@ -123,25 +118,25 @@ uint8_t Arilux::getBlueValue(void) {
 }
 
 uint8_t Arilux::getWhite1Value(void) {
-  return m_color.blue;
+  return m_color.white1;
 }
 
 uint8_t Arilux::getWhite2Value(void) {
-  return m_color.blue;
+  return m_color.white2;
 }
 
-uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1,uint8_t p_white2) {
+uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2) {
   if (!m_state)
     return false;
-    
+
   return setAll(p_red, p_green, p_blue, p_white1, p_white2, true);
 }
 
 uint8_t Arilux::setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue) {
-  return setAll(p_red,p_green, p_blue, getWhite1Value(), getWhite2Value(),true);
+  return setAll(p_red,p_green, p_blue, getWhite1Value(), getWhite2Value(), true);
 }
 uint8_t Arilux::setWhite(uint8_t p_white1,uint8_t p_white2) {
-  return setAll(getRedValue(), getGreenValue(), getBlueValue(), p_white1, p_white2,true);
+  return setAll(getRedValue(), getGreenValue(), getBlueValue(), p_white1, p_white2, true);
 }
 
 
@@ -169,7 +164,7 @@ uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p
   return true;
 }
 uint8_t Arilux::setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_retain) {
-  return setAll(p_red,p_green, p_blue, getWhite1Value(), getWhite2Value(),p_retain);  
+  return setAll(p_red,p_green, p_blue, getWhite1Value(), getWhite2Value(),p_retain);
 }
 uint8_t Arilux::setWhite( uint8_t p_white1,uint8_t p_white2, uint8_t p_retain) {
     return setAll(getRedValue(), getGreenValue(), getBlueValue(), p_white1, p_white2,p_retain);
