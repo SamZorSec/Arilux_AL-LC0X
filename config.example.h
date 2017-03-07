@@ -87,7 +87,7 @@
 
 // Enable Home Assistant MQTT discovery support
 #define HOME_ASSISTANT_MQTT_DISCOVERY
-#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX    "homeassistant"
+#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 
 // Base hostname, used for the MQTT Client ID and OTA hostname.
 // If you leave %s in place it will be replaced with the Chip ID.
