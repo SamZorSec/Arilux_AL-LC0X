@@ -101,6 +101,15 @@ int loopCount = 0;
 int stepR, stepG, stepB;
 int redVal, grnVal, bluVal;
 
+// Globals for flash
+bool flash = false;
+bool startFlash = false;
+int flashLength = 0;
+unsigned long flashStartTime = 0;
+byte flashRed = 0;
+byte flashGreen = 0;
+byte flashBlue = 0;
+byte flashBrightness = 0;
 
 ///////////////////////////////////////////////////////////////////////////
 //  SSL/TLS
@@ -177,25 +186,53 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
     startFade = true;
     inFade = false; // Kill the current fade
 
-    if (arilux.getState() != boolState) {
-      arilux.setState(boolState);
-      publishStateChange();
-    }
+    if (root.containsKey("flash")) {
+      flashLength = (int)root["flash"] * 1000;
 
-    if(boolState) {
-      if (arilux.getBrightness() != brightness) {
-        arilux.setBrightness(brightness);
-        publishBrightnessChange();
+      if (root.containsKey("brightness")) {
+        flashBrightness = root["brightness"];
+      } else {
+        flashBrightness = arilux.getBrightness();
       }
 
-      if (arilux.getWhite1Value() != white_value || arilux.getWhite2Value() != white_value) {
-        arilux.setWhite(white_value, white_value);
-        publishWhiteChange();
+      if (root.containsKey("color")) {
+        flashRed = root["color"]["r"];
+        flashGreen = root["color"]["g"];
+        flashBlue = root["color"]["b"];
+      } else {
+        flashRed = arilux.getRedValue();
+        flashGreen = arilux.getGreenValue();
+        flashBlue = arilux.getBlueValue();
       }
 
-      if (arilux.getRedValue() != red_color || arilux.getGreenValue() != green_color || arilux.getBlueValue() != blue_color) {
-        arilux.setColor(red_color, green_color, blue_color);
-        publishColorChange();
+      flashRed = map(flashRed, 0, 255, 0, flashBrightness);
+      flashGreen = map(flashGreen, 0, 255, 0, flashBrightness);
+      flashBlue = map(flashBlue, 0, 255, 0, flashBrightness);
+
+      flash = true;
+      startFlash = true;
+    } else { // Not flashing
+      flash = false;
+      if (arilux.getState() != boolState) {
+        arilux.setState(boolState);
+        publishStateChange();
+      }
+
+      if(boolState) {
+        if (arilux.getBrightness() != brightness) {
+          arilux.setBrightness(brightness);
+          publishBrightnessChange();
+        }
+
+        if (arilux.getWhite1Value() != white_value || arilux.getWhite2Value() != white_value) {
+          arilux.setWhite(white_value, white_value);
+          publishWhiteChange();
+        }
+
+        if (arilux.getRedValue() != red_color || arilux.getGreenValue() != green_color || arilux.getBlueValue() != blue_color) {
+          arilux.setColor(red_color, green_color, blue_color);
+          publishColorChange();
+        }
       }
     }
   } else if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
@@ -271,6 +308,7 @@ void connectMQTT(void) {
           root.printTo(configBuf, sizeof(configBuf));
           publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf);
         #endif
+        flashSuccess(true);
       } else {
         DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
         DEBUG_PRINT(F("Username: "));
@@ -279,6 +317,7 @@ void connectMQTT(void) {
         DEBUG_PRINTLN(MQTT_PASS);
         DEBUG_PRINT(F("Broker: "));
         DEBUG_PRINTLN(MQTT_SERVER);
+        flashSuccess(false);
       }
 
       subscribeToMQTTTopic(ARILUX_MQTT_STATE_COMMAND_TOPIC);
@@ -735,6 +774,7 @@ void setup() {
   ArduinoOTA.setHostname(MQTT_CLIENT_ID);
   ArduinoOTA.onStart([]() {
     DEBUG_PRINTLN("OTA Beginning!");
+    flashSuccess(true);
   });
   ArduinoOTA.onError([](ota_error_t error) {
     DEBUG_PRINT("ArduinoOTA Error[");
@@ -770,7 +810,7 @@ void loop() {
   // Handle commands
   handleCMD();
   yield();
-  handleFade();
+  handleEffects();
   connectMQTT();
   mqttClient.loop();
   yield();
@@ -782,50 +822,93 @@ void loop() {
 //  Utilities
 ///////////////////////////////////////////////////////////////////////////
 
-void handleFade(void) {
-  if (startFade) {
-      // If we don't want to fade, skip it.
-      if (transitionTime == 0) {
-        arilux.setColor(realRed, realGreen, realBlue);
+void flashSuccess(bool success) {
+  flashLength = 5000;
 
-        redVal = realRed;
-        grnVal = realGreen;
-        bluVal = realBlue;
+  flashBrightness = 255;
 
-        startFade = false;
-        publishColorChange();
+  if(success) {
+    flashRed = 0;
+    flashGreen = 255;
+  } else {
+    flashRed = 255;
+    flashGreen = 0;
+  }
+  flashBlue = 0;
+
+  flashRed = map(flashRed, 0, 255, 0, flashBrightness);
+  flashGreen = map(flashGreen, 0, 255, 0, flashBrightness);
+  flashBlue = map(flashBlue, 0, 255, 0, flashBrightness);
+
+  flash = true;
+  startFlash = true;
+}
+
+void handleEffects(void) {
+  if (flash) {
+    if (startFlash) {
+      startFlash = false;
+      flashStartTime = millis();
+      arilux.setWhite(0, 0);
+    }
+    if ((millis() - flashStartTime) <= flashLength) {
+      if ((millis() - flashStartTime) % 1000 <= 500) {
+        arilux.setColor(flashRed, flashGreen, flashBlue);
       } else {
-        loopCount = 0;
-        stepR = calculateStep(redVal, realRed);
-        stepG = calculateStep(grnVal, realGreen);
-        stepB = calculateStep(bluVal, realBlue);
-
-        inFade = true;
+        arilux.setColor(0, 0, 0);
+        // If you'd prefer the flashing to happen "on top of"
+        // the current color, uncomment the next line.
+        // arilux.setColor(realRed, realGreen, realBlue);
       }
+    } else {
+      flash = false;
+      arilux.setColor(realRed, realGreen, realBlue);
     }
+  }
 
-    if (inFade) {
+  if (startFade) {
+    // If we don't want to fade, skip it.
+    if (transitionTime == 0) {
+      arilux.setColor(realRed, realGreen, realBlue);
+
+      redVal = realRed;
+      grnVal = realGreen;
+      bluVal = realBlue;
+
       startFade = false;
-      unsigned long now = millis();
-      if (now - lastLoop > transitionTime) {
-        if (loopCount <= 1020) {
-          lastLoop = now;
+      publishColorChange();
+    } else {
+      loopCount = 0;
+      stepR = calculateStep(redVal, realRed);
+      stepG = calculateStep(grnVal, realGreen);
+      stepB = calculateStep(bluVal, realBlue);
 
-          redVal = calculateVal(stepR, redVal, loopCount);
-          grnVal = calculateVal(stepG, grnVal, loopCount);
-          bluVal = calculateVal(stepB, bluVal, loopCount);
+      inFade = true;
+    }
+  }
 
-          arilux.setColor(redVal, grnVal, bluVal); // Write current values to LED pins
+  if (inFade) {
+    startFade = false;
+    unsigned long now = millis();
+    if (now - lastLoop > transitionTime) {
+      if (loopCount <= 1020) {
+        lastLoop = now;
 
-          DEBUG_PRINT("Fade Loop count: ");
-          DEBUG_PRINTLN(loopCount);
-          loopCount++;
-        } else {
-          inFade = false;
-          publishColorChange();
-        }
+        redVal = calculateVal(stepR, redVal, loopCount);
+        grnVal = calculateVal(stepG, grnVal, loopCount);
+        bluVal = calculateVal(stepB, bluVal, loopCount);
+
+        arilux.setColor(redVal, grnVal, bluVal); // Write current values to LED pins
+
+        DEBUG_PRINT("Fade Loop count: ");
+        DEBUG_PRINTLN(loopCount);
+        loopCount++;
+      } else {
+        inFade = false;
+        publishColorChange();
       }
     }
+  }
 }
 
 // From https://www.arduino.cc/en/Tutorial/ColorCrossfader
