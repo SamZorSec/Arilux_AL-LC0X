@@ -162,11 +162,6 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
       DEBUG_PRINTLN("parseObject() failed");
       return;
     }
-    if (root.containsKey("transition")) {
-      transitionTime = root["transition"];
-    } else {
-      transitionTime = 0;
-    }
 
     if (root.containsKey("color")) {
       int red_color = root["color"]["r"];
@@ -220,6 +215,12 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
         }
       }
 
+      if (root.containsKey("transition")) {
+        transitionTime = root["transition"];
+      } else {
+        transitionTime = 0;
+      }
+
       if (root.containsKey("brightness")) {
         int brightness = root["brightness"];
         arilux.setBrightness(brightness);
@@ -231,15 +232,8 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
         arilux.setWhite(white_value, white_value);
         publishWhiteChange();
       }
-
-      if (root.containsKey("color")) {
-        int red_color = root["color"]["r"];
-        int green_color = root["color"]["g"];
-        int blue_color = root["color"]["b"];
-        arilux.setColor(red_color, green_color, blue_color);
-        publishColorChange();
-      }
     }
+    cmd = ARILUX_CMD_JSON;
   } else if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
     if (payload.equals(String(MQTT_STATE_ON_PAYLOAD))) {
       if (arilux.turnOn())
