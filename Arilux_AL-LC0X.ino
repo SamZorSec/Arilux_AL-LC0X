@@ -162,26 +162,25 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
       DEBUG_PRINTLN("parseObject() failed");
       return;
     }
-    // const char* effect = root["effect"];
-    String state = root["state"];
-    int brightness = root["brightness"];
-    int transition = root["transition"];
-    int white_value = root["white_value"];
     if (root.containsKey("transition")) {
       transitionTime = root["transition"];
     } else {
       transitionTime = 0;
     }
 
-    int red_color = root["color"]["r"];
-    int green_color = root["color"]["g"];
-    int blue_color = root["color"]["b"];
+    if (root.containsKey("color")) {
+      int red_color = root["color"]["r"];
+      int green_color = root["color"]["g"];
+      int blue_color = root["color"]["b"];
 
-    realRed = red_color;
-    realGreen = green_color;
-    realBlue = blue_color;
-
-    bool boolState = state.equals("ON");
+      realRed = red_color;
+      realGreen = green_color;
+      realBlue = blue_color;
+    } else {
+      realRed = arilux.getRedValue();
+      realGreen = arilux.getGreenValue();
+      realBlue = arilux.getBlueValue();
+    }
 
     startFade = true;
     inFade = false; // Kill the current fade
@@ -213,26 +212,32 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
       startFlash = true;
     } else { // Not flashing
       flash = false;
-      if (arilux.getState() != boolState) {
-        arilux.setState(boolState);
-        publishStateChange();
+      if (root.containsKey("state")) {
+        if (strcmp(root["state"], "ON") == 0) {
+          arilux.turnOn();
+        } else if (strcmp(root["state"], "OFF") == 0) {
+          arilux.turnOff();
+        }
       }
 
-      if(boolState) {
-        if (arilux.getBrightness() != brightness) {
-          arilux.setBrightness(brightness);
-          publishBrightnessChange();
-        }
+      if (root.containsKey("brightness")) {
+        int brightness = root["brightness"];
+        arilux.setBrightness(brightness);
+        publishBrightnessChange();
+      }
 
-        if (arilux.getWhite1Value() != white_value || arilux.getWhite2Value() != white_value) {
-          arilux.setWhite(white_value, white_value);
-          publishWhiteChange();
-        }
+      if (root.containsKey("white_value")) {
+        int white_value = root["white_value"];
+        arilux.setWhite(white_value, white_value);
+        publishWhiteChange();
+      }
 
-        if (arilux.getRedValue() != red_color || arilux.getGreenValue() != green_color || arilux.getBlueValue() != blue_color) {
-          arilux.setColor(red_color, green_color, blue_color);
-          publishColorChange();
-        }
+      if (root.containsKey("color")) {
+        int red_color = root["color"]["r"];
+        int green_color = root["color"]["g"];
+        int blue_color = root["color"]["b"];
+        arilux.setColor(red_color, green_color, blue_color);
+        publishColorChange();
       }
     }
   } else if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
