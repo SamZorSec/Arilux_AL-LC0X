@@ -89,6 +89,16 @@
 #define HOME_ASSISTANT_MQTT_DISCOVERY
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 
+// Enable JSON.
+// Home Assistant supports more features such as transitions, effects and flashing via JSON only.
+#define JSON
+
+// Configure the JSON topics to publish to
+#ifdef JSON
+#define MQTT_JSON_STATE_TOPIC_TEMPLATE        "%s/json/state"
+#define MQTT_JSON_COMMAND_TOPIC_TEMPLATE      "%s/json/set"
+#endif
+
 // Base hostname, used for the MQTT Client ID and OTA hostname.
 // If you leave %s in place it will be replaced with the Chip ID.
 #define HOST                                   "ARILUX%s"

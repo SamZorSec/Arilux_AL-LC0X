@@ -14,7 +14,7 @@
 #include <RCSwitch.h>         // https://github.com/sui77/rc-switch
 #endif
 #include <ArduinoOTA.h>
-#ifdef HOME_ASSISTANT_MQTT_DISCOVERY
+#if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined (JSON)
   #include <ArduinoJson.h>
 #endif
 #include "Arilux.h"
@@ -53,6 +53,10 @@ char   ARILUX_MQTT_STATUS_TOPIC[44];
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
   char   HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC[56];
 #endif
+#ifdef JSON
+  char   ARILUX_MQTT_JSON_STATE_TOPIC[44];
+  char   ARILUX_MQTT_JSON_COMMAND_TOPIC[44];
+#endif
 
 #if defined(RGBW) || defined (RGBWW)
 char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
@@ -61,6 +65,7 @@ char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
 
 // MQTT buffer
 char msgBuffer[32];
+char outgoingJsonBuffer[120];
 
 char friendlyName[32];
 char configBuf[512];
@@ -126,7 +131,47 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
   }
 
   // Handle the MQTT topic of the received message
-  if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
+  if (String(ARILUX_MQTT_JSON_COMMAND_TOPIC).equals(p_topic)) {
+    DynamicJsonBuffer incomingJsonPayload;
+    JsonObject& root = incomingJsonPayload.parseObject(payload);
+    if (!root.success()) {
+      DEBUG_PRINTLN("parseObject() failed");
+      return;
+    }
+    // const char* effect = root["effect"];
+    String state = root["state"];
+    int brightness = root["brightness"];
+    int transition = root["transition"];
+    int white_value = root["white_value"];
+
+    int red_color = root["color"]["r"];
+    int green_color = root["color"]["g"];
+    int blue_color = root["color"]["b"];
+
+    bool boolState = state.equals("ON");
+
+    if (arilux.getState() != boolState) {
+      arilux.setState(boolState);
+      publishStateChange();
+    }
+
+    if(boolState) {
+      if (arilux.getBrightness() != brightness) {
+        arilux.setBrightness(brightness);
+        publishBrightnessChange();
+      }
+
+      if (arilux.getWhite1Value() != white_value || arilux.getWhite2Value() != white_value) {
+        arilux.setWhite(white_value, white_value);
+        publishWhiteChange();
+      }
+
+      if (arilux.getRedValue() != red_color || arilux.getGreenValue() != green_color || arilux.getBlueValue() != blue_color) {
+        arilux.setColor(red_color, green_color, blue_color);
+        publishColorChange();
+      }
+    }
+  } else if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
     if (payload.equals(String(MQTT_STATE_ON_PAYLOAD))) {
       if (arilux.turnOn())
         cmd = ARILUX_CMD_STATE_CHANGED;
@@ -177,14 +222,25 @@ void connectMQTT(void) {
         #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
           JsonObject& root = HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG.createObject();
           root["name"] = friendlyName;
-          root["state_topic"] = ARILUX_MQTT_STATE_STATE_TOPIC;
-          root["command_topic"] = ARILUX_MQTT_STATE_COMMAND_TOPIC;
-          root["brightness_state_topic"] = ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC;
-          root["brightness_command_topic"] = ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC;
-          root["rgb_state_topic"] = ARILUX_MQTT_COLOR_STATE_TOPIC;
-          root["rgb_command_topic"] = ARILUX_MQTT_COLOR_COMMAND_TOPIC;
-          root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
-          root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
+          #ifdef JSON
+            root["platform"] = "mqtt_json";
+            root["state_topic"] = ARILUX_MQTT_JSON_STATE_TOPIC;
+            root["command_topic"] = ARILUX_MQTT_JSON_COMMAND_TOPIC;
+            root["brightness"] = true;
+            root["rgb"] = true;
+            #if defined(RGBW) || defined (RGBWW)
+            root["white_value"] = true;
+            #endif
+          #else
+            root["state_topic"] = ARILUX_MQTT_STATE_STATE_TOPIC;
+            root["command_topic"] = ARILUX_MQTT_STATE_COMMAND_TOPIC;
+            root["brightness_state_topic"] = ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC;
+            root["brightness_command_topic"] = ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC;
+            root["rgb_state_topic"] = ARILUX_MQTT_COLOR_STATE_TOPIC;
+            root["rgb_command_topic"] = ARILUX_MQTT_COLOR_COMMAND_TOPIC;
+            root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
+            root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
+          #endif
           root.printTo(configBuf, sizeof(configBuf));
           publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf);
         #endif
@@ -206,6 +262,10 @@ void connectMQTT(void) {
 
 #if defined(RGBW) || defined (RGBWW)
       subscribeToMQTTTopic(ARILUX_MQTT_WHITE_COMMAND_TOPIC);
+#endif
+
+#ifdef JSON
+      subscribeToMQTTTopic(ARILUX_MQTT_JSON_COMMAND_TOPIC);
 #endif
 
       lastmqttreconnect = millis();
@@ -498,31 +558,56 @@ void handleCMD(void) {
     case ARILUX_CMD_NOT_DEFINED:
       break;
     case ARILUX_CMD_STATE_CHANGED:
-      if (arilux.getState()) {
-        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_ON_PAYLOAD);
-      } else {
-        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_OFF_PAYLOAD);
-      }
-      cmd = ARILUX_CMD_NOT_DEFINED;
+      publishStateChange();
       break;
     case ARILUX_CMD_BRIGHTNESS_CHANGED:
-      snprintf(msgBuffer, sizeof(msgBuffer), "%d", arilux.getBrightness());
-      publishToMQTT(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, msgBuffer);
-      cmd = ARILUX_CMD_NOT_DEFINED;
+      publishBrightnessChange();
       break;
     case ARILUX_CMD_COLOR_CHANGED:
-      snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d,%d", arilux.getRedValue(), arilux.getGreenValue(), arilux.getBlueValue());
-      publishToMQTT(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer);
-      cmd = ARILUX_CMD_NOT_DEFINED;
+      publishColorChange();
       break;
     case ARILUX_CMD_WHITE_CHANGED:
-      snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
-      publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
-      cmd = ARILUX_CMD_NOT_DEFINED;
+      publishWhiteChange();
       break;
     default:
       break;
   }
+  if (cmd != ARILUX_CMD_NOT_DEFINED) {
+    #ifdef JSON
+      DynamicJsonBuffer outgoingJsonPayload;
+      JsonObject& root = outgoingJsonPayload.createObject();
+      String stringState = arilux.getState() ? "ON" : "OFF";
+      root["state"] = stringState;
+      root["brightness"] = arilux.getBrightness();
+      // root["transition"] =
+      root["white_value"] = arilux.getWhite1Value();
+      root["color"]["r"] = arilux.getRedValue();
+      root["color"]["g"] = arilux.getGreenValue();
+      root["color"]["b"] = arilux.getBlueValue();
+      root.printTo(outgoingJsonBuffer);
+      publishToMQTT(ARILUX_MQTT_JSON_STATE_TOPIC, outgoingJsonBuffer);
+    #endif
+    cmd = ARILUX_CMD_NOT_DEFINED;
+  };
+}
+
+void publishStateChange(void) {
+  publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, (arilux.getState() ? MQTT_STATE_ON_PAYLOAD : MQTT_STATE_OFF_PAYLOAD));
+}
+
+void publishBrightnessChange(void) {
+  snprintf(msgBuffer, sizeof(msgBuffer), "%d", arilux.getBrightness());
+  publishToMQTT(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, msgBuffer);
+}
+
+void publishColorChange(void) {
+  snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d,%d", arilux.getRedValue(), arilux.getGreenValue(), arilux.getBlueValue());
+  publishToMQTT(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer);
+}
+
+void publishWhiteChange(void) {
+  snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
+  publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -610,6 +695,11 @@ void setup() {
 
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
   sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,arilux.getColorString(),chipid);
+#endif
+
+#ifdef JSON
+  sprintf(ARILUX_MQTT_JSON_STATE_TOPIC, MQTT_JSON_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_JSON_COMMAND_TOPIC, MQTT_JSON_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
 #endif
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
