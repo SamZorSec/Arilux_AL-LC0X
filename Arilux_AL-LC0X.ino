@@ -241,11 +241,6 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
     } else if (payload.equals(String(MQTT_STATE_OFF_PAYLOAD))) {
       if (arilux.turnOff())
         cmd = ARILUX_CMD_STATE_CHANGED;
-    } else if (payload.equals(String(MQTT_STATE_ON_WHITE_PAYLOAD))) {
-      if (arilux.turnOn())
-        cmd = ARILUX_CMD_STATE_CHANGED;
-      arilux.setWhite(255, 255);
-      arilux.setBrightness(255);
     }
   } else if (String(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC).equals(p_topic)) {
     if (arilux.setBrightness(payload.toInt()))
