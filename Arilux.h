@@ -164,7 +164,7 @@ class Arilux {
     uint8_t m_redPin;
     uint8_t m_greenPin;
     uint8_t m_bluePin;
-#ifdef RGBW
+#if defined(RGBW) || defined (RGBWW)
     uint8_t m_white1Pin;
 #ifdef RGBWW
     uint8_t m_white2Pin;

@@ -4,7 +4,7 @@ Arilux::Arilux(void):
   m_redPin(ARILUX_RED_PIN),
   m_greenPin(ARILUX_GREEN_PIN),
   m_bluePin(ARILUX_BLUE_PIN)
-#ifdef RGBW
+#if defined(RGBW) || defined (RGBWW)
   , m_white1Pin(ARILUX_WHITE1_PIN)
 #ifdef RGBWW
   , m_white2Pin(ARILUX_WHITE2_PIN)
@@ -25,7 +25,7 @@ uint8_t Arilux::init(void) {
   pinMode(m_greenPin, OUTPUT);
   pinMode(m_bluePin, OUTPUT);
 
-#ifdef RGBW
+#if defined(RGBW) || defined (RGBWW)
   pinMode(m_white1Pin, OUTPUT);
 #ifdef RGBWW
   pinMode(m_white2Pin, OUTPUT);
@@ -96,7 +96,7 @@ uint8_t Arilux::setBrightness(uint8_t p_brightness) {
   analogWrite(m_redPin, map(m_color.red, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_greenPin, map(m_color.green, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_bluePin, map(m_color.blue, 0, ARILUX_PWM_RANGE, 0, m_brightness));
-#ifdef RGBW
+#if defined(RGBW) || defined (RGBWW)
   analogWrite(m_white1Pin, map(m_color.white1, 0, ARILUX_PWM_RANGE, 0, m_brightness));
 #ifdef RGBWW
   analogWrite(m_white2Pin, map(m_color.white2, 0, ARILUX_PWM_RANGE, 0, m_brightness));
@@ -155,7 +155,7 @@ uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p
   analogWrite(m_redPin, map(p_red, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_greenPin, map(p_green, 0, ARILUX_PWM_RANGE, 0, m_brightness));
   analogWrite(m_bluePin, map(p_blue, 0, ARILUX_PWM_RANGE, 0, m_brightness));
-#ifdef RGBW
+#if defined(RGBW) || defined (RGBWW)
   analogWrite(m_white1Pin, map(p_white1, 0, ARILUX_PWM_RANGE, 0, m_brightness));
 #ifdef RGBWW
   analogWrite(m_white2Pin, map(p_white2, 0, ARILUX_PWM_RANGE, 0, m_brightness));
