@@ -22,7 +22,7 @@ function build() {
   # we have to avoid reading the exit code of local:
   # "when declaring a local variable in a function, the local acts as a command in its own right"
   local build_stdout
-  build_stdout=$(arduino -v --verbose-build --verify --board esp8266:esp8266:generic Arilux_AL-LC0X.ino 2>&1)
+  build_stdout=$(arduino --board esp8266:esp8266:generic --verbose --verify $(pwd)/Arilux_AL-LC0X.ino 2>&1)
 
   # echo output if the build failed
   if [ $? -ne 0 ]; then
