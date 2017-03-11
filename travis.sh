@@ -1,19 +1,21 @@
 function build() {
 
-  if [ -z "$TYPE" ]; then
-    echo -e "#define $TYPE\n$(cat config.example.h)" > config.h
+  echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
+
+  if [ -n "$RGB_TYPE" ]; then
+    echo -e "#define $RGB_TYPE\n$(cat config.h)" > config.h
   fi
 
-  if [ -z "$REMOTE" ]; then
-    echo -e "#define $REMOTE\n$(cat config.example.h)" > config.h
+  if [ -n "$REMOTE_TYPE" ]; then
+    echo -e "#define $REMOTE_TYPE\n$(cat config.h)" > config.h
   fi
 
-  if [ -z "$MQTT_MODE" ]; then
-    echo -e "#define $MQTT_MODE\n$(cat config.example.h)" > config.h
+  if [ -n "$MQTT_MODE" ]; then
+    echo -e "#define $MQTT_MODE\n$(cat config.h)" > config.h
   fi
 
-  if [ -z "$MQTT_DISCOVERY" ]; then
-    echo -e "#define $MQTT_DISCOVERY\n$(cat config.example.h)" > config.h
+  if [ -n "$MQTT_DISCOVERY" ]; then
+    echo -e "#define $MQTT_DISCOVERY\n$(cat config.h)" > config.h
   fi
 
   # verify the ino, and save stdout & stderr to a variable

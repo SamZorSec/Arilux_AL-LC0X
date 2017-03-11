@@ -15,9 +15,9 @@
 #endif
 #include <ArduinoOTA.h>
 #if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined (JSON)
-  #include <ArduinoJsons.h>
+  #include <ArduinoJson.h>
 #endif
-#include "Ariluxs.h"
+#include "Arilux.h"
 
 // in a terminal: telnet arilux.local
 #ifdef DEBUG_TELNET
@@ -674,10 +674,12 @@ void handleCMD(void) {
     publishToMQTT(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer);
   }
 
-  void publishWhiteChange(void) {
-    snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
-    publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
-  }
+  #if defined(RGBW) || defined (RGBWW)
+    void publishWhiteChange(void) {
+      snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
+      publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
+    }
+  #endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////
