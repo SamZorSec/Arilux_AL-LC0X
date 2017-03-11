@@ -15,9 +15,9 @@
 #endif
 #include <ArduinoOTA.h>
 #if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined (JSON)
-  #include <ArduinoJson.h>
+  #include <ArduinoJsons.h>
 #endif
-#include "Arilux.h"
+#include "Ariluxs.h"
 
 // in a terminal: telnet arilux.local
 #ifdef DEBUG_TELNET

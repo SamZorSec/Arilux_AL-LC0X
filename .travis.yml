@@ -14,7 +14,7 @@ install:
   - arduino --board esp8266:esp8266:generic --save-prefs
   - arduino --pref "compiler.warning_level=all" --save-prefs
 script:
-  - arduino -v --verbose-build --verify --board esp8266:esp8266:generic Arilux_AL-LC0X.ino
+  - travis.sh
 matrix:
   include:
     before_script:
