@@ -14,7 +14,7 @@
 #include <RCSwitch.h>         // https://github.com/sui77/rc-switch
 #endif
 #include <ArduinoOTA.h>
-#ifdef HOME_ASSISTANT_MQTT_DISCOVERY
+#if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined (JSON)
   #include <ArduinoJson.h>
 #endif
 #include "Arilux.h"
@@ -43,24 +43,29 @@ char   MQTT_CLIENT_ID[32];
 char   MQTT_TOPIC_PREFIX[32];
 
 // MQTT topics
-char   ARILUX_MQTT_STATE_STATE_TOPIC[44];
-char   ARILUX_MQTT_STATE_COMMAND_TOPIC[44];
-char   ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC[44];
-char   ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC[44];
-char   ARILUX_MQTT_COLOR_STATE_TOPIC[44];
-char   ARILUX_MQTT_COLOR_COMMAND_TOPIC[44];
 char   ARILUX_MQTT_STATUS_TOPIC[44];
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
   char   HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC[56];
 #endif
-
-#if defined(RGBW) || defined (RGBWW)
-char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
-char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
+#ifdef JSON
+  char   ARILUX_MQTT_JSON_STATE_TOPIC[44];
+  char   ARILUX_MQTT_JSON_COMMAND_TOPIC[44];
+#else
+  char   ARILUX_MQTT_STATE_STATE_TOPIC[44];
+  char   ARILUX_MQTT_STATE_COMMAND_TOPIC[44];
+  char   ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC[44];
+  char   ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC[44];
+  char   ARILUX_MQTT_COLOR_STATE_TOPIC[44];
+  char   ARILUX_MQTT_COLOR_COMMAND_TOPIC[44];
+  #if defined(RGBW) || defined (RGBWW)
+    char   ARILUX_MQTT_WHITE_STATE_TOPIC[44];
+    char   ARILUX_MQTT_WHITE_COMMAND_TOPIC[44];
+  #endif
 #endif
 
 // MQTT buffer
 char msgBuffer[32];
+char outgoingJsonBuffer[120];
 
 char friendlyName[32];
 char configBuf[512];
@@ -83,6 +88,30 @@ WiFiClientSecure  wifiClient;
 WiFiClient        wifiClient;
 #endif
 PubSubClient        mqttClient(wifiClient);
+
+// Real values to write to the LEDs (ex. including brightness and state)
+byte realRed = 0;
+byte realGreen = 0;
+byte realBlue = 0;
+
+// Globals for fade/transitions
+bool startFade = false;
+unsigned long lastLoop = 0;
+int transitionTime = 0;
+bool inFade = false;
+int loopCount = 0;
+int stepR, stepG, stepB;
+int redVal, grnVal, bluVal;
+
+// Globals for flash
+bool flash = false;
+bool startFlash = false;
+int flashLength = 0;
+unsigned long flashStartTime = 0;
+byte flashRed = 0;
+byte flashGreen = 0;
+byte flashBlue = 0;
+byte flashBrightness = 0;
 
 ///////////////////////////////////////////////////////////////////////////
 //  SSL/TLS
@@ -128,46 +157,119 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
   }
 
   // Handle the MQTT topic of the received message
-  if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
-    if (payload.equals(String(MQTT_STATE_ON_PAYLOAD))) {
-      if (arilux.turnOn())
-        cmd = ARILUX_CMD_STATE_CHANGED;
-    } else if (payload.equals(String(MQTT_STATE_OFF_PAYLOAD))) {
-      if (arilux.turnOff())
-        cmd = ARILUX_CMD_STATE_CHANGED;
+  #ifdef JSON
+    if (String(ARILUX_MQTT_JSON_COMMAND_TOPIC).equals(p_topic)) {
+      DynamicJsonBuffer incomingJsonPayload;
+      JsonObject& root = incomingJsonPayload.parseObject(payload);
+      if (!root.success()) {
+        DEBUG_PRINTLN("parseObject() failed");
+        return;
+      }
+
+      if (root.containsKey("color")) {
+        int red_color = root["color"]["r"];
+        int green_color = root["color"]["g"];
+        int blue_color = root["color"]["b"];
+
+        realRed = red_color;
+        realGreen = green_color;
+        realBlue = blue_color;
+      } else {
+        realRed = arilux.getRedValue();
+        realGreen = arilux.getGreenValue();
+        realBlue = arilux.getBlueValue();
+      }
+
+      startFade = true;
+      inFade = false; // Kill the current fade
+
+      if (root.containsKey("flash")) {
+        flashLength = (int)root["flash"] * 1000;
+
+        if (root.containsKey("brightness")) {
+          flashBrightness = root["brightness"];
+        } else {
+          flashBrightness = arilux.getBrightness();
+        }
+
+        if (root.containsKey("color")) {
+          flashRed = root["color"]["r"];
+          flashGreen = root["color"]["g"];
+          flashBlue = root["color"]["b"];
+        } else {
+          flashRed = arilux.getRedValue();
+          flashGreen = arilux.getGreenValue();
+          flashBlue = arilux.getBlueValue();
+        }
+
+        flashRed = map(flashRed, 0, 255, 0, flashBrightness);
+        flashGreen = map(flashGreen, 0, 255, 0, flashBrightness);
+        flashBlue = map(flashBlue, 0, 255, 0, flashBrightness);
+
+        flash = true;
+        startFlash = true;
+      } else { // Not flashing
+        flash = false;
+        if (root.containsKey("state")) {
+          if (strcmp(root["state"], "ON") == 0) {
+            arilux.turnOn();
+          } else if (strcmp(root["state"], "OFF") == 0) {
+            arilux.turnOff();
+          }
+        }
+
+        if (root.containsKey("transition")) {
+          transitionTime = root["transition"];
+        } else {
+          transitionTime = 0;
+        }
+
+        if (root.containsKey("brightness")) {
+          int brightness = root["brightness"];
+          arilux.setBrightness(brightness);
+        }
+
+        if (root.containsKey("white_value")) {
+          int white_value = root["white_value"];
+          arilux.setWhite(white_value, white_value);
+        }
+      }
+      cmd = ARILUX_CMD_JSON;
     }
-    #if defined(RGBW) || defined (RGBWW)
-      if (payload.equals(String(MQTT_STATE_ON_WHITE_PAYLOAD))) {
+  #else
+    if (String(ARILUX_MQTT_STATE_COMMAND_TOPIC).equals(p_topic)) {
+      if (payload.equals(String(MQTT_STATE_ON_PAYLOAD))) {
         if (arilux.turnOn())
           cmd = ARILUX_CMD_STATE_CHANGED;
-        arilux.setWhite(255, 255);
-        arilux.setBrightness(255);
+      } else if (payload.equals(String(MQTT_STATE_OFF_PAYLOAD))) {
+        if (arilux.turnOff())
+          cmd = ARILUX_CMD_STATE_CHANGED;
+      }
+    } else if (String(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC).equals(p_topic)) {
+      if (arilux.setBrightness(payload.toInt()))
+        cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
+    } else if (String(ARILUX_MQTT_COLOR_COMMAND_TOPIC).equals(p_topic)) {
+      // Get the position of the first and second commas
+      int commaIndex = payload.indexOf(',');
+      //  Search for the next comma just after the first
+      int secondCommaIndex = payload.indexOf(',', commaIndex + 1);
+      String firstValue = payload.substring(0, commaIndex);
+      String secondValue = payload.substring(commaIndex + 1, secondCommaIndex);
+      String thirdValue = payload.substring(secondCommaIndex + 1); // To the end of the string
+      int r = firstValue.toInt();
+      int g = secondValue.toInt();
+      int b = thirdValue.toInt();
+
+      if (arilux.setColor(r, g, b))
+        cmd = ARILUX_CMD_COLOR_CHANGED;
+    }
+    #if defined(RGBW) || defined (RGBWW)
+      if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
+        uint8_t firstIndex = payload.indexOf(',');
+        if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
+          cmd = ARILUX_CMD_WHITE_CHANGED;
       }
     #endif
-  } else if (String(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC).equals(p_topic)) {
-    if (arilux.setBrightness(payload.toInt()))
-      cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
-  } else if (String(ARILUX_MQTT_COLOR_COMMAND_TOPIC).equals(p_topic)) {
-    // Get the position of the first and second commas
-    int commaIndex = payload.indexOf(',');
-    //  Search for the next comma just after the first
-    int secondCommaIndex = payload.indexOf(',', commaIndex + 1);
-    String firstValue = payload.substring(0, commaIndex);
-    String secondValue = payload.substring(commaIndex + 1, secondCommaIndex);
-    String thirdValue = payload.substring(secondCommaIndex + 1); // To the end of the string
-    int r = firstValue.toInt();
-    int g = secondValue.toInt();
-    int b = thirdValue.toInt();
-
-    if (arilux.setColor(r, g, b))
-      cmd = ARILUX_CMD_COLOR_CHANGED;
-  }
-  #if defined(RGBW) || defined (RGBWW)
-    if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
-      uint8_t firstIndex = payload.indexOf(',');
-      if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
-        cmd = ARILUX_CMD_WHITE_CHANGED;
-    }
   #endif
 }
 
@@ -185,18 +287,29 @@ void connectMQTT(void) {
         #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
           JsonObject& root = HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG.createObject();
           root["name"] = friendlyName;
-          root["state_topic"] = ARILUX_MQTT_STATE_STATE_TOPIC;
-          root["command_topic"] = ARILUX_MQTT_STATE_COMMAND_TOPIC;
-          root["brightness_state_topic"] = ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC;
-          root["brightness_command_topic"] = ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC;
-          root["rgb_state_topic"] = ARILUX_MQTT_COLOR_STATE_TOPIC;
-          root["rgb_command_topic"] = ARILUX_MQTT_COLOR_COMMAND_TOPIC;
-          root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
-          root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
+          #ifdef JSON
+            root["platform"] = "mqtt_json";
+            root["state_topic"] = ARILUX_MQTT_JSON_STATE_TOPIC;
+            root["command_topic"] = ARILUX_MQTT_JSON_COMMAND_TOPIC;
+            root["brightness"] = true;
+            root["rgb"] = true;
+            #if defined(RGBW) || defined (RGBWW)
+            root["white_value"] = true;
+            #endif
+          #else
+            root["state_topic"] = ARILUX_MQTT_STATE_STATE_TOPIC;
+            root["command_topic"] = ARILUX_MQTT_STATE_COMMAND_TOPIC;
+            root["brightness_state_topic"] = ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC;
+            root["brightness_command_topic"] = ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC;
+            root["rgb_state_topic"] = ARILUX_MQTT_COLOR_STATE_TOPIC;
+            root["rgb_command_topic"] = ARILUX_MQTT_COLOR_COMMAND_TOPIC;
+            root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
+            root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
+          #endif
           root.printTo(configBuf, sizeof(configBuf));
           publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf);
         #endif
-        flash(true);
+        flashSuccess(true);
       } else {
         DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
         DEBUG_PRINT(F("Username: "));
@@ -205,15 +318,19 @@ void connectMQTT(void) {
         DEBUG_PRINTLN(MQTT_PASS);
         DEBUG_PRINT(F("Broker: "));
         DEBUG_PRINTLN(MQTT_SERVER);
-        flash(false);
+        flashSuccess(false);
       }
 
+#ifdef JSON
+      subscribeToMQTTTopic(ARILUX_MQTT_JSON_COMMAND_TOPIC);
+#else
       subscribeToMQTTTopic(ARILUX_MQTT_STATE_COMMAND_TOPIC);
       subscribeToMQTTTopic(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC);
       subscribeToMQTTTopic(ARILUX_MQTT_COLOR_COMMAND_TOPIC);
 
-#if defined(RGBW) || defined (RGBWW)
-      subscribeToMQTTTopic(ARILUX_MQTT_WHITE_COMMAND_TOPIC);
+      #if defined(RGBW) || defined (RGBWW)
+            subscribeToMQTTTopic(ARILUX_MQTT_WHITE_COMMAND_TOPIC);
+      #endif
 #endif
 
       lastmqttreconnect = millis();
@@ -502,38 +619,66 @@ void handleRFRemote(void) {
    Function called to handle commands due to changes
 */
 void handleCMD(void) {
-  switch (cmd) {
-    case ARILUX_CMD_NOT_DEFINED:
-      break;
-    case ARILUX_CMD_STATE_CHANGED:
-      if (arilux.getState()) {
-        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_ON_PAYLOAD);
-      } else {
-        publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_OFF_PAYLOAD);
-      }
-      cmd = ARILUX_CMD_NOT_DEFINED;
-      break;
-    case ARILUX_CMD_BRIGHTNESS_CHANGED:
-      snprintf(msgBuffer, sizeof(msgBuffer), "%d", arilux.getBrightness());
-      publishToMQTT(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, msgBuffer);
-      cmd = ARILUX_CMD_NOT_DEFINED;
-      break;
-    case ARILUX_CMD_COLOR_CHANGED:
-      snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d,%d", arilux.getRedValue(), arilux.getGreenValue(), arilux.getBlueValue());
-      publishToMQTT(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer);
-      cmd = ARILUX_CMD_NOT_DEFINED;
-      break;
-    #if defined(RGBW) || defined (RGBWW)
-      case ARILUX_CMD_WHITE_CHANGED:
-        snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
-        publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
-        cmd = ARILUX_CMD_NOT_DEFINED;
+  #ifdef JSON
+  if (cmd != ARILUX_CMD_NOT_DEFINED) {
+      DynamicJsonBuffer outgoingJsonPayload;
+      JsonObject& root = outgoingJsonPayload.createObject();
+      String stringState = arilux.getState() ? "ON" : "OFF";
+      root["state"] = stringState;
+      root["brightness"] = arilux.getBrightness();
+      // root["transition"] =
+      root["white_value"] = arilux.getWhite1Value();
+      root["color"]["r"] = arilux.getRedValue();
+      root["color"]["g"] = arilux.getGreenValue();
+      root["color"]["b"] = arilux.getBlueValue();
+      root.printTo(outgoingJsonBuffer);
+      publishToMQTT(ARILUX_MQTT_JSON_STATE_TOPIC, outgoingJsonBuffer);
+  };
+  #else
+    switch (cmd) {
+      case ARILUX_CMD_NOT_DEFINED:
         break;
-    #endif
-    default:
-      break;
-  }
+      case ARILUX_CMD_STATE_CHANGED:
+        publishStateChange();
+        break;
+      case ARILUX_CMD_BRIGHTNESS_CHANGED:
+        publishBrightnessChange();
+        break;
+      case ARILUX_CMD_COLOR_CHANGED:
+        publishColorChange();
+        break;
+      #if defined(RGBW) || defined (RGBWW)
+        case ARILUX_CMD_WHITE_CHANGED:
+          publishWhiteChange();
+          break;
+      #endif
+      default:
+        break;
+    }
+  #endif
+  cmd = ARILUX_CMD_NOT_DEFINED;
 }
+
+#ifndef JSON
+  void publishStateChange(void) {
+    publishToMQTT(ARILUX_MQTT_STATE_STATE_TOPIC, (arilux.getState() ? MQTT_STATE_ON_PAYLOAD : MQTT_STATE_OFF_PAYLOAD));
+  }
+
+  void publishBrightnessChange(void) {
+    snprintf(msgBuffer, sizeof(msgBuffer), "%d", arilux.getBrightness());
+    publishToMQTT(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, msgBuffer);
+  }
+
+  void publishColorChange(void) {
+    snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d,%d", arilux.getRedValue(), arilux.getGreenValue(), arilux.getBlueValue());
+    publishToMQTT(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer);
+  }
+
+  void publishWhiteChange(void) {
+    snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
+    publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
+  }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////
 //  WiFi
@@ -605,21 +750,27 @@ void setup() {
 
   sprintf(MQTT_TOPIC_PREFIX, MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipid);
 
+  sprintf(ARILUX_MQTT_STATUS_TOPIC, MQTT_STATUS_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+
+#ifdef HOME_ASSISTANT_MQTT_DISCOVERY
+  sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s/config",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,arilux.getColorString(),chipid);
+#endif
+
+#ifdef JSON
+  sprintf(ARILUX_MQTT_JSON_STATE_TOPIC, MQTT_JSON_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  sprintf(ARILUX_MQTT_JSON_COMMAND_TOPIC, MQTT_JSON_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+#else
   sprintf(ARILUX_MQTT_STATE_STATE_TOPIC, MQTT_STATE_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
   sprintf(ARILUX_MQTT_STATE_COMMAND_TOPIC, MQTT_STATE_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
   sprintf(ARILUX_MQTT_BRIGHTNESS_STATE_TOPIC, MQTT_BRIGHTNESS_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
   sprintf(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC, MQTT_BRIGHTNESS_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
   sprintf(ARILUX_MQTT_COLOR_STATE_TOPIC, MQTT_COLOR_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
   sprintf(ARILUX_MQTT_COLOR_COMMAND_TOPIC, MQTT_COLOR_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
-  sprintf(ARILUX_MQTT_STATUS_TOPIC, MQTT_STATUS_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
 
-#if defined(RGBW) || defined (RGBWW)
-  sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC, MQTT_WHITE_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
-  sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC, MQTT_WHITE_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
-#endif
-
-#ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-  sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s/config",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,arilux.getColorString(),chipid);
+  #if defined(RGBW) || defined (RGBWW)
+    sprintf(ARILUX_MQTT_WHITE_STATE_TOPIC, MQTT_WHITE_STATE_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+    sprintf(ARILUX_MQTT_WHITE_COMMAND_TOPIC, MQTT_WHITE_COMMAND_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+  #endif
 #endif
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
@@ -630,7 +781,7 @@ void setup() {
   ArduinoOTA.setHostname(MQTT_CLIENT_ID);
   ArduinoOTA.onStart([]() {
     DEBUG_PRINTLN("OTA Beginning!");
-    flash(true);
+    flashSuccess(true);
   });
   ArduinoOTA.onError([](ota_error_t error) {
     DEBUG_PRINT("ArduinoOTA Error[");
@@ -666,6 +817,7 @@ void loop() {
   // Handle commands
   handleCMD();
   yield();
+  handleEffects();
   connectMQTT();
   mqttClient.loop();
   yield();
@@ -676,38 +828,154 @@ void loop() {
 ///////////////////////////////////////////////////////////////////////////
 //  Utilities
 ///////////////////////////////////////////////////////////////////////////
-/*
-   Helper function to show success/failure of a task with the light strip.
-*/
 
-void flash(bool success) {
-  if (success) {
-    arilux.setAll(0, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 255, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 255, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 255, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 0, 0, 0, 0);
+void flashSuccess(bool success) {
+  flashLength = 5000;
+
+  flashBrightness = 255;
+
+  if(success) {
+    flashRed = 0;
+    flashGreen = 255;
   } else {
-    arilux.setAll(0, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(255, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(255, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(255, 0, 0, 0, 0);
-    delay(300);
-    arilux.setAll(0, 0, 0, 0, 0);
+    flashRed = 255;
+    flashGreen = 0;
   }
+  flashBlue = 0;
+
+  flashRed = map(flashRed, 0, 255, 0, flashBrightness);
+  flashGreen = map(flashGreen, 0, 255, 0, flashBrightness);
+  flashBlue = map(flashBlue, 0, 255, 0, flashBrightness);
+
+  flash = true;
+  startFlash = true;
+}
+
+void handleEffects(void) {
+  if (flash) {
+    if (startFlash) {
+      startFlash = false;
+      flashStartTime = millis();
+      arilux.setWhite(0, 0);
+    }
+    if ((millis() - flashStartTime) <= flashLength) {
+      if ((millis() - flashStartTime) % 1000 <= 500) {
+        arilux.setColor(flashRed, flashGreen, flashBlue);
+      } else {
+        arilux.setColor(0, 0, 0);
+        // If you'd prefer the flashing to happen "on top of"
+        // the current color, uncomment the next line.
+        // arilux.setColor(realRed, realGreen, realBlue);
+      }
+    } else {
+      flash = false;
+      arilux.setColor(realRed, realGreen, realBlue);
+    }
+  }
+
+  if (startFade) {
+    // If we don't want to fade, skip it.
+    if (transitionTime == 0) {
+      arilux.setColor(realRed, realGreen, realBlue);
+
+      redVal = realRed;
+      grnVal = realGreen;
+      bluVal = realBlue;
+
+      startFade = false;
+    } else {
+      loopCount = 0;
+      stepR = calculateStep(redVal, realRed);
+      stepG = calculateStep(grnVal, realGreen);
+      stepB = calculateStep(bluVal, realBlue);
+
+      inFade = true;
+    }
+  }
+
+  if (inFade) {
+    startFade = false;
+    unsigned long now = millis();
+    if (now - lastLoop > transitionTime) {
+      if (loopCount <= 1020) {
+        lastLoop = now;
+
+        redVal = calculateVal(stepR, redVal, loopCount);
+        grnVal = calculateVal(stepG, grnVal, loopCount);
+        bluVal = calculateVal(stepB, bluVal, loopCount);
+
+        arilux.setColor(redVal, grnVal, bluVal); // Write current values to LED pins
+
+        DEBUG_PRINT("Fade Loop count: ");
+        DEBUG_PRINTLN(loopCount);
+        loopCount++;
+      } else {
+        inFade = false;
+      }
+    }
+  }
+}
+
+// From https://www.arduino.cc/en/Tutorial/ColorCrossfader
+/* BELOW THIS LINE IS THE MATH -- YOU SHOULDN'T NEED TO CHANGE THIS FOR THE BASICS
+*
+* The program works like this:
+* Imagine a crossfade that moves the red LED from 0-10,
+*   the green from 0-5, and the blue from 10 to 7, in
+*   ten steps.
+*   We'd want to count the 10 steps and increase or
+*   decrease color values in evenly stepped increments.
+*   Imagine a + indicates raising a value by 1, and a -
+*   equals lowering it. Our 10 step fade would look like:
+*
+*   1 2 3 4 5 6 7 8 9 10
+* R + + + + + + + + + +
+* G   +   +   +   +   +
+* B     -     -     -
+*
+* The red rises from 0 to 10 in ten steps, the green from
+* 0-5 in 5 steps, and the blue falls from 10 to 7 in three steps.
+*
+* In the real program, the color percentages are converted to
+* 0-255 values, and there are 1020 steps (255*4).
+*
+* To figure out how big a step there should be between one up- or
+* down-tick of one of the LED values, we call calculateStep(),
+* which calculates the absolute gap between the start and end values,
+* and then divides that gap by 1020 to determine the size of the step
+* between adjustments in the value.
+*/
+int calculateStep(int prevValue, int endValue) {
+    int step = endValue - prevValue; // What's the overall gap?
+    if (step) {                      // If its non-zero,
+        step = 1020/step;            //   divide by 1020
+    }
+
+    return step;
+}
+
+/* The next function is calculateVal. When the loop value, i,
+*  reaches the step size appropriate for one of the
+*  colors, it increases or decreases the value of that color by 1.
+*  (R, G, and B are each calculated separately.)
+*/
+int calculateVal(int step, int val, int i) {
+    if ((step) && i % step == 0) { // If step is non-zero and its time to change a value,
+        if (step > 0) {              //   increment the value if step is positive...
+            val += 1;
+        }
+        else if (step < 0) {         //   ...or decrement it if step is negative
+            val -= 1;
+        }
+    }
+
+    // Defensive driving: make sure val stays in the range 0-255
+    if (val > 255) {
+        val = 255;
+    }
+    else if (val < 0) {
+        val = 0;
+    }
+
+    return val;
 }

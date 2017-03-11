@@ -128,6 +128,7 @@ enum {
   ARILUX_CMD_BRIGHTNESS_CHANGED,
   ARILUX_CMD_COLOR_CHANGED,
   ARILUX_CMD_WHITE_CHANGED,
+  ARILUX_CMD_JSON,
   ARILUX_CMD_PING
 };
 
@@ -160,6 +161,7 @@ class Arilux {
     uint8_t setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue);
     uint8_t setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2);
     uint8_t setWhite(uint8_t p_white1, uint8_t p_white2);
+    uint8_t setState(uint8_t p_state);
   private:
     uint8_t m_redPin;
     uint8_t m_greenPin;
@@ -173,7 +175,6 @@ class Arilux {
     uint8_t m_state;
     uint8_t m_brightness;
     Color   m_color;
-    uint8_t setState(uint8_t p_state);
     uint8_t setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_retain);
     uint8_t setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2, uint8_t p_retain);
     uint8_t setWhite(uint8_t p_white1, uint8_t p_white2, uint8_t p_retain);
