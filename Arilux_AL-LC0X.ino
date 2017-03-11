@@ -64,7 +64,9 @@ char msgBuffer[32];
 
 char friendlyName[32];
 char configBuf[512];
-StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
+#ifdef HOME_ASSISTANT_MQTT_DISCOVERY
+  StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
+#endif
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
