@@ -14,14 +14,12 @@ install:
   - arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
   - arduino --pref "compiler.warning_level=all" --save-prefs
 script:
-  - ./travis.sh
+  - source travis.sh
 env:
-  - DEFINES="#define RGB\n"
-  - DEFINES="#define RGBW\n"
-  - DEFINES="#define RGBWW\n"
-matrix:
-  include:
-    before_script:
-      - echo -e "$DEFINES$(cat config.example.h)" > config.h
-      # - echo -e "#define RGBW\n$(cat config.example.h)" > config.h
-      # - echo -e "#define RGBWW\n$(cat config.example.h)" > config.h
+  - TYPE=RGB
+  - TYPE=RGBW
+  - TYPE=RGBWW
+  - REMOTE=IR_REMOTE
+  - REMOTE=RF_REMOTE
+  - MQTT_MODE=JSON
+  - MQTT_DISCOVERY=HOME_ASSISTANT_MQTT_DISCOVERY
