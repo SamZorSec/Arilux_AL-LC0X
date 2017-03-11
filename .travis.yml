@@ -25,3 +25,4 @@ env:
   - MQTT_MODE=JSON
   - MQTT_DISCOVERY=HOME_ASSISTANT_MQTT_DISCOVERY
 matrix:
+  fast_finish: true
