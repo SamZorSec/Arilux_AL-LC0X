@@ -15,9 +15,13 @@ install:
   - arduino --pref "compiler.warning_level=all" --save-prefs
 script:
   - ./travis.sh
+env:
+  - DEFINES="#define RGB\n"
+  - DEFINES="#define RGBW\n"
+  - DEFINES="#define RGBWW\n"
 matrix:
   include:
     before_script:
-      - echo -e "#define RGB\n$(cat config.example.h)" > config.h
+      - echo -e "$DEFINES$(cat config.example.h)" > config.h
       # - echo -e "#define RGBW\n$(cat config.example.h)" > config.h
       # - echo -e "#define RGBWW\n$(cat config.example.h)" > config.h
