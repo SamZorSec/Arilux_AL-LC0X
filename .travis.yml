@@ -19,5 +19,5 @@ matrix:
   include:
     before_script:
       - echo -e "#define RGB\n$(cat config.example.h)" > config.h
-      - echo -e "#define RGBW\n$(cat config.example.h)" > config.h
-      - echo -e "#define RGBWW\n$(cat config.example.h)" > config.h
+      # - echo -e "#define RGBW\n$(cat config.example.h)" > config.h
+      # - echo -e "#define RGBWW\n$(cat config.example.h)" > config.h
