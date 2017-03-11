@@ -13,8 +13,9 @@ install:
   - arduino --board esp8266:esp8266:generic --save-prefs
   - arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
   - arduino --pref "compiler.warning_level=all" --save-prefs
-script:
   - source travis.sh
+script:
+  - build
 env:
   - TYPE=RGB
   - TYPE=RGBW
