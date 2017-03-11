@@ -8,12 +8,13 @@ The controllers are also known to sell under different manufacturer names such a
 
 ## Features
 - Remote control over the MQTT protocol via individual topics or JSON
+  - Supports transitions, flashing and effects in JSON mode
 - Remote control with the included IR control (uncomment `#define IR_REMOTE` in `config.h`)
 - Remote control with the included RF control (uncomment `#define RF_REMOTE` in `config.h`)
 - TLS support (uncomment `#define TLS` in `config.h` and change the fingerprint if not using CloudMQTT)
 - Debug printing over Telnet (uncomment `#define DEBUG_TELNET` in `config.h`)
 - ArduinoOTA support for over-the-air firmware updates
-- Native support for Home Assistant, including MQTT discovery.
+- Native support for Home Assistant, including MQTT discovery
 
 ## Supported devices
 | Model | Color Support | Voltages | Remote | Price | Link                      |
