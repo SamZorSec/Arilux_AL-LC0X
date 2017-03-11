@@ -9,12 +9,12 @@ before_install:
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 install:
   - arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
-  - arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
   - arduino --install-boards esp8266:esp8266
   - arduino --board esp8266:esp8266:generic --save-prefs
+  - arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
   - arduino --pref "compiler.warning_level=all" --save-prefs
 script:
-  - travis.sh
+  - ./travis.sh
 matrix:
   include:
     before_script:
