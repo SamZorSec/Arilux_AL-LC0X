@@ -2,9 +2,11 @@ function build() {
 
   echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
 
-  if [ -n "$RGB_TYPE" ]; then
-    echo -e "#define $RGB_TYPE\n$(cat config.h)" > config.h
+  if [ -z "$RGB_TYPE" ]; then
+    RGB_TYPE="RGB"
   fi
+
+  echo -e "#define $RGB_TYPE\n$(cat config.h)" > config.h
 
   if [ -n "$REMOTE_TYPE" ]; then
     echo -e "#define $REMOTE_TYPE\n$(cat config.h)" > config.h
