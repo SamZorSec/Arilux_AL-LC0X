@@ -45,6 +45,7 @@
 // End LC11 block, stop uncommenting above this line
 
 // If you can't find your model above, you can use the defines below instead.
+
 // #define RGB
 // #define RGBW
 // #define RGBWW
@@ -62,45 +63,48 @@
 #define MQTT_USER                              "user"
 #define MQTT_PASS                              "pass"
 
-// MQTT payloads
-#define MQTT_STATE_ON_PAYLOAD                  "ON"
-#define MQTT_STATE_OFF_PAYLOAD                 "OFF"
-#define MQTT_STATE_ON_WHITE_PAYLOAD            "ON_WHITE"
-
 // MQTT topics
 // Leaving this as default will prefix all MQTT topics with RGB(W/WW)/<chipid>
 #define MQTT_TOPIC_PREFIX_TEMPLATE             "%s/%s"
 
-// Leave %s at the front if you wish to use the MQTT Topic Prefix described above
+// Last Will and Testament topic
+#define MQTT_STATUS_TOPIC_TEMPLATE             "%s/status"
+
+// Enable Home Assistant MQTT discovery support. Requires ArduinoJSON library to be installed.
+#define HOME_ASSISTANT_MQTT_DISCOVERY
+#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
+
+// Enable JSON. Requires ArduinoJSON library to be installed.
+// Home Assistant supports more features such as transitions, effects and flashing via JSON only.
+// #define JSON
+
+// Leave %s at the front if you wish to use the MQTT Topic Prefix configured above
+#ifdef JSON
+
+#define MQTT_JSON_STATE_TOPIC_TEMPLATE        "%s/json/state"
+#define MQTT_JSON_COMMAND_TOPIC_TEMPLATE      "%s/json/set"
+
+#else
+
 #define MQTT_STATE_STATE_TOPIC_TEMPLATE        "%s/state/state"
 #define MQTT_STATE_COMMAND_TOPIC_TEMPLATE      "%s/state/set"
 #define MQTT_BRIGHTNESS_STATE_TOPIC_TEMPLATE   "%s/brightness/state"
 #define MQTT_BRIGHTNESS_COMMAND_TOPIC_TEMPLATE "%s/brightness/set"
 #define MQTT_COLOR_STATE_TOPIC_TEMPLATE        "%s/color/state"
 #define MQTT_COLOR_COMMAND_TOPIC_TEMPLATE      "%s/color/set"
-#define MQTT_STATUS_TOPIC_TEMPLATE             "%s/status"
 
 #if defined(RGBW) || defined (RGBWW)
 #define MQTT_WHITE_STATE_TOPIC_TEMPLATE        "%s/white/state"
 #define MQTT_WHITE_COMMAND_TOPIC_TEMPLATE      "%s/white/set"
 #endif
 
-// Enable Home Assistant MQTT discovery support
-#define HOME_ASSISTANT_MQTT_DISCOVERY
-#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
+// MQTT payloads
+#define MQTT_STATE_ON_PAYLOAD                  "ON"
+#define MQTT_STATE_OFF_PAYLOAD                 "OFF"
 
-// Enable JSON.
-// Home Assistant supports more features such as transitions, effects and flashing via JSON only.
-#define JSON
-
-// Configure the JSON topics to publish to
-#ifdef JSON
-#define MQTT_JSON_STATE_TOPIC_TEMPLATE        "%s/json/state"
-#define MQTT_JSON_COMMAND_TOPIC_TEMPLATE      "%s/json/set"
 #endif
 
-// Base hostname, used for the MQTT Client ID and OTA hostname.
-// If you leave %s in place it will be replaced with the Chip ID.
+// Base hostname, used for the MQTT Client ID and OTA hostname
 #define HOST                                   "ARILUX%s"
 
 // Enable console output via telnet
