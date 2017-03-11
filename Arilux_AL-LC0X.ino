@@ -135,12 +135,15 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
     } else if (payload.equals(String(MQTT_STATE_OFF_PAYLOAD))) {
       if (arilux.turnOff())
         cmd = ARILUX_CMD_STATE_CHANGED;
-    } else if (payload.equals(String(MQTT_STATE_ON_WHITE_PAYLOAD))) {
-      if (arilux.turnOn())
-        cmd = ARILUX_CMD_STATE_CHANGED;
-      arilux.setWhite(255, 255);
-      arilux.setBrightness(255);
     }
+    #if defined(RGBW) || defined (RGBWW)
+      if (payload.equals(String(MQTT_STATE_ON_WHITE_PAYLOAD))) {
+        if (arilux.turnOn())
+          cmd = ARILUX_CMD_STATE_CHANGED;
+        arilux.setWhite(255, 255);
+        arilux.setBrightness(255);
+      }
+    #endif
   } else if (String(ARILUX_MQTT_BRIGHTNESS_COMMAND_TOPIC).equals(p_topic)) {
     if (arilux.setBrightness(payload.toInt()))
       cmd = ARILUX_CMD_BRIGHTNESS_CHANGED;
@@ -158,11 +161,14 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
 
     if (arilux.setColor(r, g, b))
       cmd = ARILUX_CMD_COLOR_CHANGED;
-  } else if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
-    uint8_t firstIndex = payload.indexOf(',');
-    if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
-      cmd = ARILUX_CMD_WHITE_CHANGED;
   }
+  #if defined(RGBW) || defined (RGBWW)
+    if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
+      uint8_t firstIndex = payload.indexOf(',');
+      if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
+        cmd = ARILUX_CMD_WHITE_CHANGED;
+    }
+  #endif
 }
 
 /*
@@ -517,11 +523,13 @@ void handleCMD(void) {
       publishToMQTT(ARILUX_MQTT_COLOR_STATE_TOPIC, msgBuffer);
       cmd = ARILUX_CMD_NOT_DEFINED;
       break;
-    case ARILUX_CMD_WHITE_CHANGED:
-      snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
-      publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
-      cmd = ARILUX_CMD_NOT_DEFINED;
-      break;
+    #if defined(RGBW) || defined (RGBWW)
+      case ARILUX_CMD_WHITE_CHANGED:
+        snprintf(msgBuffer, sizeof(msgBuffer), "%d,%d", arilux.getWhite1Value(), arilux.getWhite2Value());
+        publishToMQTT(ARILUX_MQTT_WHITE_STATE_TOPIC, msgBuffer);
+        cmd = ARILUX_CMD_NOT_DEFINED;
+        break;
+    #endif
     default:
       break;
   }
