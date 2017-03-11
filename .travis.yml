@@ -1,8 +1,23 @@
 language: c
-sudo: false
 before_install:
-  - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh)
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
+  - sleep 3
+  - export DISPLAY=:1.0
+  - wget http://downloads.arduino.cc/arduino-1.8.1-linux64.tar.xz
+  - tar xf arduino-1.8.1-linux64.tar.xz
+  - sudo mv arduino-1.8.1 /usr/local/share/arduino
+  - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 install:
+  - arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
   - arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
+  - arduino --install-boards esp8266:esp8266
+  - arduino --board esp8266:esp8266:generic --save-prefs
+  - arduino --pref "compiler.warning_level=all" --save-prefs
 script:
-  - build_main_platforms esp8266
+  - arduino -v --verbose-build --verify --board esp8266:esp8266:generic Arilux_AL-LC0X.ino
+matrix:
+  include:
+    before_script:
+      - echo -e "#define RGB\n$(cat config.example.h)" > config.h
+      - echo -e "#define RGBW\n$(cat config.example.h)" > config.h
+      - echo -e "#define RGBWW\n$(cat config.example.h)" > config.h
