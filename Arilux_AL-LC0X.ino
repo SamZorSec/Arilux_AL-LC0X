@@ -69,7 +69,9 @@ char outgoingJsonBuffer[120];
 
 char friendlyName[32];
 char configBuf[512];
-StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
+#ifdef HOME_ASSISTANT_MQTT_DISCOVERY
+  StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
+#endif
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
@@ -260,11 +262,14 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
 
       if (arilux.setColor(r, g, b))
         cmd = ARILUX_CMD_COLOR_CHANGED;
-    } else if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
-      uint8_t firstIndex = payload.indexOf(',');
-      if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
-        cmd = ARILUX_CMD_WHITE_CHANGED;
     }
+    #if defined(RGBW) || defined (RGBWW)
+      if (String(ARILUX_MQTT_WHITE_COMMAND_TOPIC).equals(p_topic)) {
+        uint8_t firstIndex = payload.indexOf(',');
+        if (arilux.setWhite(payload.substring(0, firstIndex).toInt(), payload.substring(firstIndex + 1).toInt()))
+          cmd = ARILUX_CMD_WHITE_CHANGED;
+      }
+    #endif
   #endif
 }
 
@@ -642,9 +647,11 @@ void handleCMD(void) {
       case ARILUX_CMD_COLOR_CHANGED:
         publishColorChange();
         break;
-      case ARILUX_CMD_WHITE_CHANGED:
-        publishWhiteChange();
-        break;
+      #if defined(RGBW) || defined (RGBWW)
+        case ARILUX_CMD_WHITE_CHANGED:
+          publishWhiteChange();
+          break;
+      #endif
       default:
         break;
     }
