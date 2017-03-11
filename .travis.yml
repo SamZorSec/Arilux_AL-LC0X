@@ -3,6 +3,6 @@ sudo: false
 before_install:
   - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh)
 install:
-  - arduino --install-library "PubSubClient,IRremoteESP8266,RCSwitch,ArduinoJson"
+  - arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
 script:
   - build_main_platforms esp8266
