@@ -1,5 +1,11 @@
 function build() {
 
+  arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
+  arduino --install-boards esp8266:esp8266
+  arduino --board esp8266:esp8266:generic --save-prefs
+  arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
+  arduino --pref "compiler.warning_level=all" --save-prefs
+
   echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
 
   if [ -z "$RGB_TYPE" ]; then
@@ -24,7 +30,7 @@ function build() {
   # we have to avoid reading the exit code of local:
   # "when declaring a local variable in a function, the local acts as a command in its own right"
   local build_stdout
-  build_stdout=$(arduino --board esp8266:esp8266:generic --verbose --verify $(pwd)/Arilux_AL-LC0X.ino 2>&1)
+  build_stdout=$(arduino --verbose --verify $(pwd)/Arilux_AL-LC0X.ino 2>&1)
 
   # echo output if the build failed
   if [ $? -ne 0 ]; then
