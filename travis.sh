@@ -1,10 +1,10 @@
 function build() {
 
-  ./arduino-headless.sh --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
-  ./arduino-headless.sh --install-boards esp8266:esp8266
-  ./arduino-headless.sh --board esp8266:esp8266:generic --save-prefs
-  ./arduino-headless.sh --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
-  ./arduino-headless.sh --pref "compiler.warning_level=all" --save-prefs
+  arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
+  arduino --install-boards esp8266:esp8266
+  arduino --board esp8266:esp8266:generic --save-prefs
+  arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
+  arduino --pref "compiler.warning_level=all" --save-prefs
 
   echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
 
