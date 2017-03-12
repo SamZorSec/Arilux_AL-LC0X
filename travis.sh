@@ -53,5 +53,4 @@ function build() {
   fi
 
   return $exit_code
-
 }
