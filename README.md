@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mertenats/Arilux_AL-LC0X.svg?branch=master)](https://travis-ci.org/mertenats/Arilux_AL-LC0X)
+
 # Arilux AL-LC0X LED controller
 ## Alternative firmware
 Alternative firmware for Arilux AL-LC0X LED controllers. Uses MQTT instead of the default "Magic Home"/"Flux LED" protocol which has numerous reliability problems.
