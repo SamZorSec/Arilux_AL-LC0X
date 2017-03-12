@@ -8,9 +8,12 @@ before_install:
   - sudo mv arduino-1.8.1 /usr/local/share/arduino
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 install:
-  - source travis.sh
+  # - source travis.sh
+  - source adafruit.sh
 script:
-  - build
+  - echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
+  - echo -e "#define $RGB_TYPE\n$(cat config.h)" > config.h
+  - build_platform esp8266
 env:
   - RGB_TYPE=RGB
   # - RGB_TYPE=RGBW
