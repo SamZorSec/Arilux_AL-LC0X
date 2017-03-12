@@ -1,10 +1,9 @@
 [![Build Status](https://travis-ci.org/mertenats/Arilux_AL-LC0X.svg?branch=master)](https://travis-ci.org/mertenats/Arilux_AL-LC0X)
 
-# Arilux AL-LC0X LED controller
-## Alternative firmware
-Alternative firmware for Arilux AL-LC0X LED controllers. Uses MQTT instead of the default "Magic Home"/"Flux LED" protocol which has numerous reliability problems.
-The LED controller is a cheap product available on sites like Banggood.com, Aliexpress, eBay and even Amazon and can be easily reprogrammed as they are based on the popular [ESP8266 Wi-Fi chip][esp8266].
-The controllers are also known to sell under different manufacturer names such as "Firstd". If the product you are looking at buying looks similar to one of the Arilux controllers below, it most likely is.
+# Alternative firmware for Arilux LED controllers
+This is an alternative firmware for Arilux LED controllers which uses [MQTT] instead of the default "Magic Home"/"Flux LED" protocol which has numerous reliability problems.
+The LED controller is a cheap product available on sites like Banggood.com, Aliexpress, eBay and even Amazon which can be easily reprogrammed as it is based on the popular [ESP8266 Wi-Fi chip][esp8266].
+The controllers are also known to sell under different manufacturer names such as "Firstd". If the product you bought looks similar to one of the Arilux controllers below, it most likely is.
 
 ![Arilux](images/Arilux.png)
 
@@ -240,3 +239,4 @@ For further information and to join the discussion for this firmware [check out 
 [esp8266]: https://en.wikipedia.org/wiki/ESP8266
 [Home Assistant's MQTT discovery functionality]: https://home-assistant.io/docs/mqtt/discovery/
 [check out this thread]: https://community.home-assistant.io/t/alternative-firmware-for-arilux-al-lc03-for-use-with-mqtt-and-home-assistant-rgb-light-strip-controller/6328/16
+[MQTT]: http://mqtt.org/
