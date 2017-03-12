@@ -3,7 +3,7 @@ install:
   - source <(curl -SLs https://raw.githubusercontent.com/fede2cr/travis-ci-arduino/master/install.sh)
 before_script:
   - arduino --install-library "ArduinoJson,IRremoteESP8266,PubSubClient,rc-switch"
-  - ./travis_config.sh
+  - ./travis.sh
 script: build_platform esp8266
 env:
   - RGB_TYPE=RGB

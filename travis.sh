@@ -1,56 +1,31 @@
-function build() {
+#!/bin/bash
+echo "WRITING CONFIGURATION FILE"
 
-  arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
-  arduino --install-boards esp8266:esp8266
-  arduino --board esp8266:esp8266:generic --save-prefs
-  arduino --install-library "PubSubClient,IRremoteESP8266,rc-switch,ArduinoJson"
-  arduino --pref "compiler.warning_level=all" --save-prefs
+echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
 
-  echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
+echo "Wrote Travis device model to config.h"
 
-  if [ -z "$RGB_TYPE" ]; then
-    RGB_TYPE="RGB"
-  fi
+if [ -z "$RGB_TYPE" ]; then
+  RGB_TYPE="RGB"
+fi
 
-  echo -e "#define $RGB_TYPE\n$(cat config.h)" > config.h
+echo -e "#define $RGB_TYPE\n$(cat config.h)" > config.h
 
-  if [ -n "$REMOTE_TYPE" ]; then
-    echo -e "#define $REMOTE_TYPE\n$(cat config.h)" > config.h
-  fi
+echo "Wrote #define $RGB_TYPE to config.h"
 
-  if [ -n "$MQTT_MODE" ]; then
-    echo -e "#define $MQTT_MODE\n$(cat config.h)" > config.h
-  fi
+if [ -n "$REMOTE_TYPE" ]; then
+  echo -e "#define $REMOTE_TYPE\n$(cat config.h)" > config.h
+  echo "Wrote #define $REMOTE_TYPE to config.h"
+fi
 
-  if [ -n "$MQTT_DISCOVERY" ]; then
-    echo -e "#define $MQTT_DISCOVERY\n$(cat config.h)" > config.h
-  fi
+if [ -n "$MQTT_MODE" ]; then
+  echo -e "#define $MQTT_MODE\n$(cat config.h)" > config.h
+  echo "Wrote #define $MQTT_MODE to config.h"
+fi
 
-  # verify the ino, and save stdout & stderr to a variable
-  # we have to avoid reading the exit code of local:
-  # "when declaring a local variable in a function, the local acts as a command in its own right"
-  local build_stdout
-  build_stdout=$(arduino --verbose --verify $(pwd)/Arilux_AL-LC0X.ino 2>&1)
+if [ -n "$MQTT_DISCOVERY" ]; then
+  echo -e "#define $MQTT_DISCOVERY\n$(cat config.h)" > config.h
+  echo "Wrote #define $MQTT_DISCOVERY to config.h"
+fi
 
-  # echo output if the build failed
-  if [ $? -ne 0 ]; then
-
-    # heavy X
-    echo -e "\xe2\x9c\x96"
-
-    echo -e "----------------------------- DEBUG OUTPUT -----------------------------\n"
-    echo "$build_stdout"
-    echo -e "\n------------------------------------------------------------------------\n"
-
-    # mark as fail
-    exit_code=1
-
-  else
-
-    # heavy checkmark
-    echo -e "\xe2\x9c\x93"
-
-  fi
-
-  return $exit_code
-}
+echo "FINISHED WRITING CONFIGURATION FILE"
