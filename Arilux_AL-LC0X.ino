@@ -810,9 +810,10 @@ void handleCMD(void) {
       root["brightness"] = arilux.getBrightness();
       // root["transition"] =
       root["white_value"] = arilux.getWhite1Value();
-      root["color"]["r"] = arilux.getRedValue();
-      root["color"]["g"] = arilux.getGreenValue();
-      root["color"]["b"] = arilux.getBlueValue();
+      JsonObject& color = root.createNestedObject("color");
+      color["r"] = arilux.getRedValue();
+      color["g"] = arilux.getGreenValue();
+      color["b"] = arilux.getBlueValue();
       root.printTo(outgoingJsonBuffer);
       publishToMQTT(ARILUX_MQTT_JSON_STATE_TOPIC, outgoingJsonBuffer);
   };
