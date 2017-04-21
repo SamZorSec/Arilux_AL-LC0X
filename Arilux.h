@@ -159,6 +159,8 @@ class Arilux {
     char * getColorString(void);
 
     uint8_t setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue);
+    uint8_t setFadeColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue);
+    uint8_t setFadeToColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue);
     uint8_t setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2);
     uint8_t setWhite(uint8_t p_white1, uint8_t p_white2);
     uint8_t setState(uint8_t p_state);

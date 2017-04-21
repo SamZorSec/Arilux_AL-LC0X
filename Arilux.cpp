@@ -135,10 +135,23 @@ uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p
 uint8_t Arilux::setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue) {
   return setAll(p_red, p_green, p_blue, getWhite1Value(), getWhite2Value(), true);
 }
+
+uint8_t Arilux::setFadeToColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue) {
+    m_color.red = p_red;
+    m_color.green = p_green;
+    m_color.blue = p_blue;
+}
+
+uint8_t Arilux::setFadeColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue) {
+  if (!m_state) {
+    m_state = true;
+  }
+  return setAll(p_red, p_green, p_blue, getWhite1Value(), getWhite2Value(), false);
+}
+
 uint8_t Arilux::setWhite(uint8_t p_white1, uint8_t p_white2) {
   return setAll(getRedValue(), getGreenValue(), getBlueValue(), p_white1, p_white2, true);
 }
-
 
 uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p_white1, uint8_t p_white2, uint8_t p_retain) {
   if ((p_red < 0 || p_red > ARILUX_PWM_RANGE) || (p_green < 0 || p_green > ARILUX_PWM_RANGE) || (p_blue < 0 || p_blue > ARILUX_PWM_RANGE || p_white1 < 0 || p_white1 > ARILUX_PWM_RANGE || p_white2 < 0 || p_white2 > ARILUX_PWM_RANGE))
