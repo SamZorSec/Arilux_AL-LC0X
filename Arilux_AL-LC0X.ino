@@ -378,6 +378,8 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
       }
 
       if (root.containsKey("color")) {
+        startFade = true;
+        inFade = false; // Kill the current fade
         int red_color = root["color"]["r"];
         int green_color = root["color"]["g"];
         int blue_color = root["color"]["b"];
@@ -391,10 +393,10 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
         realBlue = arilux.getBlueValue();
       }
 
-      startFade = true;
-      inFade = false; // Kill the current fade
 
       if (root.containsKey("flash")) {
+        startFade = true;
+        inFade = false; // Kill the current fade
         flashLength = (int)root["flash"] * 1000;
 
         if (root.containsKey("brightness")) {
@@ -425,6 +427,9 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
           if (strcmp(root["state"], "ON") == 0) {
             arilux.turnOn();
           } else if (strcmp(root["state"], "OFF") == 0) {
+            startFade = false;
+            startFlash = false;
+            inFade = false; // Kill the current fade
             arilux.turnOff();
           }
         }
