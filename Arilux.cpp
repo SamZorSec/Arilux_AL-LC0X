@@ -54,14 +54,12 @@ char *Arilux::getColorString(void) {
 }
 
 uint8_t Arilux::setState(uint8_t p_state) {
-  if (p_state == true && m_state == false) {
+  if (p_state == true) {
     m_state = true;
     return setAll(m_color.red, m_color.green, m_color.blue, m_color.white1, m_color.white2, false);
-  } else if (p_state == false && m_state == true) {
+  } else {
     m_state = false;
     return setAll(0, 0, 0, 0, 0, false);
-  } else {
-    return false;
   }
 }
 
@@ -133,6 +131,8 @@ uint8_t Arilux::setAll(uint8_t p_red, uint8_t p_green, uint8_t p_blue, uint8_t p
 }
 
 uint8_t Arilux::setColor(uint8_t p_red, uint8_t p_green, uint8_t p_blue) {
+  if (!m_state)
+    m_state = true;
   return setAll(p_red, p_green, p_blue, getWhite1Value(), getWhite2Value(), true);
 }
 uint8_t Arilux::setWhite(uint8_t p_white1, uint8_t p_white2) {

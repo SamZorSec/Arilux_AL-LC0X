@@ -975,13 +975,12 @@ void loop() {
 #endif
 
   yield();
-
-  // Handle commands
-  handleCMD();
-  yield();
-  handleEffects();
   connectMQTT();
   mqttClient.loop();
+  handleEffects();
+  yield();
+  // Handle commands
+  handleCMD();
   yield();
   ArduinoOTA.handle();
   yield();
