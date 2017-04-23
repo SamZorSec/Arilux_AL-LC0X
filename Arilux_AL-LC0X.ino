@@ -379,6 +379,8 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
       }
 
       if (root.containsKey("color")) {
+        startFade = true;
+        inFade = false; // Kill the current fade
         int red_color = root["color"]["r"];
         int green_color = root["color"]["g"];
         int blue_color = root["color"]["b"];
@@ -392,10 +394,10 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
         realBlue = arilux.getBlueValue();
       }
 
-      startFade = true;
-      inFade = false; // Kill the current fade
 
       if (root.containsKey("flash")) {
+        startFade = true;
+        inFade = false; // Kill the current fade
         flashLength = (int)root["flash"] * 1000;
 
         if (root.containsKey("brightness")) {
@@ -426,6 +428,9 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
           if (strcmp(root["state"], "ON") == 0) {
             arilux.turnOn();
           } else if (strcmp(root["state"], "OFF") == 0) {
+            startFade = false;
+            startFlash = false;
+            inFade = false; // Kill the current fade
             arilux.turnOff();
           }
         }
@@ -811,9 +816,10 @@ void handleCMD(void) {
       root["brightness"] = arilux.getBrightness();
       // root["transition"] =
       root["white_value"] = arilux.getWhite1Value();
-      root["color"]["r"] = arilux.getRedValue();
-      root["color"]["g"] = arilux.getGreenValue();
-      root["color"]["b"] = arilux.getBlueValue();
+      JsonObject& color = root.createNestedObject("color");
+      color["r"] = arilux.getRedValue();
+      color["g"] = arilux.getGreenValue();
+      color["b"] = arilux.getBlueValue();
       root.printTo(outgoingJsonBuffer);
       publishToMQTT(ARILUX_MQTT_JSON_STATE_TOPIC, outgoingJsonBuffer);
   };
