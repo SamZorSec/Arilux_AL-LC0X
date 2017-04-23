@@ -323,7 +323,8 @@ void handleEffects(void) {
       stepR = calculateStep(redVal, realRed);
       stepG = calculateStep(grnVal, realGreen);
       stepB = calculateStep(bluVal, realBlue);
-
+      arilux.setFadeToColor(realRed, realGreen, realBlue);
+      
       inFade = true;
     }
   }
@@ -339,7 +340,7 @@ void handleEffects(void) {
         grnVal = calculateVal(stepG, grnVal, loopCount);
         bluVal = calculateVal(stepB, bluVal, loopCount);
 
-        arilux.setColor(redVal, grnVal, bluVal); // Write current values to LED pins
+        arilux.setFadeColor(redVal, grnVal, bluVal); // Write current values to LED pins
 
         DEBUG_PRINT("Fade Loop count: ");
         DEBUG_PRINTLN(loopCount);
