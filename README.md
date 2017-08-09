@@ -53,6 +53,7 @@ You must copy `config.example.h` to `config.h` and change settings to match your
 | Upload Speed    | 115200                   |
 | Port            | COMX, /dev/ttyUSB0, etc. |
 
+*Note: If you own a board labeled 1.4 or the board isn't booting, use the DOUT mode instead of the DIO mode to flash the firmware*
 
 ### Option 1
 #### Schematic
