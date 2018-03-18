@@ -128,11 +128,12 @@ The LED controller can be controlled with the RF remote included with the Arilux
 
 ### Effect
 An effect will set the color, effects are usually based on timings like flashing leds, strobe or
-slow fades.
+slow fades. Only one effect can be active at a time.
 
 ### Filter
 A filter will take the output of a effect and apply an additional transformation. THis can include
-color correct and/or fading the HSB to create smooth transitions between colors.
+color correct and/or fading the HSB to create smooth transitions between colors. Only one filter
+can be active at a time. NOTE: List of filter is on my todo..
 
 
 #### Control 
@@ -165,6 +166,24 @@ color correct and/or fading the HSB to create smooth transitions between colors.
    | `effect`       | Object/dictionary                      | `{}`  | A dictionary with effect config                                                                                                                                               |
    | `effect.name`     | Integer, 0-359                       | `rainbow`   | Name of the effect to activate                                                                                                                                                               |
    | `effect.XXX`     | properries                           |    | Properties                                                                                                                                              |
+
+
+   ## State
+   ```
+     "state": "ON" 
+   ```
+   #### Example
+   ```
+     # Turn device on
+     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"state":"ON"}'
+     # Turn device off
+     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"state":"OFF"}'
+     # Turn device off and remove current effect
+     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"state":"OFF", "effect":{"name":"none"}}'
+   ```
+   Note: If you expect active transitions, it´ always a good idea to turn them off
+   state ON/OFF is implemented as a birghtness of 0 or previous brightness
+   soo effects might override this command.
 
    ## Available Filters
 
