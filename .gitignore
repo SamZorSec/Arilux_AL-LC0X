@@ -1,1 +1,5 @@
-config.h
+setup.h
+.DS_Store
+.vscode
+.editorconfig
+.idea
