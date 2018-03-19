@@ -61,7 +61,6 @@ char jsonBuffer[512];
 
 volatile unsigned long transitionCounter = 0;
 volatile unsigned long startMillis = 0;
-volatile boolean newChangeReceived = true;
 volatile unsigned long currentMqttReconnect = 0;
 HSB hsb(0, 0, 255, 0, 0);
 HSB currentHsb(0, 0, 255, 0, 0);
@@ -323,8 +322,6 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
                 hsb = HSB(sHsb.getHue(), sHsb.getSaturation(), 0, sHsb.getWhite1(), hsb.getWhite2());
             }
         }
-
-        newChangeReceived = true;
     }
 }
 
@@ -624,11 +621,12 @@ void setup() {
 #endif
     // Init the Arilux LED controller
     arilux.init();
-#ifdef EEPROM_STORE
+
+    // Get current EEPROM value
     EEPROM.begin(512);
     hsb = eepromStore.getHSB();
     eepromStore.initStore(hsb);
-#endif
+
     // Set hostname and start OTA
     ArduinoOTA.setHostname(mqttClientID);
     ArduinoOTA.onStart([]() {
@@ -679,13 +677,15 @@ void setup() {
 void handleEffects() {
     const unsigned long currentMillies = millis();
 
-    if (currentEffect->hasModification(transitionCounter, currentMillies, hsb) || newChangeReceived) {
+    if (currentEffect->hasModification(transitionCounter, currentMillies, hsb)) {
         const HSB effectedHsb = currentEffect->handleEffect(transitionCounter, currentMillies, hsb);
         currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, effectedHsb);
-        int colors[3];
-        currentHsb.getConstantRGB(colors);
-        arilux.setAll(colors[0], colors[1], colors[2], currentHsb.getCWhite1(), currentHsb.getCWhite2());
+    } else {
+        currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, hsb);
     }
+    int colors[3];
+    currentHsb.getConstantRGB(colors);
+    arilux.setAll(colors[0], colors[1], colors[2], currentHsb.getCWhite1(), currentHsb.getCWhite2());
 }
 
 
@@ -704,15 +704,17 @@ void onceASecond() {
 }
 
 #define NUMBER_OF_SLOTS 12
+float avarageTime = 0.0;
 void loop() {
     const unsigned long currentMillis = millis();
 
-    if (currentMillis - startMillis > EFFECT_PERIOD_CALLBACK) {
-        startMillis += EFFECT_PERIOD_CALLBACK;
+    if (currentMillis - startMillis >= EFFECT_PERIOD_CALLBACK) {
+        startMillis = currentMillis;
         transitionCounter++;
         handleEffects();
 
-        if (transitionCounter % FRAMES_PER_SECOND == 0) {
+        if (transitionCounter % FRAMES_PER_SECOND == 10) {
+            DEBUG_PRINTLN(avarageTime / transitionCounter);
             onceASecond();
         }
 
@@ -770,5 +772,16 @@ void loop() {
                 eepromStore.storeHSB(hsb);
             }
         }
+
+        const unsigned long thisDuration = (millis() - currentMillis);
+        if (thisDuration > EFFECT_PERIOD_CALLBACK) {
+            DEBUG_PRINT(F("Spiked : "));
+            DEBUG_PRINT(slot);
+            DEBUG_PRINT(F(" "));
+            DEBUG_PRINTLN(thisDuration);
+        }
+        avarageTime = avarageTime + thisDuration;
+
     }
+
 }

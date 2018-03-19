@@ -53,7 +53,7 @@
 
 // How often we are updating the mqtt state in ms
 #ifndef MQTT_UPDATE_DELAY
-#define MQTT_UPDATE_DELAY                       125
+#define MQTT_UPDATE_DELAY                       5000
 #endif
 
 // MQTT topics : RGBW/00FF1234

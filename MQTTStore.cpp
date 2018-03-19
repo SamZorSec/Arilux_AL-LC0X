@@ -38,15 +38,14 @@ bool MQTTStore::storeHSB(const HSB hsb) {
 }
 
 void MQTTStore::storeState(const HSB& hsb) {
-    DynamicJsonBuffer outgoingJsonPayload;
-    JsonObject& root = outgoingJsonPayload.createObject();
-    JsonObject& jsonHsb = root.createNestedObject("hsb");
-    jsonHsb["h"] = hsb.getHue();
-    jsonHsb["s"] = (hsb.getSaturation() + 2) >> 2;
-    jsonHsb["b"] = (hsb.getBrightness() + 2) >> 2;
-    root["w1"] = (hsb.getWhite1() + 2) >> 2;
-    root["w2"] = (hsb.getWhite2() + 2) >> 2;
-    root.printTo(jsonBuffer, sizeof(jsonBuffer));
+    char jsonBuffer[64];
+    sprintf(jsonBuffer, "{\"hsb\":{\"h\":%d,\"s\":%d,\"b\":%d},\"w1\":%d,\"w2\":%d}", 
+        hsb.getHue(),
+        (hsb.getSaturation() + 2) >> 2,
+        (hsb.getBrightness() + 2) >> 2,
+        (hsb.getWhite1() + 2) >> 2,
+        (hsb.getWhite2() + 2) >> 2
+    );
     publishToMQTT(m_topic, jsonBuffer);
 }
 
