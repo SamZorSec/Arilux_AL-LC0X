@@ -73,7 +73,7 @@
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 
 // Base hostname, used for the MQTT Client ID and OTA hostname
-#ifndef HOSTNAME_TEMPLATE                      
+#ifndef HOSTNAME_TEMPLATE
 #define HOSTNAME_TEMPLATE                       "ARILUX%s"
 #endif
 

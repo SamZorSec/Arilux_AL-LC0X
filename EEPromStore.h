@@ -4,17 +4,17 @@
 
 class EEPromStore : public Store {
 private:
-    const int m_eepromAddress;
-    const unsigned long m_debounceWaitTime;
-    const unsigned long m_commitWaitTime;
-    unsigned long m_startCommitTime;
-    unsigned long m_startDebounceTime;
+    const uint16_t m_eepromAddress;
+    const uint32_t m_debounceWaitTime;
+    const uint32_t m_commitWaitTime;
+    uint32_t m_startCommitTime;
+    uint32_t m_startDebounceTime;
 
     HSB m_lastHSB;
     bool m_hsbChanged;
 
 public:
-    EEPromStore(const int p_eepromAddress, const unsigned long p_debounceWaitTime, const unsigned long p_commitWaitTime);
+    EEPromStore(const uint16_t p_eepromAddress, const uint32_t p_debounceWaitTime, const uint32_t p_commitWaitTime);
 
     /**
          * Get the current value from EEProm
@@ -30,6 +30,7 @@ public:
          */
     virtual bool storeHSB(HSB hsb);
     virtual void initStore(HSB hsb);
+    virtual void commit();
 
 private:
     uint16_t crc16(uint8_t* a, uint16_t length) const;

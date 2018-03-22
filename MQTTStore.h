@@ -7,11 +7,11 @@ class MQTTStore : public Store {
 private:
     const char* m_topic;
     PubSubClient m_mqttClient;
-    const unsigned long m_debounceWaitTime;
-    unsigned long m_startDebounceTime;
+    const uint32_t m_debounceWaitTime;
+    uint32_t m_startDebounceTime;
     HSB m_lastHSB;
 public:
-    MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const unsigned long p_debounceWaitTime);
+    MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const uint32_t p_debounceWaitTime);
 
     /**
          * Get the current value from EEProm

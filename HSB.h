@@ -1,34 +1,35 @@
 #pragma once
 
 #include <math.h>
+#include <stdint.h>
 
 class HSBBuilder;
 
 class HSB {
 private:
-    int m_hue;
-    int m_saturation;
-    int m_brightness;
+    uint16_t m_hue;
+    uint16_t m_saturation;
+    uint16_t m_brightness;
 
-    int m_white1;
-    int m_white2;
+    uint16_t m_white1;
+    uint16_t m_white2;
 public:
-    explicit HSB(int p_hue, int p_saturation, int p_brightness, int p_white1, int p_white2);
+    explicit HSB(const uint16_t p_hue, const uint16_t p_saturation, const uint16_t p_brightness, const uint16_t p_white1, const uint16_t p_white2);
     HSB(const HSB& hsb);
     HSBBuilder toBuilder();
 
-    void getHSB(int colors[]) const;
+    void getHSB(uint16_t colors[]) const;
 
-    int getHue() const;
-    int getSaturation() const;
-    int getBrightness() const;
+    uint16_t getHue() const;
+    uint16_t getSaturation() const;
+    uint16_t getBrightness() const;
 
-    int getWhite1() const;
-    int getWhite2() const;
+    uint16_t getWhite1() const;
+    uint16_t getWhite2() const;
 
-    int getCWhite1() const;
-    int getCWhite2() const;
-    void getConstantRGB(int colors[]) const;
+    uint16_t getCWhite1() const;
+    uint16_t getCWhite2() const;
+    void getConstantRGB(uint16_t colors[]) const;
 
     /**
      * Calculate shortest path from one hue to the next hue
@@ -53,7 +54,7 @@ public:
      *  Fix a hue if it´s outside of the range <0 will get
      *  360 added and >360 will get 360 substracted
      */
-    static int fixHue(int hue) {
+    static uint16_t fixHue(uint16_t hue) {
         return (hue < 0 ? hue + 360 : hue > 360 ? hue - 360 : hue) % 360;
     }
 
@@ -73,12 +74,12 @@ public:
 
 class HSBBuilder {
 private:
-    int m_hue;
-    int m_saturation;
-    int m_brightness;
+    uint16_t m_hue;
+    uint16_t m_saturation;
+    uint16_t m_brightness;
 
-    int m_white1;
-    int m_white2;
+    uint16_t m_white1;
+    uint16_t m_white2;
 public:
     HSBBuilder() :
         m_hue(0),    m_saturation(0), m_brightness(0), m_white1(0), m_white2(0) {
@@ -92,27 +93,27 @@ public:
         m_white2(hsb.getWhite2()) {
     }
 
-    explicit HSBBuilder(int p_hue, int p_saturation, int p_brightness, int p_white1, int p_white2) :
+    explicit HSBBuilder(uint16_t p_hue, uint16_t p_saturation, uint16_t p_brightness, uint16_t p_white1, uint16_t p_white2) :
         m_hue(p_hue), m_saturation(p_saturation), m_brightness(p_brightness), m_white1(p_white1), m_white2(p_white2) {
     }
 
-    HSBBuilder& hue(int p_hue) {
+    HSBBuilder& hue(uint16_t p_hue) {
         m_hue = p_hue;
         return *this;
     }
-    HSBBuilder& saturation(int p_saturation) {
+    HSBBuilder& saturation(uint16_t p_saturation) {
         m_saturation = p_saturation;
         return *this;
     }
-    HSBBuilder& brightness(int p_brightness) {
+    HSBBuilder& brightness(uint16_t p_brightness) {
         m_brightness = p_brightness;
         return *this;
     }
-    HSBBuilder& white1(int p_white1) {
+    HSBBuilder& white1(uint16_t p_white1) {
         m_white1 = p_white1;
         return *this;
     }
-    HSBBuilder& white2(int p_white2) {
+    HSBBuilder& white2(uint16_t p_white2) {
         m_white2 = p_white2;
         return *this;
     }

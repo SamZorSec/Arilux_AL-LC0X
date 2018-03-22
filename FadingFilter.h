@@ -1,6 +1,7 @@
 #pragma once
 #include "Filter.h"
 #include "HSB.h"
+#include <stdint.h>
 
 /**
  * Transitions nicely between two HSB values
@@ -13,7 +14,6 @@ private:
     float m_cptBrightness;
     float m_cptWhite1;
     float m_cptWhite2;
-    bool m_hasModification;
 
 public:
     /**
@@ -22,8 +22,8 @@ public:
      */
     FadingFilter(const HSB _hsb, const float p_alpha);
 
-    virtual HSB handleFilter(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual HSB handleFilter(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& hsb);
 
 };

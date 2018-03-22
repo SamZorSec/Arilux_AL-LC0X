@@ -7,7 +7,7 @@
 extern char jsonBuffer[512];
 
 
-MQTTStore::MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const unsigned long p_debounceWaitTime) : Store(),
+MQTTStore::MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const uint32_t p_debounceWaitTime) : Store(),
     m_topic(p_topic),
     m_mqttClient(p_mqttClient),
     m_debounceWaitTime(p_debounceWaitTime),
@@ -39,13 +39,13 @@ bool MQTTStore::storeHSB(const HSB hsb) {
 
 void MQTTStore::storeState(const HSB& hsb) {
     char jsonBuffer[64];
-    sprintf(jsonBuffer, "{\"hsb\":{\"h\":%d,\"s\":%d,\"b\":%d},\"w1\":%d,\"w2\":%d}", 
-        hsb.getHue(),
-        (hsb.getSaturation() + 2) >> 2,
-        (hsb.getBrightness() + 2) >> 2,
-        (hsb.getWhite1() + 2) >> 2,
-        (hsb.getWhite2() + 2) >> 2
-    );
+    sprintf(jsonBuffer, "{\"hsb\":{\"h\":%d,\"s\":%d,\"b\":%d},\"w1\":%d,\"w2\":%d}",
+            hsb.getHue(),
+            (hsb.getSaturation() + 2) >> 2,
+            (hsb.getBrightness() + 2) >> 2,
+            (hsb.getWhite1() + 2) >> 2,
+            (hsb.getWhite2() + 2) >> 2
+           );
     publishToMQTT(m_topic, jsonBuffer);
 }
 

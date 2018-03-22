@@ -15,9 +15,9 @@ struct HSBEEPromData {
     uint16_t crc;
 };
 
-EEPromStore::EEPromStore(const int p_eepromAddress,
-                         const unsigned long p_debounceWaitTime,
-                         const unsigned long p_commitWaitTime) :
+EEPromStore::EEPromStore(const uint16_t p_eepromAddress,
+                         const uint32_t p_debounceWaitTime,
+                         const uint32_t p_commitWaitTime) :
 
     m_eepromAddress(p_eepromAddress),
     m_debounceWaitTime(p_debounceWaitTime),
@@ -35,9 +35,10 @@ const HSB EEPromStore::getHSB() const {
     } else {
         HSBEEPromData data;
         EEPROM.get(m_eepromAddress, data);
-        const uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(data) - 2);
+        // const uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(data) - 2);
+        const uint16_t crc = 0;
 
-        if (crc == data.crc) {
+        if (crc == data.crc || true) {
             return HSB(data.hue, data.saturation, data.brightness, data.white1, data.white2);
         } else {
             return HSB(0, 0, 50, 0, 0);
@@ -74,7 +75,6 @@ bool EEPromStore::storeHSB(const HSB hsb) {
             };
             data.crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(data) - 2);
             EEPROM.put(m_eepromAddress, data);
-            EEPROM.commit();
             m_hsbChanged = false;
             m_startCommitTime = millis();
             didStore = true;
@@ -90,6 +90,10 @@ void EEPromStore::initStore(HSB hsb) {
     m_hsbChanged = false;
     m_startDebounceTime = millis();
     m_startCommitTime = millis() - m_commitWaitTime;
+}
+
+void EEPromStore::commit() {
+    EEPROM.commit();
 }
 
 uint16_t EEPromStore::crc16(uint8_t* a, uint16_t length) const {

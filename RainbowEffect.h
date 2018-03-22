@@ -10,19 +10,15 @@ private:
 public:
     RainbowEffect();
 
-    virtual HSB handleEffect(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual HSB handleEffect(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& hsb);
 
-    virtual bool hasModification(const unsigned long p_count,
-                                 const unsigned long p_time,
-                                 const HSB& hsb) const;
-
-    virtual bool isCompleted(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual bool isCompleted(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& hsb) const;
 
-    virtual HSB finalState(const unsigned long p_count,
-                           const unsigned long p_time,
+    virtual HSB finalState(const uint32_t p_count,
+                           const uint32_t p_time,
                            const HSB& hsb) const;
 };

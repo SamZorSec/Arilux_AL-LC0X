@@ -8,30 +8,26 @@
  */
 class FlashEffect : public Effect {
 private:
-    const unsigned long m_currentCount;
+    const uint32_t m_currentCount;
     const uint8_t m_period;
     const uint8_t m_pulseWidth;
     const HSB m_hsb;
 
 public:
     FlashEffect(const HSB p_hsb,
-                const unsigned long p_currentCount,
+                const uint32_t p_currentCount,
                 const uint8_t p_period,
                 const uint8_t p_pulseWidth);
 
-    virtual HSB handleEffect(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual HSB handleEffect(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& p_hsb) ;
 
-    virtual bool hasModification(const unsigned long p_count,
-                                 const unsigned long p_time,
-                                 const HSB& p_hsb)  const;
-
-    virtual bool isCompleted(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual bool isCompleted(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& p_hsb)  const;
 
-    virtual HSB finalState(const unsigned long p_count,
-                           const unsigned long p_time,
+    virtual HSB finalState(const uint32_t p_count,
+                           const uint32_t p_time,
                            const HSB& p_hsb)  const;
 };

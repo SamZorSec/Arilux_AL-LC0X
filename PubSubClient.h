@@ -85,8 +85,8 @@ private:
     Client* _client;
     uint8_t buffer[MQTT_MAX_PACKET_SIZE];
     uint16_t nextMsgId;
-    unsigned long lastOutActivity;
-    unsigned long lastInActivity;
+    uint32_t lastOutActivity;
+    uint32_t lastInActivity;
     bool pingOutstanding;
     MQTT_CALLBACK_SIGNATURE;
     uint16_t readPacket(uint8_t*);

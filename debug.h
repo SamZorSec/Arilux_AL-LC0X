@@ -6,8 +6,8 @@
 // in a terminal: telnet arilux.local
 #if defined DEBUG_TELNET || defined DEBUG_SERIAL
 #ifdef DEBUG_TELNET
-      extern WiFiServer telnetServer;
-      extern WiFiClient telnetClient;
+extern WiFiServer telnetServer;
+extern WiFiClient telnetClient;
 
 #define DEBUG_PRINT(x) telnetClient.print(x)
 #define DEBUG_PRINT_WITH_FMT(x, fmt) telnetClient.print(x, fmt)

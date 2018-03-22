@@ -178,7 +178,7 @@ boolean PubSubClient::connect(const char* id, const char* user, const char* pass
             lastInActivity = lastOutActivity = millis();
 
             while (!_client->available()) {
-                unsigned long t = millis();
+                uint32_t t = millis();
 
                 if (t - lastInActivity >= ((int32_t) MQTT_SOCKET_TIMEOUT * 1000UL)) {
                     _state = MQTT_CONNECTION_TIMEOUT;
@@ -313,7 +313,7 @@ uint16_t PubSubClient::readPacket(uint8_t* lengthLength) {
 
 boolean PubSubClient::loop() {
     if (connected()) {
-        unsigned long t = millis();
+        uint32_t t = millis();
 
         if ((t - lastInActivity > MQTT_KEEPALIVE * 1000UL) || (t - lastOutActivity > MQTT_KEEPALIVE * 1000UL)) {
             if (pingOutstanding) {

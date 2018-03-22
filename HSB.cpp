@@ -1,6 +1,10 @@
 #include "HSB.h"
 
-HSB::HSB(int p_hue, int p_saturation, int p_brightness, int p_white1, int p_white2)
+HSB::HSB(const uint16_t p_hue,
+         const uint16_t p_saturation,
+         const uint16_t p_brightness,
+         const uint16_t p_white1,
+         const uint16_t p_white2)
     : m_hue(p_hue % 360),
       m_saturation(p_saturation),
       m_brightness(p_brightness),
@@ -20,44 +24,44 @@ HSBBuilder HSB::toBuilder() {
     return HSBBuilder(m_hue, m_saturation, m_brightness, m_white1, m_white2);
 }
 
-void HSB::getHSB(int colors[]) const {
+void HSB::getHSB(uint16_t colors[]) const {
     colors[0] = m_hue;
     colors[1] = m_saturation;
     colors[2] = m_brightness;
 }
 
-int HSB::getHue() const {
+uint16_t HSB::getHue() const {
     return m_hue;
 }
 
-int HSB::getSaturation() const {
+uint16_t HSB::getSaturation() const {
     return m_saturation;
 }
 
-int HSB::getBrightness() const {
+uint16_t HSB::getBrightness() const {
     return m_brightness;
 }
 
-int HSB::getWhite1() const {
+uint16_t HSB::getWhite1() const {
     return m_white1;
 }
 
-int HSB::getWhite2() const {
+uint16_t HSB::getWhite2() const {
     return m_white1;
 }
 
-int HSB::getCWhite1() const {
+uint16_t HSB::getCWhite1() const {
     return m_white1;
 }
 
-int HSB::getCWhite2() const {
+uint16_t HSB::getCWhite2() const {
     return m_white2;
 }
 
-void HSB::getConstantRGB(int colors[]) const {
-    unsigned long r_temp, g_temp, b_temp;
-    int inverse_sat = 1020 - m_saturation;
-    int index_mod = m_hue % 120;
+void HSB::getConstantRGB(uint16_t colors[]) const {
+    uint32_t r_temp, g_temp, b_temp;
+    uint16_t inverse_sat = 1020 - m_saturation;
+    uint16_t index_mod = m_hue % 120;
 
     if (m_hue < 120) {
         r_temp = 120 - index_mod;

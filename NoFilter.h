@@ -13,8 +13,8 @@ class NoFilter : public Filter {
 public:
     NoFilter();
 
-    virtual HSB handleFilter(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual HSB handleFilter(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& p_hsb);
 
 };

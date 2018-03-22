@@ -1,6 +1,6 @@
 #pragma once
 #include "HSB.h"
-
+#include <stdint.h>
 /**
  * Base effect class
  */
@@ -9,7 +9,7 @@ public:
     /**
        * generate a new HSB color based on count or time or current HSB color
        */
-    virtual HSB handleFilter(const unsigned long p_count,
-                             const unsigned long p_time,
+    virtual HSB handleFilter(const uint32_t p_count,
+                             const uint32_t p_time,
                              const HSB& p_hsb);
 };

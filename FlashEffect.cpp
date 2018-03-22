@@ -1,7 +1,7 @@
 #include "FlashEffect.h"
 
 FlashEffect::FlashEffect(const HSB p_hsb,
-                         const unsigned long p_currentCount,
+                         const uint32_t p_currentCount,
                          const uint8_t p_period,
                          const uint8_t p_pulseWidth) :
     Effect(),
@@ -11,10 +11,10 @@ FlashEffect::FlashEffect(const HSB p_hsb,
     m_pulseWidth(p_pulseWidth) {
 }
 
-HSB FlashEffect::handleEffect(const unsigned long p_count,
-                              const unsigned long p_time,
+HSB FlashEffect::handleEffect(const uint32_t p_count,
+                              const uint32_t p_time,
                               const HSB& p_hsb) {
-    const unsigned long cc = p_count % m_period;
+    const uint32_t cc = p_count % m_period;
 
     if (cc < m_pulseWidth) {
         return m_hsb;
@@ -23,26 +23,14 @@ HSB FlashEffect::handleEffect(const unsigned long p_count,
     }
 }
 
-bool FlashEffect::hasModification(const unsigned long p_count,
-                                  const unsigned long p_time,
-                                  const HSB& p_hsb) const {
-    const unsigned long cc = p_count % m_period;
-
-    if (cc == 0 || (cc - m_pulseWidth) == 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool FlashEffect::isCompleted(const unsigned long p_count,
-                              const unsigned long p_time,
+bool FlashEffect::isCompleted(const uint32_t p_count,
+                              const uint32_t p_time,
                               const HSB& p_hsb) const {
     return false;
 }
 
-HSB FlashEffect::finalState(const unsigned long p_count,
-                            const unsigned long p_time,
+HSB FlashEffect::finalState(const uint32_t p_count,
+                            const uint32_t p_time,
                             const HSB& p_hsb) const {
     return p_hsb;
 }

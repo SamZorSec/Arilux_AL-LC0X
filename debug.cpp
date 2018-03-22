@@ -18,6 +18,7 @@ void handleTelnet(void) {
             if (telnetClient) {
                 telnetClient.stop();
             }
+
             telnetClient = telnetServer.available();
         } else {
             telnetServer.available().stop();
