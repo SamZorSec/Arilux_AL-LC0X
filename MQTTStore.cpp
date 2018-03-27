@@ -40,11 +40,11 @@ bool MQTTStore::storeHSB(const HSB hsb) {
 void MQTTStore::storeState(const HSB& hsb) {
     char jsonBuffer[64];
     sprintf(jsonBuffer, "{\"hsb\":{\"h\":%d,\"s\":%d,\"b\":%d},\"w1\":%d,\"w2\":%d}",
-            hsb.getHue(),
+            hsb.hue(),
             (hsb.getSaturation() + 2) >> 2,
-            (hsb.getBrightness() + 2) >> 2,
-            (hsb.getWhite1() + 2) >> 2,
-            (hsb.getWhite2() + 2) >> 2
+            (hsb.brightness() + 2) >> 2,
+            (hsb.white1() + 2) >> 2,
+            (hsb.white2() + 2) >> 2
            );
     publishToMQTT(m_topic, jsonBuffer);
 }
@@ -52,9 +52,6 @@ void MQTTStore::storeState(const HSB& hsb) {
 void MQTTStore::publishToMQTT(const char* topic, const char* payload) {
     if (m_mqttClient.publish(topic, payload, true)) {
         DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
-        DEBUG_PRINT(topic);
-        DEBUG_PRINT(F(". Payload: "));
-        DEBUG_PRINTLN(payload);
     } else {
         DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
     }

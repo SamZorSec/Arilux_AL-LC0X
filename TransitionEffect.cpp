@@ -32,12 +32,12 @@ HSB TransitionEffect::calcHSB(const uint32_t p_count,
                               const uint32_t p_time,
                               const HSB& _hsb) const {
     const uint16_t percent = ((p_time - m_startMillis) * 1000) / m_totalMillis;
-    const uint16_t m_hsbsPath = HSB::hueShortestPath(_hsb.getHue(), m_hsb.getHue());
-    const uint16_t newHue = map(percent, 0, 1000, _hsb.getHue(), m_hsbsPath);
+    const uint16_t m_hsbsPath = HSB::hueShortestPath(_hsb.hue(), m_hsb.hue());
+    const uint16_t newHue = map(percent, 0, 1000, _hsb.hue(), m_hsbsPath);
     return HSB(
                HSB::fixHue(newHue),
                map(percent, 0, 1000, _hsb.getSaturation(), m_hsb.getSaturation()),
-               map(percent, 0, 1000, _hsb.getBrightness(), m_hsb.getBrightness()),
-               map(percent, 0, 1000, _hsb.getWhite1(), m_hsb.getWhite1()),
-               map(percent, 0, 1000, _hsb.getWhite2(), m_hsb.getWhite2()));
+               map(percent, 0, 1000, _hsb.brightness(), m_hsb.brightness()),
+               map(percent, 0, 1000, _hsb.white1(), m_hsb.white1()),
+               map(percent, 0, 1000, _hsb.white2(), m_hsb.white2()));
 }

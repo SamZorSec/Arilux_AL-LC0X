@@ -67,11 +67,11 @@ bool EEPromStore::storeHSB(const HSB hsb) {
             millis() - m_startDebounceTime > m_debounceWaitTime &&
             millis() - m_startCommitTime > m_commitWaitTime) {
             HSBEEPromData data = {
-                hsb.getHue(),
+                hsb.hue(),
                 hsb.getSaturation(),
-                hsb.getBrightness(),
-                hsb.getWhite1(),
-                hsb.getWhite2()
+                hsb.brightness(),
+                hsb.white1(),
+                hsb.white2()
             };
             data.crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(data) - 2);
             EEPROM.put(m_eepromAddress, data);

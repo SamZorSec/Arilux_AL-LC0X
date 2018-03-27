@@ -81,12 +81,17 @@
 // #define DEBUG_TELNET
 // #define DEBUG_SERIAL
 
+// When set we will pause for any OTA messages before we startup, no commands are handled in this time
+// #define PAUSE_FOR_OTA
+
 #define FILTER                      "filter"
 #define FNAME                       "name"
 #define FILTER_NONE                 "none"
 #define FILTER_FADING               "fading"
 #define FALPHA                      "alpha"
 #define FILTER_FADING_ALPHA         0.04
+
+#define RESTART                  "restart"
 
 #define EFFECT                  "effect"
 #define EFFECT_NONE             "none"
@@ -100,3 +105,6 @@
 #define STATE                       "state"
 #define SON                         "ON"
 #define SOFF                        "OFF"
+
+#define BRIGHTNESS_INCREASE     5
+#define BRIGHTNESS_DECREASE     -5

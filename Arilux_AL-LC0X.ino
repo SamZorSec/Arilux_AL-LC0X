@@ -40,6 +40,7 @@
 // Filters
 #include "NoFilter.h"
 #include "FadingFilter.h"
+#include "BrightnessFilter.h"
 
 // Number of ms per effect transistion, 20ms == 50 Hz
 #define FRAMES_PER_SECOND        50
@@ -62,10 +63,12 @@ char jsonBuffer[512];
 volatile uint32_t transitionCounter = 0;
 volatile uint32_t startMillis = 0;
 volatile uint32_t currentMqttReconnect = 0;
+volatile bool arduinoOTAInProgress = false;
 HSB workingHsb(0, 0, 255, 0, 0); // Holds the current working HSB color
 HSB currentHsb(0, 0, 255, 0, 0); // Hold´s the color of the last color generated and send to teh Arilux device
 Effect* currentEffect = dynamic_cast<Effect*>(new NoEffect());
 Filter* currentFilter = dynamic_cast<Filter*>(new NoFilter());
+BrightnessFilter brightnessFilter(100);
 
 const HSB hsbRed(0, 255, 255, 0, 0);
 const HSB hsbGreen(120, 255, 255, 0, 0);
@@ -176,13 +179,13 @@ HSB getNewColorState(const HSB& hsb, const JsonObject& root) {
     if (root.containsKey("w1")) {
         white1 = constrain(root["w1"], 0, 255)  << 2;
     } else {
-        white1 = hsb.getWhite1();
+        white1 = hsb.white1();
     }
 
     if (root.containsKey("w2")) {
         white1 = constrain(root["w2"], 0, 255)  << 2;
     } else {
-        white2 = hsb.getWhite2();
+        white2 = hsb.white2();
     }
 
     return HSB(colors[0], colors[1], colors[2], white1, white2);
@@ -254,6 +257,11 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         }
 
         // Load transitions
+        if (root.containsKey(RESTART)) {
+            ESP.restart();
+        }
+
+        // Load transitions
         if (root.containsKey(EFFECT)) {
             DEBUG_PRINT(F("Transition :"));
             const Effect* thisTransition = currentEffect;
@@ -311,21 +319,26 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         // So we load the values from eeProm but we ensure we have a brightness > 0
         if (root.containsKey(STATE)) {
             const char* state = root[STATE];
+            HSB colorState = getNewColorState(workingHsb, root);
 
             if (strcmp(state, SON) == 0) {
-                const HSB storedHSB = eepromStore.getHSB();
-                const uint16_t brightness = storedHSB.getBrightness();
-                const HSB mergedHSB = getNewColorState(workingHsb, root);
-                workingHsb = HSB(mergedHSB.getHue(), mergedHSB.getSaturation(), brightness, mergedHSB.getWhite1(), mergedHSB.getWhite2());
+                workingHsb = getOnState(colorState);
             } else if (strcmp(state, SOFF) == 0) {
-                // Turn off all effects when going into off state
                 delete currentEffect;
                 currentEffect = dynamic_cast<Effect*>(new NoEffect());
-                const HSB sHsb = getNewColorState(workingHsb, root);
-                workingHsb = HSB(sHsb.getHue(), sHsb.getSaturation(), 0, sHsb.getWhite1(), workingHsb.getWhite2());
+                workingHsb = getOffState(colorState);
             }
         }
     }
+}
+
+HSB getOffState(const HSB& hsb) {
+    return hsb.toBuilder().white1(0).white2(0).brightness(0).build();
+}
+
+HSB getOnState(const HSB& hsb) {
+    const HSB storedHSB = eepromStore.getHSB();
+    return hsb.toBuilder().white1(storedHSB.white1()).white2(storedHSB.white2()).brightness(storedHSB.brightness()).build();
 }
 
 void connectMQTT(void) {
@@ -384,6 +397,7 @@ void setupWiFi() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     wifiClient.setNoDelay(true);
+
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
@@ -506,52 +520,73 @@ void handleRFRemote(void) {
 
         switch (value) {
             case ARILUX_RF_CODE_KEY_BRIGHT_PLUS:
+                brightnessFilter
+                .brightness(constrain(brightnessFilter.brightness() + BRIGHTNESS_INCREASE, 0, 200));
                 break;
 
             case ARILUX_RF_CODE_KEY_BRIGHT_MINUS:
+                brightnessFilter
+                .brightness(constrain(brightnessFilter.brightness() + BRIGHTNESS_DECREASE, 0, 200));
                 break;
 
             case ARILUX_RF_CODE_KEY_OFF:
+                delete currentEffect;
+                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+                workingHsb = getOffState(workingHsb);
                 break;
 
             case ARILUX_RF_CODE_KEY_ON:
+                delete currentEffect;
+                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+                workingHsb = getOnState(workingHsb);
                 break;
 
             case ARILUX_RF_CODE_KEY_RED:
-                workingHsb = HSB(0, 255 * 4, workingHsb.getBrightness(), 0, 0);
+                workingHsb = HSB(0, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_GREEN:
+                workingHsb = HSB(120, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_BLUE:
+                workingHsb = HSB(240, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_WHITE:
+                workingHsb = HSB(0, 0, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_ORANGE:
+                workingHsb = HSB(25, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_LTGRN:
+                workingHsb = HSB(120, 100 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_LTBLUE:
+                workingHsb = HSB(240, 100 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_AMBER:
+                workingHsb = HSB(49, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_CYAN:
+                workingHsb = HSB(180, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_PURPLE:
+                workingHsb = HSB(300, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_YELLOW:
+                workingHsb = HSB(60, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_PINK:
+                workingHsb = HSB(350, 64 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
             case ARILUX_RF_CODE_KEY_TOGGLE:
@@ -624,15 +659,14 @@ void setup() {
 #endif
     // Init the Arilux LED controller
     arilux.init();
-
     // Get current EEPROM value
     EEPROM.begin(16); // TODO make some way to get datasize from objects using eeprom
     workingHsb = eepromStore.getHSB();
     eepromStore.initStore(workingHsb);
-
     // Set hostname and start OTA
     ArduinoOTA.setHostname(mqttClientID);
     ArduinoOTA.onStart([]() {
+        arduinoOTAInProgress = true;
         DEBUG_PRINTLN(F("OTA Beginning!"));
         FlashEffectSuccess(true);
     });
@@ -661,13 +695,13 @@ void setup() {
         yield();
         uint16_t colors[3];
         HSB hsb(i, 255 * 4, 255, 0, 0);
-        hsb.getConstantRGB(colors);
+        hsb.constantRGB(colors);
         arilux.setAll(colors[0], colors[1], colors[2], 0, 0);
         ArduinoOTA.handle();
         yield();
         delay(10);
         i++;
-    } while (i < 360);
+    } while (i < 360 * 2 || arduinoOTAInProgress);
 
 #endif
     mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
@@ -679,26 +713,25 @@ void setup() {
 
 void handleEffects() {
     const uint32_t currentMillies = millis();
-
     const HSB effectedHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
     currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, effectedHsb);
-
+    currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     uint16_t colors[3];
-    currentHsb.getConstantRGB(colors);
-    arilux.setAll(colors[0], colors[1], colors[2], currentHsb.getCWhite1(), currentHsb.getCWhite2());
+    currentHsb.constantRGB(colors);
+    arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
 }
 
 
 void onceASecond() {
 #ifdef DEBUG_SERIAL || DEBUG_TELNET
     uint16_t colors[3];
-    currentHsb.getConstantRGB(colors);
+    currentHsb.constantRGB(colors);
     lastRefreshSecondTime += REFRESH_INTERVAL;
     char str[128];
     sprintf(str, "rgb %d,%d,%d", colors[0], colors[1], colors[2]);
     DEBUG_PRINTLN(str);
     currentHsb.getHSB(colors);
-    sprintf(str, "hsb %d,%d,%d w %d,%d", colors[0], colors[1], colors[2], currentHsb.getWhite1(), currentHsb.getWhite2());
+    sprintf(str, "hsb %d,%d,%d w %d,%d", colors[0], colors[1], colors[2], currentHsb.white1(), currentHsb.white2());
     DEBUG_PRINTLN(str);
 #endif
 }
@@ -763,10 +796,10 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
-            if (workingHsb.getBrightness() == 0) {
+            if (workingHsb.brightness() == 0) {
                 const HSB storedHsb = eepromStore.getHSB();
                 eepromStore.storeHSB(
-                    workingHsb.toBuilder().brightness(storedHsb.getBrightness()).build()
+                    workingHsb.toBuilder().brightness(storedHsb.brightness()).build()
                 );
             } else {
                 eepromStore.storeHSB(workingHsb);
@@ -774,14 +807,14 @@ void loop() {
         }
 
         const uint32_t thisDuration = (millis() - currentMillis);
+
         if (thisDuration > EFFECT_PERIOD_CALLBACK) {
             DEBUG_PRINT(F("Spiked : "));
             DEBUG_PRINT(slot);
             DEBUG_PRINT(F(" "));
             DEBUG_PRINTLN(thisDuration);
         }
+
         avarageTime = avarageTime + thisDuration;
-
     }
-
 }

@@ -20,7 +20,7 @@ HSB::HSB(const HSB& p_hsb)
       m_white2(p_hsb.m_white2) {
 }
 
-HSBBuilder HSB::toBuilder() {
+HSBBuilder HSB::toBuilder() const {
     return HSBBuilder(m_hue, m_saturation, m_brightness, m_white1, m_white2);
 }
 
@@ -30,7 +30,7 @@ void HSB::getHSB(uint16_t colors[]) const {
     colors[2] = m_brightness;
 }
 
-uint16_t HSB::getHue() const {
+uint16_t HSB::hue() const {
     return m_hue;
 }
 
@@ -38,27 +38,27 @@ uint16_t HSB::getSaturation() const {
     return m_saturation;
 }
 
-uint16_t HSB::getBrightness() const {
+uint16_t HSB::brightness() const {
     return m_brightness;
 }
 
-uint16_t HSB::getWhite1() const {
+uint16_t HSB::white1() const {
     return m_white1;
 }
 
-uint16_t HSB::getWhite2() const {
+uint16_t HSB::white2() const {
     return m_white1;
 }
 
-uint16_t HSB::getCWhite1() const {
+uint16_t HSB::cwhite1() const {
     return m_white1;
 }
 
-uint16_t HSB::getCWhite2() const {
+uint16_t HSB::cwhite2() const {
     return m_white2;
 }
 
-void HSB::getConstantRGB(uint16_t colors[]) const {
+void HSB::constantRGB(uint16_t colors[]) const {
     uint32_t r_temp, g_temp, b_temp;
     uint16_t inverse_sat = 1020 - m_saturation;
     uint16_t index_mod = m_hue % 120;

@@ -16,20 +16,20 @@ private:
 public:
     explicit HSB(const uint16_t p_hue, const uint16_t p_saturation, const uint16_t p_brightness, const uint16_t p_white1, const uint16_t p_white2);
     HSB(const HSB& hsb);
-    HSBBuilder toBuilder();
+    HSBBuilder toBuilder() const;
 
     void getHSB(uint16_t colors[]) const;
 
-    uint16_t getHue() const;
+    uint16_t hue() const;
     uint16_t getSaturation() const;
-    uint16_t getBrightness() const;
+    uint16_t brightness() const;
 
-    uint16_t getWhite1() const;
-    uint16_t getWhite2() const;
+    uint16_t white1() const;
+    uint16_t white2() const;
 
-    uint16_t getCWhite1() const;
-    uint16_t getCWhite2() const;
-    void getConstantRGB(uint16_t colors[]) const;
+    uint16_t cwhite1() const;
+    uint16_t cwhite2() const;
+    void constantRGB(uint16_t colors[]) const;
 
     /**
      * Calculate shortest path from one hue to the next hue
@@ -86,11 +86,11 @@ public:
     }
 
     HSBBuilder(const HSB& hsb) :
-        m_hue(hsb.getBrightness()),
+        m_hue(hsb.brightness()),
         m_saturation(hsb.getSaturation()),
-        m_brightness(hsb.getBrightness()),
-        m_white1(hsb.getWhite1()),
-        m_white2(hsb.getWhite2()) {
+        m_brightness(hsb.brightness()),
+        m_white1(hsb.white1()),
+        m_white2(hsb.white2()) {
     }
 
     explicit HSBBuilder(uint16_t p_hue, uint16_t p_saturation, uint16_t p_brightness, uint16_t p_white1, uint16_t p_white2) :
