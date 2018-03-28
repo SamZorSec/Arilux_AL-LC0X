@@ -4,26 +4,36 @@
 
 This is an alternative version of the [Alternative firmware] for Arilux LED Controllers with a few modifications and enhancements.
 
-Differences are:
+Differences are between the original Arilux alternative firmware:
 - Only support for HSB
 - Only support for JSON mqtt messages
+- Almost complete rewrite of the code
 
 Enhancements are:
 - Fade from any color to any other color smoothly without apparent brightness changes
-- ON/OFF states will correctly fade and remember the last color
+- ON/OFF states will correctly fade and remember the last color (in EEPROM)
 - Easy to make new effects, See Effect.h and some of the including Effects
-- You can send partial updates for teh color, for example just the hue, brightness or white values
+- You can send partial updates for the color, for example just the hue, brightness or white values
 - After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch)
+- Change: Remote control Speed + and - will change through colors
 
 Current effects are:
 - Rainbow: Will keep fading over the rainbow of colors
-- Transition: Change from color1 to color2 over a period of time
+- Transition: Change from color1 to color2 over a period of time 
 - Flash:  Flash between two colors or betwene black and the current color
 - Strobe: Strobe between two colors, period can be given
 
 Old functionality to be re-added
-- Remote control
+- IR Remote control
 
+## Todo
+
+ - IR Remote, need to add some better interface for this instead of separate routines for each remote control device
+ - Configure using some form of web based interface, eg, no need to configure for each device using the setup.h file
+ - ASync TCP / MQTT client
+ - Store the current active Filter in EEPROM/MQTT (properly need to create some configure object)
+ - CHeck if we can use a better way of debugging lines
+ 
 Tested with the [ESP8266 Wi-Fi chip][esp8266].
 
 
@@ -125,6 +135,7 @@ The LED controller can be controlled with the RF remote included with the Arilux
 ### MQTT
 
 ## Filter vs Effect
+What.s the difference in this firmware
 
 ### Effect
 An effect will set the color, effects are usually based on timings like flashing leds, strobe or
@@ -283,6 +294,16 @@ can be active at a time. NOTE: List of filter is on my todo..
    mosquitto_pub -u admin -P admin1234 -t "RGBW/001F162E/json/set" -m '{"effect":{"name":fade,"duration":10000,"hsb":{"h":240}}}'
    ```
 
+   ### Other things you can do
+   Restart the device from mqtt
+   ```
+     "restart": 1
+   ```
+   ### Example
+   ```
+   # Fade to 0 in 10 seconds
+   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"restart":1}'
+   ```
 
 #### Last Will and Testament
 
@@ -296,12 +317,11 @@ This allows for instant setup and use of your device without requiring any manua
 If you are using the MQTT JSON mode, the `light.mqtt_json` platform will be loaded. Otherwise, the `light.mqtt` platform will load. `light.mqtt_json` is required for full functionality.
 There are a few one time steps that you need to take to get this working.
 
-1. Install the [ArduinoJson] library.
-2. Add `discovery: true` to your `mqtt` configuration in Home Assistant, if it isn't there already.
-3. Uncomment the `HOME_ASSISTANT_MQTT_DISCOVERY` and `HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX` definitions in your `config.h` file.
+1. Add `discovery: true` to your `mqtt` configuration in Home Assistant, if it isn't there already.
+2. Uncomment the `HOME_ASSISTANT_MQTT_DISCOVERY` definitions in your `config.h` file.
   - You can change the discovery prefix (default is `homeassistant`) by changing `HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX`.
     Make sure this matches your Home Assistant MQTT configuration.
-4. Upload the firmware once more after making the previous changes.
+3. Upload the firmware once more after making the previous changes.
 
 From now on your device will announce itself to Home Assistant with all of the proper configuration information.
 
@@ -326,12 +346,6 @@ light:
     rgb_command_topic: 'rgb(w/ww)/<chipid>/color/set'
 ```
 
-## Todo
-### IR remote
- - Not available yet
-
-### RF remote
- - Not available yet
 
 ## Licence
 > THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR

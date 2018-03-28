@@ -5,15 +5,9 @@
 */
 #include <memory>
 
-#include "config.h"
-#include "debug.h"
 #include <ESP8266WiFi.h>  // https://github.com/esp8266/Arduino
 
-// Included in code so we can increase packet size
-// This is something that´s not possible with Arduino IDE
-// Currently set to v2.6
-#define MQTT_MAX_PACKET_SIZE 256
-#include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
+#include "config.h"
 
 #ifdef IR_REMOTE
 #include <IRremoteESP8266.h> // https://github.com/markszabo/IRremoteESP8266
@@ -22,16 +16,23 @@
 #include <RCSwitch.h> // https://github.com/sui77/rc-switch
 #endif
 
-#include "Store.h"
-#include "MQTTStore.h"
-#include <EEPROM.h>
-#include "EEPromStore.h"
-
 #include <ArduinoOTA.h>
 #include <ArduinoJson.h>
+#include <EEPROM.h>
+
+
+#include "debug.h"
 
 #include "Arilux.h"
 #include "HSB.h"
+
+// Included in code so we can increase packet size
+// This is something that´s not possible with Arduino IDE, currently using v2.6
+#define MQTT_MAX_PACKET_SIZE 256
+#include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
+
+#include "EEPromStore.h"
+#include "MQTTStore.h"
 
 // Effects
 #include "NoEffect.h"
@@ -62,19 +63,34 @@ char mqttCommandTopic[44];
 char friendlyName[48];
 char jsonBuffer[512];
 
+// Counter that keeps counting up, used for filters, effects or other means to keep EFFECT_PERIOD_CALLBACK
+// of transitions
 volatile uint32_t transitionCounter = 0;
-volatile uint32_t startMillis = 0;
+
+// Keep track when the last time we ran the effect state changes
+volatile uint32_t effectPeriodStartMillis = 0;
+
+// Keep track when the last time we tried to reconnect to mqtt
 volatile uint32_t currentMqttReconnect = 0;
+
+// True when arduinoOTAInProgress is in progress, during start
+// we use this to not move to the main event loop
 volatile bool arduinoOTAInProgress = false;
-HSB workingHsb(0, 0, 255, 0, 0); // Holds the current working HSB color
-HSB currentHsb(0, 0, 255, 0, 0); // Hold´s the color of the last color generated and send to teh Arilux device
+
+// Holds the current working HSB color
+HSB workingHsb(0, 0, 255, 0, 0); 
+
+// Hold´s the color of the last color generated and send to teh Arilux device
+HSB currentHsb(0, 0, 255, 0, 0); 
+
+// Pointers to current effect and filter
 std::unique_ptr<Effect> currentEffect(new NoEffect());
-std::unique_ptr<Filter> currentFilter(new NoFilter());
+std::unique_ptr<Filter> currentFilter(new FadingFilter());
+
+// Filter to control overall brightness
 BrightnessFilter brightnessFilter(100);
 
-const HSB hsbRed(0, 255, 255, 0, 0);
-const HSB hsbGreen(120, 255, 255, 0, 0);
-
+// Arilux device interface
 Arilux arilux;
 
 #ifdef RF_REMOTE
@@ -87,11 +103,14 @@ WiFiClient wifiClient;
 #endif
 PubSubClient mqttClient(wifiClient);
 
+// Eeprom storage
 EEPromStore eepromStore(0, 5000, 300000);
+
+// MQTT Storage (state handler)
 MQTTStore mqttStore(mqttStateTopic, mqttClient, MQTT_UPDATE_DELAY);
 
-StaticJsonBuffer<2> emptyJsonBuffer;
-const JsonObject& emptyJsonRoot = emptyJsonBuffer.createObject();
+// emotyJSON root, to make a few code flows easer
+const JsonObject& emptyJsonRoot = StaticJsonBuffer<2>().createObject();
 
 ///////////////////////////////////////////////////////////////////////////
 //  SSL/TLS
@@ -139,14 +158,6 @@ void publishToMQTT(const char* topic, const char* payload) {
     }
 }
 
-void FlashEffectSuccess(bool success) {
-    if (success) {
-        //    workingHsb = hsbGreen;
-    } else {
-        //    workingHsb = hsbRed;
-    }
-}
-
 ///////////////////////////////////////////////////////////////////////////
 //  MQTT
 ///////////////////////////////////////////////////////////////////////////
@@ -161,35 +172,28 @@ HSB getNewColorState(const HSB& hsb, const JsonObject& root) {
     uint16_t white1, white2;
     uint16_t colors[3];
     hsb.getHSB(colors);
-
     if (root.containsKey("hsb")) {
         const JsonObject& hsbRoot = root["hsb"];
-
         if (hsbRoot.containsKey("h")) {
             colors[0] = constrain(hsbRoot["h"], 0, 359);
         }
-
         if (hsbRoot.containsKey("s")) {
             colors[1] = constrain(hsbRoot["s"], 0, 255) << 2;
         }
-
         if (hsbRoot.containsKey("b")) {
             colors[2] = constrain(hsbRoot["b"], 0, 255) << 2;
         }
     }
-
     if (root.containsKey("w1")) {
         white1 = constrain(root["w1"], 0, 255)  << 2;
     } else {
         white1 = hsb.white1();
     }
-
     if (root.containsKey("w2")) {
         white1 = constrain(root["w2"], 0, 255)  << 2;
     } else {
         white2 = hsb.white2();
     }
-
     return HSB(colors[0], colors[1], colors[2], white1, white2);
 }
 
@@ -368,7 +372,6 @@ void connectMQTT(void) {
                 //DEBUG_PRINTLN(MQTT_PASS);
                 DEBUG_PRINT(F("Broker: "));
                 DEBUG_PRINTLN(MQTT_SERVER);
-                FlashEffectSuccess(false);
             }
         }
     }
@@ -565,7 +568,6 @@ void setup() {
     ArduinoOTA.onStart([]() {
         arduinoOTAInProgress = true;
         DEBUG_PRINTLN(F("OTA Beginning!"));
-        FlashEffectSuccess(true);
     });
     ArduinoOTA.onError([](ota_error_t error) {
         DEBUG_PRINT("ArduinoOTA Error[");
@@ -604,7 +606,7 @@ void setup() {
     mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
     mqttClient.setCallback(callback);
     connectMQTT();
-    startMillis = millis();
+    effectPeriodStartMillis = millis();
 }
 
 
@@ -638,8 +640,8 @@ float avarageTime = 0.0;
 void loop() {
     const uint32_t currentMillis = millis();
 
-    if (currentMillis - startMillis >= EFFECT_PERIOD_CALLBACK) {
-        startMillis += EFFECT_PERIOD_CALLBACK;
+    if (currentMillis - effectPeriodStartMillis >= EFFECT_PERIOD_CALLBACK) {
+        effectPeriodStartMillis += EFFECT_PERIOD_CALLBACK;
         transitionCounter++;
         handleEffects();
 

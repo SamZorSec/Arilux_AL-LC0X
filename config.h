@@ -74,7 +74,9 @@
 
 // Enable Home Assistant MQTT discovery support. Requires ArduinoJSON library to be installed.
 #define HOME_ASSISTANT_MQTT_DISCOVERY
+#ifndef HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
+#endif
 
 // Base hostname, used for the MQTT Client ID and OTA hostname
 #ifndef HOSTNAME_TEMPLATE
