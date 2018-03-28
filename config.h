@@ -19,6 +19,10 @@
 
 // #define IR_REMOTE
 // #define RF_REMOTE
+// Base code from remote control that will be added to the key code
+#ifndef REMOTE_CODE
+#define REMOTE_CODE                            0xABCD00
+#endif
 
 // Wi-Fi
 #ifndef WIFI_SSID

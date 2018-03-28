@@ -3,6 +3,8 @@
   See the README at https://github.com/mertenats/Arilux_AL-LC0X for more information.
   Licensed under the MIT license.
 */
+#include <memory>
+
 #include "config.h"
 #include "debug.h"
 #include <ESP8266WiFi.h>  // https://github.com/esp8266/Arduino
@@ -66,8 +68,8 @@ volatile uint32_t currentMqttReconnect = 0;
 volatile bool arduinoOTAInProgress = false;
 HSB workingHsb(0, 0, 255, 0, 0); // Holds the current working HSB color
 HSB currentHsb(0, 0, 255, 0, 0); // Hold´s the color of the last color generated and send to teh Arilux device
-Effect* currentEffect = dynamic_cast<Effect*>(new NoEffect());
-Filter* currentFilter = dynamic_cast<Filter*>(new NoFilter());
+std::unique_ptr<Effect> currentEffect(new NoEffect());
+std::unique_ptr<Filter> currentFilter(new NoFilter());
 BrightnessFilter brightnessFilter(100);
 
 const HSB hsbRed(0, 255, 255, 0, 0);
@@ -220,12 +222,11 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             const bool isFilterNameOnly = root[FILTER].is<char*>();
             const char* filterName = isFilterNameOnly ? root[FILTER] : root[FILTER][FNAME];
             const JsonObject& filterRoot = isFilterNameOnly ? emptyJsonRoot : root[FILTER];
-            const Filter* thisFilter = currentFilter;
 
             // Set Filters
             if (strcmp(filterName, FILTER_NONE) == 0) {
                 DEBUG_PRINT(F(" " FILTER_NONE));
-                currentFilter = dynamic_cast<Filter*>(new NoFilter());
+                currentFilter.reset(new NoFilter());
             } else if (strcmp(filterName, FILTER_FADING) == 0) {
                 DEBUG_PRINT(F(" " FILTER_FADING " "));
 
@@ -234,23 +235,19 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
                     DEBUG_PRINT(alpha);
 
                     if (alpha > 0.001 && alpha < 1.0) {
-                        currentFilter = dynamic_cast<Filter*>(new FadingFilter(workingHsb, alpha));
+                        currentFilter.reset(new FadingFilter(workingHsb, alpha));
                     } else {
                         DEBUG_PRINT(F(FALPHA " must be > 0.001 && < 1.0"));
                     }
                 } else {
                     DEBUG_PRINT(F(" "));
                     DEBUG_PRINT(FILTER_FADING_ALPHA);
-                    currentFilter = dynamic_cast<Filter*>(new FadingFilter(workingHsb, FILTER_FADING_ALPHA));
+                    currentFilter.reset(new FadingFilter(workingHsb, FILTER_FADING_ALPHA));
                 }
             } else {
                 DEBUG_PRINT(F(" "));
                 DEBUG_PRINT(filterName);
                 DEBUG_PRINT(F(" not found."));
-            }
-
-            if (currentFilter != thisFilter) {
-                delete thisFilter;
             }
 
             DEBUG_PRINTLN(F(" done"));
@@ -264,7 +261,6 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         // Load transitions
         if (root.containsKey(EFFECT)) {
             DEBUG_PRINT(F("Transition :"));
-            const Effect* thisTransition = currentEffect;
             const JsonObject& transitionRoot = root[EFFECT];
 
             if (!transitionRoot.containsKey(TNAME)) {
@@ -279,35 +275,31 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
 
             if (strcmp(transitionName, EFFECT_NONE) == 0) {
                 DEBUG_PRINT(F(" " EFFECT_NONE));
-                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+                currentEffect.reset(new NoEffect());
             } else if (strcmp(transitionName, EFFECT_FLASH) == 0) {
                 DEBUG_PRINT(F(" " EFFECT_FLASH " "));
                 const uint8_t pulseWidth = transitionRoot.containsKey(TWIDTH) ? transitionRoot[TWIDTH] : FRAMES_PER_SECOND >> 1;
                 DEBUG_PRINT(pulseWidth);
 
                 if (transitionHSB == workingHsb) {
-                    currentEffect = dynamic_cast<Effect*>(new FlashEffect(
-                                                              workingHsb.toBuilder().brightness(0).build(), transitionCounter, FRAMES_PER_SECOND, pulseWidth));
+                    currentEffect.reset(new FlashEffect(workingHsb.toBuilder().brightness(0).build(),
+                                                        transitionCounter, FRAMES_PER_SECOND, pulseWidth));
                 } else {
-                    currentEffect = dynamic_cast<Effect*>(new FlashEffect(
-                                                              transitionHSB, transitionCounter, FRAMES_PER_SECOND, pulseWidth));
+                    currentEffect.reset(new FlashEffect(transitionHSB,
+                                                        transitionCounter, FRAMES_PER_SECOND, pulseWidth));
                 }
             } else if (strcmp(transitionName, EFFECT_RAINBOW) == 0) {
                 DEBUG_PRINT(F(" " EFFECT_RAINBOW));
-                currentEffect = dynamic_cast<Effect*>(new RainbowEffect());
+                currentEffect.reset(new RainbowEffect());
             } else if (strcmp(transitionName, EFFECT_FADE) == 0) {
                 DEBUG_PRINT(F(" " EFFECT_FADE " "));
                 const uint16_t timeMillis = transitionRoot.containsKey(TDURATION) ? transitionRoot[TDURATION] : 1000;
-                currentEffect = dynamic_cast<Effect*>(new TransitionEffect(transitionHSB, millis(), timeMillis));
+                currentEffect.reset(new TransitionEffect(transitionHSB, millis(), timeMillis));
                 DEBUG_PRINT(timeMillis);
             } else {
                 DEBUG_PRINT(F(" "));
                 DEBUG_PRINT(transitionName);
                 DEBUG_PRINT(F(" Unknown"));
-            }
-
-            if (currentEffect != thisTransition) {
-                delete thisTransition;
             }
 
             DEBUG_PRINT(F(" done"));
@@ -324,8 +316,7 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             if (strcmp(state, SON) == 0) {
                 workingHsb = getOnState(colorState);
             } else if (strcmp(state, SOFF) == 0) {
-                delete currentEffect;
-                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+                currentEffect.reset(new NoEffect());
                 workingHsb = getOffState(colorState);
             }
         }
@@ -409,104 +400,8 @@ void setupWiFi() {
     Serial.print(F("INFO: IP address: "));
     Serial.println(WiFi.localIP());
 }
-
 ///////////////////////////////////////////////////////////////////////////
-//  IR REMOTE
-///////////////////////////////////////////////////////////////////////////
-/*
-   Function called to handle received IR codes from the remote
-*/
-#ifdef IR_REMOTE
-void handleIRRemote(void) {
-    decode_results results;
-
-    if (irRecv.decode(&results)) {
-        switch (results.value) {
-            case ARILUX_IR_CODE_KEY_UP:
-                break;
-
-            case ARILUX_IR_CODE_KEY_DOWN:
-                break;
-
-            case ARILUX_IR_CODE_KEY_OFF:
-                break;
-
-            case ARILUX_IR_CODE_KEY_ON:
-                break;
-
-            case ARILUX_IR_CODE_KEY_R:
-                break;
-
-            case ARILUX_IR_CODE_KEY_G:
-                break;
-
-            case ARILUX_IR_CODE_KEY_B:
-                break;
-
-            case ARILUX_IR_CODE_KEY_W:
-                break;
-
-            case ARILUX_IR_CODE_KEY_1:
-                break;
-
-            case ARILUX_IR_CODE_KEY_2:
-                break;
-
-            case ARILUX_IR_CODE_KEY_3:
-                break;
-
-            case ARILUX_IR_CODE_KEY_FlashEffect:
-                break;
-
-            case ARILUX_IR_CODE_KEY_4:
-                break;
-
-            case ARILUX_IR_CODE_KEY_5:
-                break;
-
-            case ARILUX_IR_CODE_KEY_6:
-                break;
-
-            case ARILUX_IR_CODE_KEY_STROBE:
-                break;
-
-            case ARILUX_IR_CODE_KEY_7:
-                break;
-
-            case ARILUX_IR_CODE_KEY_8:
-                break;
-
-            case ARILUX_IR_CODE_KEY_9:
-                break;
-
-            case ARILUX_IR_CODE_KEY_FADE:
-                break;
-
-            case ARILUX_IR_CODE_KEY_10:
-                break;
-
-            case ARILUX_IR_CODE_KEY_11:
-                break;
-
-            case ARILUX_IR_CODE_KEY_12:
-                break;
-
-            case ARILUX_IR_CODE_KEY_SMOOTH:
-                break;
-
-            default:
-                DEBUG_PRINT(F("ERROR: IR code not defined: "));
-                DEBUG_PRINTLN_WITH_FMT(results.value, HEX);
-                break;
-        }
-
-        irRecv.resume();
-    }
-}
-#endif
-
-///////////////////////////////////////////////////////////////////////////
-//  RF REMOTE
+//  REMOTE
 ///////////////////////////////////////////////////////////////////////////
 /*
    Function called to handle received RF codes from the remote
@@ -519,89 +414,91 @@ void handleRFRemote(void) {
         DEBUG_PRINTLN_WITH_FMT(value, HEX);
 
         switch (value) {
-            case ARILUX_RF_CODE_KEY_BRIGHT_PLUS:
+            case ARILUX_REMOTE_KEY_BRIGHT_PLUS:
                 brightnessFilter
                 .brightness(constrain(brightnessFilter.brightness() + BRIGHTNESS_INCREASE, 0, 200));
                 break;
 
-            case ARILUX_RF_CODE_KEY_BRIGHT_MINUS:
+            case ARILUX_REMOTE_KEY_BRIGHT_MINUS:
                 brightnessFilter
                 .brightness(constrain(brightnessFilter.brightness() + BRIGHTNESS_DECREASE, 0, 200));
                 break;
 
-            case ARILUX_RF_CODE_KEY_OFF:
-                delete currentEffect;
-                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+            case ARILUX_REMOTE_KEY_OFF:
+                currentEffect.reset(new NoEffect());
                 workingHsb = getOffState(workingHsb);
                 break;
 
-            case ARILUX_RF_CODE_KEY_ON:
-                delete currentEffect;
-                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+            case ARILUX_REMOTE_KEY_ON:
+                currentEffect.reset(new NoEffect());
                 workingHsb = getOnState(workingHsb);
                 break;
 
-            case ARILUX_RF_CODE_KEY_RED:
+            case ARILUX_REMOTE_KEY_RED:
                 workingHsb = HSB(0, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_GREEN:
+            case ARILUX_REMOTE_KEY_GREEN:
                 workingHsb = HSB(120, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_BLUE:
+            case ARILUX_REMOTE_KEY_BLUE:
                 workingHsb = HSB(240, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_WHITE:
+            case ARILUX_REMOTE_KEY_WHITE:
                 workingHsb = HSB(0, 0, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_ORANGE:
+            case ARILUX_REMOTE_KEY_ORANGE:
                 workingHsb = HSB(25, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_LTGRN:
+            case ARILUX_REMOTE_KEY_LTGRN:
                 workingHsb = HSB(120, 100 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_LTBLUE:
+            case ARILUX_REMOTE_KEY_LTBLUE:
                 workingHsb = HSB(240, 100 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_AMBER:
+            case ARILUX_REMOTE_KEY_AMBER:
                 workingHsb = HSB(49, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_CYAN:
+            case ARILUX_REMOTE_KEY_CYAN:
                 workingHsb = HSB(180, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_PURPLE:
+            case ARILUX_REMOTE_KEY_PURPLE:
                 workingHsb = HSB(300, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_YELLOW:
+            case ARILUX_REMOTE_KEY_YELLOW:
                 workingHsb = HSB(60, 255 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_PINK:
+            case ARILUX_REMOTE_KEY_PINK:
                 workingHsb = HSB(350, 64 * 4, workingHsb.brightness(), 0, 0);
                 break;
 
-            case ARILUX_RF_CODE_KEY_TOGGLE:
+            case ARILUX_REMOTE_KEY_TOGGLE:
                 break;
 
-            case ARILUX_RF_CODE_KEY_SPEED_PLUS:
+            case ARILUX_REMOTE_KEY_SPEED_PLUS:
+                // TODO: Implement some incremantal speedup filter
+                workingHsb = workingHsb.toBuilder().hue((workingHsb.hue() + 5 % 360)).build();
                 break;
 
-            case ARILUX_RF_CODE_KEY_MODE_PLUS:
+            case ARILUX_REMOTE_KEY_SPEED_MINUS:
+                // TODO: Implement some incremantal speedup filter
+                workingHsb = workingHsb.toBuilder().hue((workingHsb.hue() - 5 % 360)).build();
                 break;
 
-            case ARILUX_RF_CODE_KEY_SPEED_MINUS:
+            case ARILUX_REMOTE_KEY_MODE_PLUS:
                 break;
 
-            case ARILUX_RF_CODE_KEY_MODE_MINUS:
+            case ARILUX_REMOTE_KEY_MODE_MINUS:
                 break;
 
             default:
@@ -713,9 +610,9 @@ void setup() {
 
 void handleEffects() {
     const uint32_t currentMillies = millis();
-    const HSB effectedHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
-    currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, effectedHsb);
+    currentHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
     currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
+    currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
     uint16_t colors[3];
     currentHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
@@ -759,8 +656,7 @@ void loop() {
             if (currentEffect->isCompleted(transitionCounter, currentMillis, workingHsb)) {
                 DEBUG_PRINTLN(F("Transition Completed, setting NoEffect"));
                 workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-                delete currentEffect;
-                currentEffect = dynamic_cast<Effect*>(new NoEffect());
+                currentEffect.reset(new NoEffect());
             }
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             yield();
