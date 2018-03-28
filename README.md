@@ -32,7 +32,8 @@ Old functionality to be re-added
  - Configure using some form of web based interface, eg, no need to configure for each device using the setup.h file
  - ASync TCP / MQTT client
  - Store the current active Filter in EEPROM/MQTT (properly need to create some configure object)
- - CHeck if we can use a better way of debugging lines
+ - Check if we can use a better way of debugging lines
+ - Check travis and see if that still works (never worked with it...sorry)
  
 Tested with the [ESP8266 Wi-Fi chip][esp8266].
 
