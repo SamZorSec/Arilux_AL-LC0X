@@ -85,7 +85,7 @@ HSB currentHsb(0, 0, 255, 0, 0);
 
 // Pointers to current effect and filter
 std::unique_ptr<Effect> currentEffect(new NoEffect());
-std::unique_ptr<Filter> currentFilter(new FadingFilter());
+std::unique_ptr<Filter> currentFilter(new FadingFilter(workingHsb, FILTER_FADING_ALPHA));
 
 // Filter to control overall brightness
 BrightnessFilter brightnessFilter(100);
