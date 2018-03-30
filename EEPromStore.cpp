@@ -29,7 +29,7 @@ SettingsDTO EEPromStore::get() const {
 
 void EEPromStore::store(const SettingsDTO& settingsDTO) {
     SettingsDTO data = settingsDTO;
-    const uint16_t crc = crc16(settingsDTO.blob(), settingsDTO.blobSize());
+    const uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(SettingsDTO));
     EEPROM.put(m_eepromAddress, settingsDTO);
     EEPROM.put(m_eepromAddress + sizeof(settingsDTO), crc);
     DEBUG_PRINTLN(F("EEPromStore : Store"));
