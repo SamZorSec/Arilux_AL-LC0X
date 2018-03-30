@@ -1,7 +1,7 @@
 #pragma once
 
-#include <math.h>
 #include <stdint.h>
+#include <math.h>
 
 class HSBBuilder;
 
@@ -21,7 +21,7 @@ public:
     void getHSB(uint16_t colors[]) const;
 
     uint16_t hue() const;
-    uint16_t getSaturation() const;
+    uint16_t saturation() const;
     uint16_t brightness() const;
 
     uint16_t white1() const;
@@ -87,7 +87,7 @@ public:
 
     HSBBuilder(const HSB& hsb) :
         m_hue(hsb.brightness()),
-        m_saturation(hsb.getSaturation()),
+        m_saturation(hsb.saturation()),
         m_brightness(hsb.brightness()),
         m_white1(hsb.white1()),
         m_white2(hsb.white2()) {

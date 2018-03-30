@@ -7,57 +7,27 @@
 extern char jsonBuffer[512];
 
 
-MQTTStore::MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const uint32_t p_debounceWaitTime) : Store(),
+MQTTStore::MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const uint32_t p_debounceWaitTime) :
+    Settings(10, p_debounceWaitTime),
     m_topic(p_topic),
-    m_mqttClient(p_mqttClient),
-    m_debounceWaitTime(p_debounceWaitTime),
-    m_lastHSB(HSB(0, 0, 0, 0, 0)) {
+    m_mqttClient(p_mqttClient) {
 }
 
-// THis store does not do retreival
-const HSB MQTTStore::getHSB() const {
-    return m_lastHSB;
-}
-
-bool MQTTStore::storeHSB(const HSB hsb) {
-    bool didStore = false;
-
-    // Only write HSB to EEPROM if
-    // if HSB changed..
-    // And if didn´t write more than XX milli seconds ago
-    if (m_lastHSB != hsb &&
-        millis() - m_startDebounceTime > m_debounceWaitTime) {
-        m_lastHSB = hsb;
-        m_startDebounceTime = millis();
-        didStore = true;
-        storeState(m_lastHSB);
-        DEBUG_PRINTLN(F("MQTTStore : Store"));
-    }
-
-    return didStore;
-}
-
-void MQTTStore::storeState(const HSB& hsb) {
-    char jsonBuffer[64];
+void MQTTStore::store(const SettingsDTO& settingsDTO) {
+    static char jsonBuffer[64];
+    const HSB& hsb = settingsDTO.hsb();
     sprintf(jsonBuffer, "{\"hsb\":{\"h\":%d,\"s\":%d,\"b\":%d},\"w1\":%d,\"w2\":%d}",
             hsb.hue(),
-            (hsb.getSaturation() + 2) >> 2,
+            (hsb.saturation() + 2) >> 2,
             (hsb.brightness() + 2) >> 2,
             (hsb.white1() + 2) >> 2,
             (hsb.white2() + 2) >> 2
            );
-    publishToMQTT(m_topic, jsonBuffer);
-}
 
-void MQTTStore::publishToMQTT(const char* topic, const char* payload) {
-    if (m_mqttClient.publish(topic, payload, true)) {
+    if (m_mqttClient.publish(m_topic, jsonBuffer, true)) {
         DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
     } else {
         DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
     }
 }
 
-void MQTTStore::initStore(HSB hsb) {
-    m_lastHSB = hsb;
-    m_startDebounceTime = millis();
-}

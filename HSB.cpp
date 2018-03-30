@@ -34,7 +34,7 @@ uint16_t HSB::hue() const {
     return m_hue;
 }
 
-uint16_t HSB::getSaturation() const {
+uint16_t HSB::saturation() const {
     return m_saturation;
 }
 

@@ -36,7 +36,7 @@ HSB TransitionEffect::calcHSB(const uint32_t p_count,
     const uint16_t newHue = map(percent, 0, 1000, _hsb.hue(), m_hsbsPath);
     return HSB(
                HSB::fixHue(newHue),
-               map(percent, 0, 1000, _hsb.getSaturation(), m_hsb.getSaturation()),
+               map(percent, 0, 1000, _hsb.saturation(), m_hsb.saturation()),
                map(percent, 0, 1000, _hsb.brightness(), m_hsb.brightness()),
                map(percent, 0, 1000, _hsb.white1(), m_hsb.white1()),
                map(percent, 0, 1000, _hsb.white2(), m_hsb.white2()));

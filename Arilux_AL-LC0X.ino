@@ -31,6 +31,7 @@
 #define MQTT_MAX_PACKET_SIZE 256
 #include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
+#include "Settings.h"
 #include "EEPromStore.h"
 #include "MQTTStore.h"
 
@@ -78,10 +79,10 @@ volatile uint32_t currentMqttReconnect = 0;
 volatile bool arduinoOTAInProgress = false;
 
 // Holds the current working HSB color
-HSB workingHsb(0, 0, 255, 0, 0); 
+HSB workingHsb(0, 0, 255, 0, 0);
 
 // Hold´s the color of the last color generated and send to teh Arilux device
-HSB currentHsb(0, 0, 255, 0, 0); 
+HSB currentHsb(0, 0, 255, 0, 0);
 
 // Pointers to current effect and filter
 std::unique_ptr<Effect> currentEffect(new NoEffect());
@@ -102,6 +103,10 @@ WiFiClientSecure wifiClient;
 WiFiClient wifiClient;
 #endif
 PubSubClient mqttClient(wifiClient);
+
+// Settings
+SettingsDTO eepromSettingsDTO;
+SettingsDTO mqttSettingsDTO;
 
 // Eeprom storage
 EEPromStore eepromStore(0, 5000, 300000);
@@ -172,28 +177,35 @@ HSB getNewColorState(const HSB& hsb, const JsonObject& root) {
     uint16_t white1, white2;
     uint16_t colors[3];
     hsb.getHSB(colors);
+
     if (root.containsKey("hsb")) {
         const JsonObject& hsbRoot = root["hsb"];
+
         if (hsbRoot.containsKey("h")) {
             colors[0] = constrain(hsbRoot["h"], 0, 359);
         }
+
         if (hsbRoot.containsKey("s")) {
             colors[1] = constrain(hsbRoot["s"], 0, 255) << 2;
         }
+
         if (hsbRoot.containsKey("b")) {
             colors[2] = constrain(hsbRoot["b"], 0, 255) << 2;
         }
     }
+
     if (root.containsKey("w1")) {
         white1 = constrain(root["w1"], 0, 255)  << 2;
     } else {
         white1 = hsb.white1();
     }
+
     if (root.containsKey("w2")) {
         white1 = constrain(root["w2"], 0, 255)  << 2;
     } else {
         white2 = hsb.white2();
     }
+
     return HSB(colors[0], colors[1], colors[2], white1, white2);
 }
 
@@ -332,8 +344,12 @@ HSB getOffState(const HSB& hsb) {
 }
 
 HSB getOnState(const HSB& hsb) {
-    const HSB storedHSB = eepromStore.getHSB();
-    return hsb.toBuilder().white1(storedHSB.white1()).white2(storedHSB.white2()).brightness(storedHSB.brightness()).build();
+    const HSB settings = eepromStore.get().hsb();
+    return hsb.toBuilder()
+           .white1(settings.white1())
+           .white2(settings.white2())
+           .brightness(settings.brightness())
+           .build();
 }
 
 void connectMQTT(void) {
@@ -555,14 +571,17 @@ void setup() {
     setupWiFi();
 #ifdef TLS
     // Check the fingerprint of CloudMQTT's SSL cert
-    verifyFingerprint();
+    ve | gerprint();
 #endif
     // Init the Arilux LED controller
     arilux.init();
-    // Get current EEPROM value
+    // Initialise the settings and prever settings from EEPROM during startup
     EEPROM.begin(16); // TODO make some way to get datasize from objects using eeprom
-    workingHsb = eepromStore.getHSB();
-    eepromStore.initStore(workingHsb);
+    eepromSettingsDTO = eepromStore.get();
+    mqttSettingsDTO = eepromSettingsDTO;
+    workingHsb = eepromStore.get().hsb();
+    eepromSettingsDTO.reset();
+    mqttSettingsDTO.reset();
     // Set hostname and start OTA
     ArduinoOTA.setHostname(mqttClientID);
     ArduinoOTA.onStart([]() {
@@ -615,6 +634,7 @@ void handleEffects() {
     currentHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
     currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
+    mqttSettingsDTO.hsb(currentHsb);
     uint16_t colors[3];
     currentHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
@@ -635,7 +655,7 @@ void onceASecond() {
 #endif
 }
 
-#define NUMBER_OF_SLOTS 12
+#define NUMBER_OF_SLOTS 15
 float avarageTime = 0.0;
 void loop() {
     const uint32_t currentMillis = millis();
@@ -690,18 +710,24 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             mqttClient.loop();
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
-            mqttStore.storeHSB(currentHsb);
+            mqttStore.handle(mqttSettingsDTO);
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+            eepromSettingsDTO.hsb(workingHsb);
+
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
             if (workingHsb.brightness() == 0) {
-                const HSB storedHsb = eepromStore.getHSB();
-                eepromStore.storeHSB(
-                    workingHsb.toBuilder().brightness(storedHsb.brightness()).build()
-                );
+                SettingsDTO storedSettings = eepromStore.get();
+                storedSettings.reset();
+                const HSB storedHsb = storedSettings.hsb();
+                storedSettings.hsb(workingHsb.toBuilder().brightness(storedHsb.brightness()).build());
+                eepromStore.handle(storedSettings);
             } else {
-                eepromStore.storeHSB(workingHsb);
+                eepromStore.handle(eepromSettingsDTO);
             }
+
+            EEPROM.commit();
+        } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
         }
 
         const uint32_t thisDuration = (millis() - currentMillis);

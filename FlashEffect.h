@@ -1,7 +1,8 @@
 #pragma once
+#include <stdint.h>
+
 #include "Effect.h"
 #include "HSB.h"
-#include <stdint.h>
 
 /**
  * Flash/Strobe between two different colors

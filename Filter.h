@@ -1,6 +1,7 @@
 #pragma once
-#include "HSB.h"
+
 #include <stdint.h>
+#include "HSB.h"
 /**
  * Base effect class
  */
