@@ -8,7 +8,7 @@ extern char jsonBuffer[512];
 
 
 MQTTStore::MQTTStore(const char* p_topic, const PubSubClient& p_mqttClient, const uint32_t p_debounceWaitTime) :
-    Settings(10, p_debounceWaitTime),
+    Settings(0, p_debounceWaitTime),
     m_topic(p_topic),
     m_mqttClient(p_mqttClient) {
 }

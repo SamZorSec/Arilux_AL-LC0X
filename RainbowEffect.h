@@ -7,7 +7,7 @@
 /**
  * Cycle between all colors of the rainbow
  */
-class RainbowEffect : public Effect {
+class RainbowEffect final : public Effect {
 private:
 public:
     RainbowEffect();
