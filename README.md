@@ -15,8 +15,6 @@ Enhancements are:
 - Easy to make new effects, See Effect.h and some of the including Effects
 - You can send partial updates for the color, for example just the hue, brightness or white values
 - After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch)
-- Change: Remote control Speed + and - will change through colors
-- Change: Remote control Mode + and - changes saturation
 
 Current effects are:
 - Rainbow: Will keep fading over the rainbow of colors
@@ -26,6 +24,13 @@ Current effects are:
 
 Old functionality to be re-added
 - IR Remote control
+
+## Remote Controle changes
+
+- Remote control Speed + and - will change through colors
+- Remote control Mode + and - changes saturation
+- Remote control toggle stops the current effect
+
 
 ## Todo
 

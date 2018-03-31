@@ -457,11 +457,13 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_OFF:
+                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
                 currentEffect.reset(new NoEffect());
                 workingHsb = getOffState(workingHsb);
                 break;
 
             case ARILUX_REMOTE_KEY_ON:
+                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
                 currentEffect.reset(new NoEffect());
                 workingHsb = getOnState(workingHsb);
                 break;
@@ -515,6 +517,8 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_TOGGLE:
+                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
+                currentEffect.reset(new NoEffect());
                 break;
 
             case ARILUX_REMOTE_KEY_SPEED_PLUS:
@@ -602,12 +606,10 @@ void setup() {
         }
     });
     ArduinoOTA.begin();
-
 #ifdef DEBUG_TELNET
     // Start the Telnet server
     startTelnet();
 #endif
-
 #ifdef PAUSE_FOR_OTA
     uint16_t i = 0;
 
@@ -628,7 +630,6 @@ void setup() {
     // Start the IR receiver
     irRecv.enableIRIn();
 #endif
-
 #ifdef RF_REMOTE
     // Start the RF receiver
     rcSwitch.enableReceive(ARILUX_RF_PIN);
@@ -638,7 +639,6 @@ void setup() {
     eepromSettingsDTO = eepromStore.get();
     mqttSettingsDTO = eepromSettingsDTO;
     workingHsb = eepromSettingsDTO.hsb();
-
 #ifdef DEBUG_TELNET
     handleTelnet();
 #endif
@@ -738,12 +738,13 @@ void loop() {
 
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
-            if (workingHsb.brightness() == 0) {
+            if (workingHsb.brightness() == 0 && eepromSettingsDTO.modified()) {
                 SettingsDTO storedSettings = eepromStore.get();
                 storedSettings.reset();
                 const HSB storedHsb = storedSettings.hsb();
                 storedSettings.hsb(workingHsb.toBuilder().brightness(storedHsb.brightness()).build());
                 eepromStore.handle(storedSettings);
+                eepromSettingsDTO.reset();
             } else {
                 eepromStore.handle(eepromSettingsDTO);
             }

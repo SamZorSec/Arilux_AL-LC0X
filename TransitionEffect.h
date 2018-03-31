@@ -9,8 +9,8 @@
 class TransitionEffect final : public Effect {
 private:
     const HSB m_hsb;
-    const uint16_t m_startMillis;
-    const uint16_t m_endMillis;
+    const uint32_t m_startMillis;
+    const uint32_t m_endMillis;
     const uint16_t m_totalMillis;
 
 public:

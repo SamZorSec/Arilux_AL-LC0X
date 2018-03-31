@@ -15,7 +15,7 @@ EEPromStore::EEPromStore(const uint16_t p_eepromAddress,
 
 SettingsDTO EEPromStore::get() const {
     blobData_t data;
-    uint16_t storedCRC=0;
+    uint16_t storedCRC = 0;
     EEPROM.get(m_eepromAddress, data);
     EEPROM.get(m_eepromAddress + sizeof(blobData_t), storedCRC);
     const uint16_t calculcatedCRC = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
