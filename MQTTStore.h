@@ -4,7 +4,7 @@
 #include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
 
-class MQTTStore final : public Settings {
+class MQTTStore : public Settings {
 private:
     const char* m_topic;
     PubSubClient m_mqttClient;

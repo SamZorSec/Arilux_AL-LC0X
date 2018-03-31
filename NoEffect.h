@@ -4,7 +4,7 @@
 #include "Effect.h"
 #include "HSB.h"
 
-class NoEffect final : public Effect {
+class NoEffect : public Effect {
 private:
 public:
     NoEffect();

@@ -109,7 +109,7 @@ SettingsDTO eepromSettingsDTO;
 SettingsDTO mqttSettingsDTO;
 
 // Eeprom storage
-EEPromStore eepromStore(0, 5000, EEPROM_COMMIT_WAIT_DELAY);
+EEPromStore eepromStore(0, 5000, 300000);
 
 // MQTT Storage (state handler)
 MQTTStore mqttStore(mqttStateTopic, mqttClient, MQTT_UPDATE_DELAY);
@@ -270,6 +270,11 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         }
 
         // Load transitions
+        if (root.containsKey(RESTART)) {
+            ESP.restart();
+        }
+
+        // Load transitions
         if (root.containsKey(EFFECT)) {
             DEBUG_PRINT(F("Transition :"));
             const JsonObject& transitionRoot = root[EFFECT];
@@ -331,21 +336,6 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
                 workingHsb = getOffState(colorState);
             }
         }
-
-        // Base address of the remote control
-        if (root.containsKey(REMOTECMD)) {
-            eepromSettingsDTO.remote(root[REMOTECMD]);
-        }
-
-        // Load transitions
-        if (root.containsKey(RESTARTCMD)) {
-            ESP.restart();
-        }
-
-        // Force storing settings in eeprom
-        if (root.containsKey(STORECMD)) {
-            eepromStore.forceStorage(eepromSettingsDTO);
-        }
     }
 }
 
@@ -358,7 +348,6 @@ HSB getOnState(const HSB& hsb) {
     return hsb.toBuilder()
            .white1(settings.white1())
            .white2(settings.white2())
-           //           .brightness(constrain(settings.brightness(),5,1020))
            .brightness(settings.brightness())
            .build();
 }
@@ -439,11 +428,9 @@ void setupWiFi() {
 #ifdef RF_REMOTE
 void handleRFRemote(void) {
     if (rcSwitch.available()) {
-        const uint32_t value = rcSwitch.getReceivedValue() - eepromSettingsDTO.remote();
-        DEBUG_PRINT(F("Key Received : "));
-        DEBUG_PRINT(value & 0xFFFF00);
-        DEBUG_PRINT(F(" / key:"));
-        DEBUG_PRINTLN(value);
+        int value = rcSwitch.getReceivedValue();
+        DEBUG_PRINTLN(F("Key Received"));
+        DEBUG_PRINTLN_WITH_FMT(value, HEX);
 
         switch (value) {
             case ARILUX_REMOTE_KEY_BRIGHT_PLUS:
@@ -457,13 +444,11 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_OFF:
-                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
                 currentEffect.reset(new NoEffect());
                 workingHsb = getOffState(workingHsb);
                 break;
 
             case ARILUX_REMOTE_KEY_ON:
-                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
                 currentEffect.reset(new NoEffect());
                 workingHsb = getOnState(workingHsb);
                 break;
@@ -517,8 +502,6 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_TOGGLE:
-                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-                currentEffect.reset(new NoEffect());
                 break;
 
             case ARILUX_REMOTE_KEY_SPEED_PLUS:
@@ -532,11 +515,9 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_MODE_PLUS:
-                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() + 5, 0, 1020)).build();
                 break;
 
             case ARILUX_REMOTE_KEY_MODE_MINUS:
-                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() - 5, 0, 1020)).build();
                 break;
 
             default:
@@ -555,6 +536,18 @@ void handleRFRemote(void) {
 void setup() {
     Serial.begin(115200);
     delay(500);
+#ifdef DEBUG_TELNET
+    // Start the Telnet server
+    startTelnet();
+#endif
+#ifdef IR_REMOTE
+    // Start the IR receiver
+    irRecv.enableIRIn();
+#endif
+#ifdef RF_REMOTE
+    // Start the RF receiver
+    rcSwitch.enableReceive(ARILUX_RF_PIN);
+#endif
     // chipId : 00FF1234
     sprintf(chipId, "%08X", ESP.getChipId());
     // mqttTopicPrefix : RGBW/00FF1234
@@ -582,6 +575,13 @@ void setup() {
 #endif
     // Init the Arilux LED controller
     arilux.init();
+    // Initialise the settings and prever settings from EEPROM during startup
+    EEPROM.begin(16); // TODO make some way to get datasize from objects using eeprom
+    eepromSettingsDTO = eepromStore.get();
+    mqttSettingsDTO = eepromSettingsDTO;
+    workingHsb = eepromStore.get().hsb();
+    eepromSettingsDTO.reset();
+    mqttSettingsDTO.reset();
     // Set hostname and start OTA
     ArduinoOTA.setHostname(mqttClientID);
     ArduinoOTA.onStart([]() {
@@ -606,10 +606,6 @@ void setup() {
         }
     });
     ArduinoOTA.begin();
-#ifdef DEBUG_TELNET
-    // Start the Telnet server
-    startTelnet();
-#endif
 #ifdef PAUSE_FOR_OTA
     uint16_t i = 0;
 
@@ -626,24 +622,6 @@ void setup() {
     } while (i < 360 * 2 || arduinoOTAInProgress);
 
 #endif
-#ifdef IR_REMOTE
-    // Start the IR receiver
-    irRecv.enableIRIn();
-#endif
-#ifdef RF_REMOTE
-    // Start the RF receiver
-    rcSwitch.enableReceive(ARILUX_RF_PIN);
-#endif
-    // Initialise the settings and prever settings from EEPROM during startup
-    EEPROM.begin(32); // TODO make some way to get datasize from objects using eeprom
-    eepromSettingsDTO = eepromStore.get();
-    mqttSettingsDTO = eepromSettingsDTO;
-    workingHsb = eepromSettingsDTO.hsb();
-#ifdef DEBUG_TELNET
-    handleTelnet();
-#endif
-    eepromStore.get();
-    // Setup mqtt
     mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
     mqttClient.setCallback(callback);
     connectMQTT();
@@ -738,16 +716,17 @@ void loop() {
 
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
-            if (workingHsb.brightness() == 0 && eepromSettingsDTO.modified()) {
+            if (workingHsb.brightness() == 0) {
                 SettingsDTO storedSettings = eepromStore.get();
                 storedSettings.reset();
                 const HSB storedHsb = storedSettings.hsb();
                 storedSettings.hsb(workingHsb.toBuilder().brightness(storedHsb.brightness()).build());
                 eepromStore.handle(storedSettings);
-                eepromSettingsDTO.reset();
             } else {
                 eepromStore.handle(eepromSettingsDTO);
             }
+
+            EEPROM.commit();
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
         }
 

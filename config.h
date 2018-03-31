@@ -21,7 +21,7 @@
 // #define RF_REMOTE
 // Base code from remote control that will be added to the key code
 #ifndef REMOTE_CODE
-#define REMOTE_CODE                            0x000000
+#define REMOTE_CODE                            0xABCD00
 #endif
 
 // Wi-Fi
@@ -97,13 +97,7 @@
 #define FALPHA                      "alpha"
 #define FILTER_FADING_ALPHA         0.04
 
-// Command to set base address of the remote control
-#define REMOTECMD              "remote"
-
-// When received, force storage in eeprom (don´t call this unless you have to)
-#define STORECMD              "store"
-
-#define RESTARTCMD                  "restart"
+#define RESTART                  "restart"
 
 #define EFFECT                  "effect"
 #define EFFECT_NONE             "none"
@@ -120,8 +114,3 @@
 
 #define BRIGHTNESS_INCREASE     5
 #define BRIGHTNESS_DECREASE     -5
-
-#ifndef EEPROM_COMMIT_WAIT_DELAY
-// Number of milli seconds to wait untill we commit to EEPROM
-#define EEPROM_COMMIT_WAIT_DELAY       300000
-#endif

@@ -7,7 +7,7 @@
 /**
  * Transitions nicely between two HSB values
  */
-class FadingFilter final : public Filter {
+class FadingFilter : public Filter {
 private:
     const float m_alpha;
     float m_cptHue;

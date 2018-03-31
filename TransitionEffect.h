@@ -6,11 +6,11 @@
 /**
  * Transitions nicely between two HSB values
  */
-class TransitionEffect final : public Effect {
+class TransitionEffect : public Effect {
 private:
     const HSB m_hsb;
-    const uint32_t m_startMillis;
-    const uint32_t m_endMillis;
+    const uint16_t m_startMillis;
+    const uint16_t m_endMillis;
     const uint16_t m_totalMillis;
 
 public:

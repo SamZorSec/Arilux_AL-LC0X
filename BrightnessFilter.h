@@ -6,7 +6,7 @@
 /**
  * ALter the brightness of a HSB value
  */
-class BrightnessFilter final : public Filter {
+class BrightnessFilter : public Filter {
 private:
     float m_brightness;
 public:

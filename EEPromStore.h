@@ -2,13 +2,13 @@
 #include "Settings.h"
 #include "stdint.h"
 
-class EEPromStore final : public Settings {
+class EEPromStore : public Settings {
 private:
     const uint16_t m_eepromAddress;
 
 public:
     EEPromStore(const uint16_t p_eepromAddress, const uint32_t p_debounceWaitTime, const uint32_t p_commitWaitTime);
-    SettingsDTO get() const;
+    virtual SettingsDTO get() const;
 
 private:
     virtual void store(const SettingsDTO& settingsDTO) override;
