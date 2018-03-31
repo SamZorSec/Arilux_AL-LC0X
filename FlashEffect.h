@@ -7,7 +7,7 @@
 /**
  * Flash/Strobe between two different colors
  */
-class FlashEffect : public Effect {
+class FlashEffect final : public Effect {
 private:
     const uint32_t m_currentCount;
     const uint8_t m_period;

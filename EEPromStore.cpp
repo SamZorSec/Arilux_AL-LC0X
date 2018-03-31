@@ -14,25 +14,28 @@ EEPromStore::EEPromStore(const uint16_t p_eepromAddress,
 }
 
 SettingsDTO EEPromStore::get() const {
-    SettingsDTO data;
+    blobData_t data;
+    uint16_t storedCRC=0;
     EEPROM.get(m_eepromAddress, data);
-    const uint16_t calculcatedCRC = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(data));
-    uint16_t storedCRC;
-    EEPROM.get(m_eepromAddress + sizeof(data), storedCRC);
+    EEPROM.get(m_eepromAddress + sizeof(blobData_t), storedCRC);
+    const uint16_t calculcatedCRC = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
 
     if (storedCRC == calculcatedCRC) {
-        return data;
+        DEBUG_PRINT(F("EEPromStore : CRC match "));
+        return SettingsDTO(data);
     } else {
+        DEBUG_PRINT(F("EEPromStore : CRC mismatch "));
         return SettingsDTO();
     }
 }
 
 void EEPromStore::store(const SettingsDTO& settingsDTO) {
-    SettingsDTO data = settingsDTO;
-    const uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(SettingsDTO));
-    EEPROM.put(m_eepromAddress, settingsDTO);
-    EEPROM.put(m_eepromAddress + sizeof(settingsDTO), crc);
-    DEBUG_PRINTLN(F("EEPromStore : Store"));
+    blobData_t data = settingsDTO.blob();
+    uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
+    EEPROM.put(m_eepromAddress, data);
+    EEPROM.put(m_eepromAddress + sizeof(blobData_t), crc);
+    DEBUG_PRINTLN(F("EEPromStore : Store "));
+    EEPROM.commit();
 }
 
 uint16_t EEPromStore::crc16(uint8_t* a, uint16_t length) const {

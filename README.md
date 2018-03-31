@@ -16,6 +16,7 @@ Enhancements are:
 - You can send partial updates for the color, for example just the hue, brightness or white values
 - After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch)
 - Change: Remote control Speed + and - will change through colors
+- Change: Remote control Mode + and - changes saturation
 
 Current effects are:
 - Rainbow: Will keep fading over the rainbow of colors
@@ -28,13 +29,12 @@ Old functionality to be re-added
 
 ## Todo
 
- - IR Remote, need to add some better interface for this instead of separate routines for each remote control device
  - Configure using some form of web based interface, eg, no need to configure for each device using the setup.h file
  - ASync TCP / MQTT client
  - Store and reload the current active Filter in EEPROM/MQTT so the device comes back up correctly after reboot
  - Check if we can use a better way of debugging lines
  - Check travis and see if that still works (never worked with it...sorry)
- - Have a way to store the remote control base code over MQTT 
+ - Implement learning for the remote control. For example 5 seconds after startup or after a mqtt command?
  
 Tested with the [ESP8266 Wi-Fi chip][esp8266].
 
@@ -303,8 +303,25 @@ can be active at a time. NOTE: List of filter is on my todo..
    ```
    ### Example
    ```
-   # Fade to 0 in 10 seconds
    mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"restart":1}'
+   ```
+
+   Set the base address of the remote control, value will be stored in EEPROM. Currently only tested with RF
+   ```
+     "remote":10622464
+   ```
+   ### Example
+   ```
+   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"remote":10622464}'
+   ```
+
+   Force storage of settings in eeprom, otherwhise it will wait for some time, see also EEPROM_COMMIT_WAIT_DELAY
+   ```
+     "store":1
+   ```
+   ### Example
+   ```
+   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"store":1}'
    ```
 
 #### Last Will and Testament

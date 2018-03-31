@@ -11,7 +11,7 @@
  * corrections, smooth fadings etc.
  * A filter never ends.
  */
-class NoFilter : public Filter {
+class NoFilter final : public Filter {
 public:
     NoFilter();
 
