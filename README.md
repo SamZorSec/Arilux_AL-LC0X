@@ -2,6 +2,22 @@
 
 # Alternative - Alternative firmware for Arilux LED controllers
 
+# WARNING:
+## I Decided to remove JSON MQTT topics in favor of simple topics
+That means if you really like to JSON, this project is not for you.
+Main reason I decided to switch back from using JSON topics is that it just doesn work nice with mqtt and the idea´ behind mqtt. Specialy when it comes to retaining topics and the way people might use it. For example youa re obligated to post full json strings and this is just not cleanly possible.
+
+Example not structure (code follows soon, I am 50% done):
+- RGBW/001F162E/store
+- RGBW/001F162E/restart
+- RGBW/001F162E/remote 10622464
+
+- RGBW/001F162E/state ON OFF
+- RGBW/001F162E/color/hsb 0,100,100
+- RGBW/001F162E/color hsb=0,100,100 w1=255 w2=255
+
+# END WARNING
+
 This is an alternative version of the [Alternative firmware] for Arilux LED Controllers with a few modifications and enhancements.
 
 Differences are between the original Arilux alternative firmware:
