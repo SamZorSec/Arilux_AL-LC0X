@@ -17,7 +17,6 @@
 #endif
 
 #include <ArduinoOTA.h>
-#include <ArduinoJson.h>
 #include <EEPROM.h>
 
 
@@ -34,6 +33,7 @@
 #include "Settings.h"
 #include "EEPromStore.h"
 #include "MQTTStore.h"
+#include "OptParser.h"
 
 // Effects
 #include "NoEffect.h"
@@ -50,19 +50,22 @@
 #define FRAMES_PER_SECOND        50
 #define EFFECT_PERIOD_CALLBACK   (1000 / FRAMES_PER_SECOND)
 
-char chipId[12];
-char mqttClientID[32];
-char mqttTopicPrefix[32];
-
 // MQTT topics
-char homeAssistantDiscoveryTopic[56];
-char mqttLastWillTopic[44];
-char mqttStateTopic[44];
-char mqttCommandTopic[44];
+const char* chipId;
+const char* mqttClientID;
+const char* mqttTopicPrefix;
+const char* mqttLastWillTopic;
+const char* mqttSubscriberTopic;
+const char* homeAssistantDiscoveryTopic;
+// length of the base (#) topic we subscribe to, we use this as an offset
+// when we get topics so we can easely compare this with our seperate topics
+size_t mqttSubscriberTopicStrLength = 0;
 
 // MQTT buffer
-char friendlyName[48];
-char jsonBuffer[512];
+char mqttBuffer[512];
+
+// Arilux friendly name
+const char* friendlyName;
 
 // Counter that keeps counting up, used for filters, effects or other means to keep EFFECT_PERIOD_CALLBACK
 // of transitions
@@ -105,17 +108,14 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 // Settings
-SettingsDTO eepromSettingsDTO;
-SettingsDTO mqttSettingsDTO;
+SettingsDTO settingsDTO;
 
 // Eeprom storage
-EEPromStore eepromStore(0, 5000, EEPROM_COMMIT_WAIT_DELAY);
+EEPromStore eepromStore(0, EEPROM_COMMIT_BOUNCE_DELAY, EEPROM_COMMIT_WAIT_DELAY);
 
 // MQTT Storage (state handler)
-MQTTStore mqttStore(mqttStateTopic, mqttClient, MQTT_UPDATE_DELAY);
+std::unique_ptr<MQTTStore> mqttStore(nullptr);
 
-// emotyJSON root, to make a few code flows easer
-const JsonObject& emptyJsonRoot = StaticJsonBuffer<2>().createObject();
 
 ///////////////////////////////////////////////////////////////////////////
 //  SSL/TLS
@@ -173,178 +173,128 @@ void publishToMQTT(const char* topic, const char* payload) {
    @param p_length  The length of the payload
 */
 
-HSB getNewColorState(const HSB& hsb, const JsonObject& root) {
-    uint16_t white1, white2;
-    uint16_t colors[3];
-    hsb.getHSB(colors);
+/**
+ * Parse a potential color string from a topic´s value
+ * String can be in the format of hsb=xHx,xSx,xBx w1=xWx w2=xWx xHx,xSx,xBx,xW1x,xW2x h=xxx s=xxx b=xxx
+ * Missing values will be used from the input HSB
+ * The below example result all in the same HSB values
+ * Example 1: hsb=12,13,14 w1=15 w2=16
+ * Example 2: 12,13,14,15,16
+ * Example 3: hsb=12,13,14,15,16
+ * Example 4: s=13 h=12 b=14 w2=16 w1=15
+ * Example 5: hsb=100,101,102 12,13,14,15,16
+ */
+HSB hsbFromString(const HSB& hsb, const char* data) {
+    auto cstr1020 = [](float in) {
+        return constrain(in, 0.0, 100.0) * 10.2;
+    };
+    uint16_t h, s, b, w1, w2;
+    h = hsb.hue();
+    s = hsb.saturation();
+    b = hsb.brightness();
+    w1 = hsb.white1();
+    w2 = hsb.white1();
+    OptParser::get(data, [cstr1020, &h, &s, &b, &w1, &w2](OptValue f) {
+        if (strcmp(f.key(), "hsb") == 0 || atoi(f.key()) > 0) {
+            OptParser::get(f.asChar(), ",", [cstr1020, &h, &s, &b, &w1, &w2](OptValue c) {
+                switch (c.pos()) {
+                    case 0:
+                        h = constrain(c.asInt(), 0, 359);
+                        break;
 
-    if (root.containsKey("hsb")) {
-        const JsonObject& hsbRoot = root["hsb"];
+                    case 1:
+                        s = cstr1020(c.asFloat());
+                        break;
 
-        if (hsbRoot.containsKey("h")) {
-            colors[0] = constrain(hsbRoot["h"], 0, 359);
+                    case 2:
+                        b = cstr1020(c.asFloat());
+                        break;
+
+                    case 3:
+                        w1 = cstr1020(c.asFloat());
+                        break;
+
+                    case 4:
+                        w2 = cstr1020(c.asFloat());
+                        break;
+                }
+            });
+        } else if (strcmp(f.key(), "h") == 0) {
+            h = f.asInt();
+        } else if (strcmp(f.key(), "s") == 0) {
+            s = cstr1020(f.asFloat());
+        } else if (strcmp(f.key(), "b") == 0) {
+            b = cstr1020(f.asFloat());
+        } else if (strcmp(f.key(), "w1") == 0) {
+            w1 = cstr1020(f.asFloat());
+        } else if (strcmp(f.key(), "w2") == 0) {
+            w2 = cstr1020(f.asFloat());
         }
-
-        if (hsbRoot.containsKey("s")) {
-            colors[1] = constrain(hsbRoot["s"], 0, 255) << 2;
-        }
-
-        if (hsbRoot.containsKey("b")) {
-            colors[2] = constrain(hsbRoot["b"], 0, 255) << 2;
-        }
-    }
-
-    if (root.containsKey("w1")) {
-        white1 = constrain(root["w1"], 0, 255)  << 2;
-    } else {
-        white1 = hsb.white1();
-    }
-
-    if (root.containsKey("w2")) {
-        white1 = constrain(root["w2"], 0, 255)  << 2;
-    } else {
-        white2 = hsb.white2();
-    }
-
-    return HSB(colors[0], colors[1], colors[2], white1, white2);
+    });
+    return HSB(h, s, b, w1, w2);
 }
 
 void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
-    if (strcmp(mqttCommandTopic, p_topic) == 0) {
-        // Handle the MQTT topic of the received message
-        if (p_length > sizeof(jsonBuffer) - 1) {
-            DEBUG_PRINTLN(F("MQTT Payload to large."));
-            return;
-        }
+    // Mem copy into own buffer, I am not sure if p_payload is null terminated
+    memcpy(mqttBuffer, p_payload, p_length);
+    mqttBuffer[p_length] = 0;
+    DEBUG_PRINT(F("MQTT Message received: "));
+    DEBUG_PRINTLN(p_topic + mqttSubscriberTopicStrLength);
+    DEBUG_PRINT(F("Payload: "));
+    DEBUG_PRINTLN(mqttBuffer);
 
-        // Mem copy into own buffer, I am not sure if p_payload is null terminated
-        memcpy(jsonBuffer, p_payload, p_length);
-        jsonBuffer[p_length] = 0;
-        DEBUG_PRINT(F("MQTT Message received: "));
-        DynamicJsonBuffer incomingJsonPayload;
-        const JsonObject& root = incomingJsonPayload.parseObject(jsonBuffer);
-
-        if (!root.success()) {
-            DEBUG_PRINTLN(F("parseObject() failed"));
-            return;
-        }
-
-        DEBUG_PRINTLN(jsonBuffer);
-
-        // Load filters
-        if (root.containsKey(FILTER)) {
-            DEBUG_PRINT(F("Filter :"));
-            // Get the name straight from the filter or use the object
-            const bool isFilterNameOnly = root[FILTER].is<char*>();
-            const char* filterName = isFilterNameOnly ? root[FILTER] : root[FILTER][FNAME];
-            const JsonObject& filterRoot = isFilterNameOnly ? emptyJsonRoot : root[FILTER];
-
-            // Set Filters
-            if (strcmp(filterName, FILTER_NONE) == 0) {
-                DEBUG_PRINT(F(" " FILTER_NONE));
-                currentFilter.reset(new NoFilter());
-            } else if (strcmp(filterName, FILTER_FADING) == 0) {
-                DEBUG_PRINT(F(" " FILTER_FADING " "));
-
-                if (filterRoot.containsKey(FALPHA)) {
-                    const float alpha = filterRoot[FALPHA];
-                    DEBUG_PRINT(alpha);
-
-                    if (alpha > 0.001 && alpha < 1.0) {
-                        currentFilter.reset(new FadingFilter(workingHsb, alpha));
-                    } else {
-                        DEBUG_PRINT(F(FALPHA " must be > 0.001 && < 1.0"));
-                    }
-                } else {
-                    DEBUG_PRINT(F(" "));
-                    DEBUG_PRINT(FILTER_FADING_ALPHA);
-                    currentFilter.reset(new FadingFilter(workingHsb, FILTER_FADING_ALPHA));
-                }
-            } else {
-                DEBUG_PRINT(F(" "));
-                DEBUG_PRINT(filterName);
-                DEBUG_PRINT(F(" not found."));
+    // Process topics
+    if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_COLOR_TOPIC) == 0) {
+        workingHsb = hsbFromString(workingHsb, mqttBuffer);
+    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_FILTER_TOPIC) == 0) {
+        // Get variables from payload
+        const char* name;
+        float alpha = FILTER_FADING_ALPHA;
+        OptParser::get(mqttBuffer, [&name, &alpha](OptValue v) {
+            // Get variables from filter
+            if (strcmp(v.key(), FNAME) == 0) {
+                name = v.asChar();
+            } else if (strcmp(v.key(), FALPHA) == 0) {
+                alpha = constrain(v.asFloat(), 0.001, 1.0);
             }
+        });
 
-            DEBUG_PRINTLN(F(" done"));
+        // Setup the filter
+        if (strcmp(name, FILTER_NONE) == 0) {
+            currentFilter.reset(new NoFilter());
+        } else if (strcmp(name, FILTER_FADING) == 0) {
+            // Note, using currentHSB instead of workingHSB to get directly the correct color
+            // visible
+            currentFilter.reset(new FadingFilter(currentHsb, alpha));
         }
-
-        // Load transitions
-        if (root.containsKey(EFFECT)) {
-            DEBUG_PRINT(F("Transition :"));
-            const JsonObject& transitionRoot = root[EFFECT];
-
-            if (!transitionRoot.containsKey(TNAME)) {
-                DEBUG_PRINTLN(F(" no name found."));
-                return;
+    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_EFFECT_TOPIC) == 0) {
+        // Get variables from payload
+        const char* name;
+        OptParser::get(mqttBuffer, [&name   ](OptValue v) {
+            // Get variables from filter
+            if (strcmp(v.key(), ENAME) == 0) {
+                name = v.asChar();
             }
+        });
 
-            const char* transitionName = transitionRoot[TNAME];
-            workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-            workingHsb = getNewColorState(workingHsb, root);
-            const HSB transitionHSB = getNewColorState(workingHsb, transitionRoot);
-
-            if (strcmp(transitionName, EFFECT_NONE) == 0) {
-                DEBUG_PRINT(F(" " EFFECT_NONE));
-                currentEffect.reset(new NoEffect());
-            } else if (strcmp(transitionName, EFFECT_FLASH) == 0) {
-                DEBUG_PRINT(F(" " EFFECT_FLASH " "));
-                const uint8_t pulseWidth = transitionRoot.containsKey(TWIDTH) ? transitionRoot[TWIDTH] : FRAMES_PER_SECOND >> 1;
-                DEBUG_PRINT(pulseWidth);
-
-                if (transitionHSB == workingHsb) {
-                    currentEffect.reset(new FlashEffect(workingHsb.toBuilder().brightness(0).build(),
-                                                        transitionCounter, FRAMES_PER_SECOND, pulseWidth));
-                } else {
-                    currentEffect.reset(new FlashEffect(transitionHSB,
-                                                        transitionCounter, FRAMES_PER_SECOND, pulseWidth));
-                }
-            } else if (strcmp(transitionName, EFFECT_RAINBOW) == 0) {
-                DEBUG_PRINT(F(" " EFFECT_RAINBOW));
-                currentEffect.reset(new RainbowEffect());
-            } else if (strcmp(transitionName, EFFECT_FADE) == 0) {
-                DEBUG_PRINT(F(" " EFFECT_FADE " "));
-                const uint16_t timeMillis = transitionRoot.containsKey(TDURATION) ? transitionRoot[TDURATION] : 1000;
-                currentEffect.reset(new TransitionEffect(transitionHSB, millis(), timeMillis));
-                DEBUG_PRINT(timeMillis);
-            } else {
-                DEBUG_PRINT(F(" "));
-                DEBUG_PRINT(transitionName);
-                DEBUG_PRINT(F(" Unknown"));
-            }
-
-            DEBUG_PRINT(F(" done"));
-        } else {
-            workingHsb = getNewColorState(workingHsb, root);
+        if (strcmp(name, EFFECT_NONE) == 0) {
+            currentEffect.reset(new NoEffect());
+        } else if (strcmp(name, EFFECT_RAINBOW) == 0) {
+            currentEffect.reset(new RainbowEffect());
         }
-
-        // ON/OFF are light turning the device ON
-        // So we load the values from eeProm but we ensure we have a brightness > 0
-        if (root.containsKey(STATE)) {
-            const char* state = root[STATE];
-            HSB colorState = getNewColorState(workingHsb, root);
-
-            if (strcmp(state, SON) == 0) {
-                workingHsb = getOnState(colorState);
-            } else if (strcmp(state, SOFF) == 0) {
-                currentEffect.reset(new NoEffect());
-                workingHsb = getOffState(colorState);
-            }
-        }
-
-        // Base address of the remote control
-        if (root.containsKey(REMOTECMD)) {
-            eepromSettingsDTO.remote(root[REMOTECMD]);
-        }
-
-        // Load transitions
-        if (root.containsKey(RESTARTCMD)) {
+    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_RESTART_TOPIC) == 0) {
+        if (strcmp(mqttBuffer, "1")) {
             ESP.restart();
         }
+    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_STORE_TOPIC) == 0) {
+        if (strcmp(mqttBuffer, "1")) {
+            eepromStore.forceStorage(settingsDTO);
+        }
+    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_REMOTE_TOPIC) == 0) {
+        const uint32_t base = atol(mqttBuffer);
 
-        // Force storing settings in eeprom
-        if (root.containsKey(STORECMD)) {
-            eepromStore.forceStorage(eepromSettingsDTO);
+        if (base > 0) {
+            settingsDTO.remote(base);
         }
     }
 }
@@ -369,27 +319,29 @@ void connectMQTT(void) {
             currentMqttReconnect = millis();
 
             if (mqttClient.connect(mqttClientID, MQTT_USER, MQTT_PASS, mqttLastWillTopic, 0, 1, "dead")) {
-                if (mqttClient.subscribe(mqttCommandTopic)) {
+                if (mqttClient.subscribe(mqttSubscriberTopic)) {
                     DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded for topic: "));
                 } else {
                     DEBUG_PRINT(F("ERROR: Sending the MQTT subscribe failed for topic: "));
                 }
 
-                DEBUG_PRINTLN(mqttCommandTopic);
+                DEBUG_PRINTLN(mqttSubscriberTopic);
                 DEBUG_PRINTLN(F("INFO: The client is successfully connected to the MQTT broker"));
                 publishToMQTT(mqttLastWillTopic, "alive");
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-                DynamicJsonBuffer outgoingJsonPayload;
-                JsonObject& root = outgoingJsonPayload.createObject();
-                root["name"] = friendlyName;
-                root["platform"] = "mqtt_json";
-                root["state_topic"] = mqttStateTopic;
-                root["command_topic"] = mqttCommandTopic;
-                root["brightness"] = true;
-                root["rgb"] = true;
-                root["white_value"] = true;
-                root.printTo(jsonBuffer, sizeof(jsonBuffer));
-                publishToMQTT(homeAssistantDiscoveryTopic, jsonBuffer);
+                /*
+                                DynamicmqttBuffer outgoingJsonPayload;
+                                JsonObject& root = outgoingJsonPayload.createObject();
+                                root["name"] = friendlyName;
+                                root["platform"] = "mqtt_json";
+                                root["state_topic"] = mqttStateTopic;
+                                root["command_topic"] = mqttCommandTopic;
+                                root["brightness"] = true;
+                                root["rgb"] = true;
+                                root["white_value"] = true;
+                                root.printTo(mqttBuffer, sizeof(mqttBuffer));
+                                publishToMQTT(homeAssistantDiscoveryTopic, mqttBuffer);
+                                */
 #endif
             } else {
                 DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
@@ -439,7 +391,7 @@ void setupWiFi() {
 #ifdef RF_REMOTE
 void handleRFRemote(void) {
     if (rcSwitch.available()) {
-        const uint32_t value = rcSwitch.getReceivedValue() - eepromSettingsDTO.remote();
+        const uint32_t value = rcSwitch.getReceivedValue() - settingsDTO.remote();
         DEBUG_PRINT(F("Key Received : "));
         DEBUG_PRINT(value & 0xFFFF00);
         DEBUG_PRINT(F(" / key:"));
@@ -552,30 +504,45 @@ void handleRFRemote(void) {
 ///////////////////////////////////////////////////////////////////////////
 //  SETUP() AND LOOP()
 ///////////////////////////////////////////////////////////////////////////
+char* makeString(const char* format, ...) {
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, 255, format, args);
+    va_end(args);
+    return strdup(buffer);
+}
+
 void setup() {
     Serial.begin(115200);
     delay(500);
     // chipId : 00FF1234
-    sprintf(chipId, "%08X", ESP.getChipId());
-    // mqttTopicPrefix : RGBW/00FF1234
-    sprintf(mqttTopicPrefix, MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipId);
-    // mqttLastWillTopic :  RGBW/00FF1234/status
-    sprintf(mqttLastWillTopic, MQTT_LASTWILL_TOPIC_TEMPLATE, mqttTopicPrefix);
-    // mqttStateTopic : RGBW/00FF1234/json/state
-    sprintf(mqttStateTopic, MQTT_STATE_TOPIC_TEMPLATE, mqttTopicPrefix);
-    // mqttCommandTopic : RGBW/00FF1234/json/set
-    sprintf(mqttCommandTopic, MQTT_COMMAND_TOPIC_TEMPLATE, mqttTopicPrefix);
-    // mqttClientID : ARILUX00FF1234
-    sprintf(mqttClientID, HOSTNAME_TEMPLATE, chipId);
+    chipId = makeString("%08X", ESP.getChipId());
+    // ARILUX00FF1234
+    mqttClientID = makeString(HOSTNAME_TEMPLATE, chipId);
+    // RGBW/00FF1234
+    mqttTopicPrefix = makeString(MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipId);
+    // RGBW/00FF1234/lastwill
+    mqttLastWillTopic = makeString(MQTT_LASTWILL_TOPIC_TEMPLATE, mqttTopicPrefix);
+    //  RGBW/00FF1234/#
+    mqttSubscriberTopic = makeString(MQTT_SUBSCRIBER_TOPIC_TEMPLATE, mqttTopicPrefix);
+    // Calculate length of the subcriber topic
+    mqttSubscriberTopicStrLength = strlen(mqttSubscriberTopic) - 2;
     // friendlyName : Arilux LC11 RGBW LED Controller 00FF1234
-    sprintf(friendlyName, "Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipId);
-    // homeAssistantDiscoveryTopic : homeassistant/light/ARILUX_LC11_RGBW_00FF1234/config
-    sprintf(homeAssistantDiscoveryTopic, "%s/light/ARILUX_%s_%s_%s/config", HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, arilux.getColorString(), chipId);
+    friendlyName = makeString("Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipId);
+    homeAssistantDiscoveryTopic = makeString("%s/light/ARILUX_%s_%s_%s/config", HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, arilux.getColorString(), chipId);
     Serial.print("Hostname:");
     Serial.println(mqttClientID);
     WiFi.hostname(mqttClientID);
     // Setup Wi-Fi
     setupWiFi();
+    mqttStore.reset(new MQTTStore(
+                        mqttTopicPrefix,
+                        MQTT_COLOR_STATE_TOPIC,
+                        MQTT_REMOTE_STATE_TOPIC,
+                        mqttClient,
+                        MQTT_STATE_UPDATE_DELAY
+                    ));
 #ifdef TLS
     // Check the fingerprint of CloudMQTT's SSL cert
     ve | gerprint();
@@ -636,9 +603,8 @@ void setup() {
 #endif
     // Initialise the settings and prever settings from EEPROM during startup
     EEPROM.begin(32); // TODO make some way to get datasize from objects using eeprom
-    eepromSettingsDTO = eepromStore.get();
-    mqttSettingsDTO = eepromSettingsDTO;
-    workingHsb = eepromSettingsDTO.hsb();
+    settingsDTO = eepromStore.get();
+    workingHsb = settingsDTO.hsb();
 #ifdef DEBUG_TELNET
     handleTelnet();
 #endif
@@ -656,7 +622,7 @@ void handleEffects() {
     currentHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
     currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
-    mqttSettingsDTO.hsb(currentHsb);
+    settingsDTO.hsb(currentHsb);
     uint16_t colors[3];
     currentHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
@@ -732,23 +698,22 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             mqttClient.loop();
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
-            mqttStore.handle(mqttSettingsDTO);
+            mqttStore->handle(settingsDTO);
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
-            eepromSettingsDTO.hsb(workingHsb);
-
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
-            if (workingHsb.brightness() == 0 && eepromSettingsDTO.modified()) {
+            if (workingHsb.brightness() == 0 && settingsDTO.modified()) {
                 SettingsDTO storedSettings = eepromStore.get();
                 storedSettings.reset();
                 const HSB storedHsb = storedSettings.hsb();
                 storedSettings.hsb(workingHsb.toBuilder().brightness(storedHsb.brightness()).build());
                 eepromStore.handle(storedSettings);
-                eepromSettingsDTO.reset();
             } else {
-                eepromStore.handle(eepromSettingsDTO);
+                eepromStore.handle(settingsDTO);
             }
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+            settingsDTO.reset();
+            EEPROM.commit();
         }
 
         const uint32_t thisDuration = (millis() - currentMillis);
