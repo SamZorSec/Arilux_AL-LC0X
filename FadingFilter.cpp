@@ -17,7 +17,7 @@ HSB FadingFilter::handleFilter(const uint32_t p_count,
     const auto dwSat = _hsb.saturation() - m_cptSaturation;
     const auto dwBright = _hsb.brightness() - m_cptBrightness;
     const auto dw1 = _hsb.white1() - m_cptWhite1;
-    const auto dw2 = _hsb.white2() - m_cptWhite1;
+    const auto dw2 = _hsb.white2() - m_cptWhite2;
     m_cptHue = sPathHue + dwHue * m_alpha;
     m_cptSaturation = m_cptSaturation + dwSat * m_alpha;
     m_cptBrightness = m_cptBrightness + dwBright * m_alpha;

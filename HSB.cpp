@@ -9,7 +9,7 @@ HSB::HSB(const uint16_t p_hue,
       m_saturation(p_saturation),
       m_brightness(p_brightness),
       m_white1(p_white1),
-      m_white2(p_white1) {
+      m_white2(p_white2) {
 }
 
 HSB::HSB(const HSB& p_hsb)
@@ -47,7 +47,7 @@ uint16_t HSB::white1() const {
 }
 
 uint16_t HSB::white2() const {
-    return m_white1;
+    return m_white2;
 }
 
 uint16_t HSB::cwhite1() const {

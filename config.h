@@ -56,23 +56,37 @@
 #endif
 
 // How often we are updating the mqtt state in ms
-#ifndef MQTT_UPDATE_DELAY
-#define MQTT_UPDATE_DELAY                       5000
+#ifndef MQTT_STATE_UPDATE_DELAY
+#define MQTT_STATE_UPDATE_DELAY                       5000
 #endif
 
 // MQTT topics : RGBW/00FF1234
 #define MQTT_TOPIC_PREFIX_TEMPLATE             "%s/%s"
 
-// Last Will and Testament topic : RGBW/00FF1234/status
-#define MQTT_LASTWILL_TOPIC_TEMPLATE           "%s/status"
+// Last Will and Testament topic : RGBW/00FF1234/lastwill
+#define MQTT_LASTWILL_TOPIC_TEMPLATE           "%s/lastwill"
 
-// State template : RGBW/00FF1234/json/state
-#define MQTT_STATE_TOPIC_TEMPLATE              "%s/json/state"
+#define MQTT_SUBSCRIBER_TOPIC_TEMPLATE         "%s/#"
 
-// Topic Template : RGBW/00FF1234/json/set
-#define MQTT_COMMAND_TOPIC_TEMPLATE             "%s/json/set"
+#define MQTT_STATE_STATE_TOPIC_TEMPLATE        "/state/state"
+#define MQTT_STATE_TOPIC_TEMPLATE              "/state"
 
-// Enable Home Assistant MQTT discovery support. Requires ArduinoJSON library to be installed.
+#define MQTT_REMOTE_STATE_TOPIC                "/remote/state"
+#define MQTT_REMOTE_TOPIC                      "/remote"
+
+#define MQTT_COLOR_STATE_TOPIC                 "/color/state"
+#define MQTT_COLOR_TOPIC                       "/color"
+
+#define MQTT_FILTER_STATE_TOPIC                "/filter/state"
+#define MQTT_FILTER_TOPIC                      "/filter"
+
+#define MQTT_EFFECT_TOPIC                      "/effect"
+
+#define MQTT_STORE_TOPIC                       "/store"
+#define MQTT_RESTART_TOPIC                     "/restart"
+
+
+// Enable Home Assistant MQTT discovery support.
 #define HOME_ASSISTANT_MQTT_DISCOVERY
 #ifndef HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
@@ -106,10 +120,11 @@
 #define RESTARTCMD                  "restart"
 
 #define EFFECT                  "effect"
+#define ENAME                  "name"
 #define EFFECT_NONE             "none"
 #define EFFECT_FLASH            "flash"
-#define EFFECT_RAINBOW          "rainbow"
 #define EFFECT_FADE             "fade"
+#define EFFECT_RAINBOW             "rainbow"
 #define TWIDTH                      "width"
 #define TNAME                       "name"
 #define TDURATION                   "duration"
@@ -124,4 +139,8 @@
 #ifndef EEPROM_COMMIT_WAIT_DELAY
 // Number of milli seconds to wait untill we commit to EEPROM
 #define EEPROM_COMMIT_WAIT_DELAY       300000
+#endif
+#ifndef EEPROM_COMMIT_BOUNCE_DELAY
+// Number of ms we wait untill we store to prevent storing to eeprom to many times
+#define EEPROM_COMMIT_BOUNCE_DELAY       5000
 #endif

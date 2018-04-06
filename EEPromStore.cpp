@@ -13,6 +13,40 @@ EEPromStore::EEPromStore(const uint16_t p_eepromAddress,
     m_eepromAddress(p_eepromAddress) {
 }
 
+blobData_t EEPromStore::getBlob() const {
+    blobData_t data;
+    uint16_t storedCRC = 0;
+    EEPROM.get(m_eepromAddress, data);
+    EEPROM.get(m_eepromAddress + sizeof(blobData_t), storedCRC);
+    const uint16_t calculcatedCRC = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
+
+    if (storedCRC == calculcatedCRC) {
+        DEBUG_PRINT(F("EEPromStore : CRC matched "));
+        return data;
+    } else {
+        DEBUG_PRINT(F("EEPromStore : CRC mismatch "));
+        return {0, 0, 0, 0, 0, 0, 0};
+    }
+}
+
+void EEPromStore::storeHsb(const HSB& p_hsb) {
+    blobData_t data = getBlob();
+    data.m_hue = p_hsb.hue();
+    data.m_saturation = p_hsb.saturation();
+    data.m_brightness = p_hsb.brightness();
+    data.m_white1 = p_hsb.white1();
+    data.m_white2 = p_hsb.white2();
+    storeBlob(data);
+    DEBUG_PRINTLN(F("EEPromStore : HSB "));
+}
+
+void EEPromStore::storeRemoteBase(const uint32_t p_remoteBase) {
+    blobData_t data = getBlob();
+    data.m_remoteBase = p_remoteBase;
+    storeBlob(data);
+    DEBUG_PRINTLN(F("EEPromStore : remoteBase "));
+}
+
 SettingsDTO EEPromStore::get() const {
     blobData_t data;
     uint16_t storedCRC = 0;
@@ -22,20 +56,21 @@ SettingsDTO EEPromStore::get() const {
 
     if (storedCRC == calculcatedCRC) {
         DEBUG_PRINT(F("EEPromStore : CRC match "));
-        return SettingsDTO(data);
+        return SettingsDTO(
+                   HSB(data.m_hue, data.m_saturation, data.m_brightness, data.m_white1, data.m_white2),
+                   data.m_remoteBase,
+                   0);
     } else {
         DEBUG_PRINT(F("EEPromStore : CRC mismatch "));
         return SettingsDTO();
     }
 }
 
-void EEPromStore::store(const SettingsDTO& settingsDTO) {
-    blobData_t data = settingsDTO.blob();
+void EEPromStore::storeBlob(const blobData_t& p_blob) const {
+    blobData_t data = p_blob;
     uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
-    EEPROM.put(m_eepromAddress, data);
+    EEPROM.put(m_eepromAddress, p_blob);
     EEPROM.put(m_eepromAddress + sizeof(blobData_t), crc);
-    DEBUG_PRINTLN(F("EEPromStore : Store "));
-    EEPROM.commit();
 }
 
 uint16_t EEPromStore::crc16(uint8_t* a, uint16_t length) const {
