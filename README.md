@@ -2,11 +2,17 @@
 
 # Alternative - Alternative firmware for Arilux LED controllers
 
+# WARNING:
+I am working on a change, I decied not to use JSON payloads anymore 
+because I believe that it's not the right payload for these style projects.
+If you really need JSON mnessages, this project isnot for you.
+
+
 This is an alternative version of the [Alternative firmware] for Arilux LED Controllers with a few modifications and enhancements.
 
 Differences are between the original Arilux alternative firmware:
 - Only support for HSB
-- Only support for JSON mqtt messages
+- Only support for plain text mqtt messages
 - Almost complete rewrite of the code
 
 Enhancements are:
