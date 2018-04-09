@@ -47,7 +47,7 @@ void MQTTStore::publish(const char* baseTopic, const char* topic, const char* pa
         DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
         DEBUG_PRINT(topicBuffer);
         DEBUG_PRINT(F(":"));
-        DEBUG_PRINT(payload);
+        DEBUG_PRINTLN(payload);
     } else {
         DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
     }

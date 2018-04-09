@@ -56,6 +56,7 @@ const char* mqttClientID;
 const char* mqttTopicPrefix;
 const char* mqttLastWillTopic;
 const char* mqttSubscriberTopic;
+const char* mqttSubscriberStateTopic;
 const char* homeAssistantDiscoveryTopic;
 // length of the base (#) topic we subscribe to, we use this as an offset
 // when we get topics so we can easely compare this with our seperate topics
@@ -69,7 +70,7 @@ const char* friendlyName;
 
 // Counter that keeps counting up, used for filters, effects or other means to keep EFFECT_PERIOD_CALLBACK
 // of transitions
-volatile uint32_t transitionCounter = 0;
+volatile uint32_t transitionCounter = 1;
 
 // Keep track when the last time we ran the effect state changes
 volatile uint32_t effectPeriodStartMillis = 0;
@@ -80,6 +81,8 @@ volatile uint32_t currentMqttReconnect = 0;
 // True when arduinoOTAInProgress is in progress, during start
 // we use this to not move to the main event loop
 volatile bool arduinoOTAInProgress = false;
+
+uint16_t waitingForStateCaptureAt = 1;
 
 // Holds the current working HSB color
 HSB workingHsb(0, 0, 255, 0, 0);
@@ -116,6 +119,17 @@ EEPromStore eepromStore(0, EEPROM_COMMIT_BOUNCE_DELAY, EEPROM_COMMIT_WAIT_DELAY)
 // MQTT Storage (state handler)
 std::unique_ptr<MQTTStore> mqttStore(nullptr);
 
+enum MqttRestoreStatus {
+    WAITFOREEPROM,
+    INITIALCONNECTMQTT,
+    SUBSCRIBESTATETOPIC,
+    WAITFORSTATECAPTURE,
+    UNSUBSCRIBESTATETOPIC,
+    SUBSCRIBECOMMANDTOPIC,
+    MQTTSTATUSEND
+};
+volatile MqttRestoreStatus restoreStatus = WAITFOREEPROM;
+volatile bool justOnceStateCapture = false;
 
 ///////////////////////////////////////////////////////////////////////////
 //  SSL/TLS
@@ -239,14 +253,16 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     memcpy(mqttBuffer, p_payload, p_length);
     mqttBuffer[p_length] = 0;
     DEBUG_PRINT(F("MQTT Message received: "));
-    DEBUG_PRINTLN(p_topic + mqttSubscriberTopicStrLength);
+    auto topicPos = p_topic + mqttSubscriberTopicStrLength;
+    DEBUG_PRINTLN(topicPos);
     DEBUG_PRINT(F("Payload: "));
     DEBUG_PRINTLN(mqttBuffer);
 
     // Process topics
-    if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_COLOR_TOPIC) == 0) {
+    if (strcmp(topicPos, MQTT_COLOR_TOPIC) == 0) {
         workingHsb = hsbFromString(workingHsb, mqttBuffer);
-    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_FILTER_TOPIC) == 0) {
+    } else if (strcmp(topicPos, "/lastwill") == 0) {
+    } else if (strcmp(topicPos, MQTT_FILTER_TOPIC) == 0) {
         // Get variables from payload
         const char* name;
         float alpha = FILTER_FADING_ALPHA;
@@ -267,7 +283,7 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             // visible
             currentFilter.reset(new FadingFilter(currentHsb, alpha));
         }
-    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_EFFECT_TOPIC) == 0) {
+    } else if (strcmp(topicPos, MQTT_EFFECT_TOPIC) == 0) {
         // Get variables from payload
         const char* name;
         OptParser::get(mqttBuffer, [&name   ](OptValue v) {
@@ -282,15 +298,15 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         } else if (strcmp(name, EFFECT_RAINBOW) == 0) {
             currentEffect.reset(new RainbowEffect());
         }
-    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_RESTART_TOPIC) == 0) {
-        if (strcmp(mqttBuffer, "1")) {
+    } else if (strcmp(topicPos, MQTT_RESTART_TOPIC) == 0) {
+        if (strcmp(mqttBuffer, "1") == 0) {
             ESP.restart();
         }
-    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_STORE_TOPIC) == 0) {
-        if (strcmp(mqttBuffer, "1")) {
+    } else if (strcmp(topicPos, MQTT_STORE_TOPIC) == 0) {
+        if (strcmp(mqttBuffer, "1") == 0) {
             eepromStore.forceStorage(settingsDTO);
         }
-    } else if (strcmp(p_topic + mqttSubscriberTopicStrLength, MQTT_REMOTE_TOPIC) == 0) {
+    } else if (strcmp(topicPos, MQTT_REMOTE_TOPIC) == 0) {
         const uint32_t base = atol(mqttBuffer);
 
         if (base > 0) {
@@ -308,26 +324,48 @@ HSB getOnState(const HSB& hsb) {
     return hsb.toBuilder()
            .white1(settings.white1())
            .white2(settings.white2())
-           //           .brightness(constrain(settings.brightness(),5,1020))
-           .brightness(settings.brightness())
+           // On state forces lights to go on, so we constrain it with a minimjm brightness value
+           // as a saveguard
+           .brightness(constrain(settings.brightness(), 5, 1020))
            .build();
 }
 
+void connectMQTTTopic() {
+    if (mqttClient.connected()) {
+        if (restoreStatus == SUBSCRIBESTATETOPIC) {
+            if (mqttClient.subscribe(mqttSubscriberStateTopic)) {
+                DEBUG_PRINT(F("INFO: Connected to topic : "));
+                restoreStatus = WAITFORSTATECAPTURE;
+                waitingForStateCaptureAt = transitionCounter;
+            } else {
+                DEBUG_PRINT(F("ERROR: Failed to connect to topic : "));
+            }
+            DEBUG_PRINTLN(mqttSubscriberStateTopic);
+        } else if (restoreStatus == SUBSCRIBECOMMANDTOPIC) {
+            if (mqttClient.subscribe(mqttSubscriberTopic)) {
+                restoreStatus = MQTTSTATUSEND;
+                DEBUG_PRINT(F("INFO: Connected to topic : "));
+            } else {
+                DEBUG_PRINT(F("ERROR: Failed to connect to topic : "));
+            }
+            DEBUG_PRINTLN(mqttSubscriberTopic);
+        } else if (restoreStatus == UNSUBSCRIBESTATETOPIC) {
+            if (mqttClient.unsubscribe(mqttSubscriberStateTopic)) {
+                restoreStatus = SUBSCRIBECOMMANDTOPIC;
+            }
+        }
+    }
+}
+
 void connectMQTT(void) {
-    if (!mqttClient.connected()) {
+    if (!mqttClient.connected() && restoreStatus>=INITIALCONNECTMQTT) {
         if (millis() - currentMqttReconnect > 1000) {
             currentMqttReconnect = millis();
 
             if (mqttClient.connect(mqttClientID, MQTT_USER, MQTT_PASS, mqttLastWillTopic, 0, 1, "dead")) {
-                if (mqttClient.subscribe(mqttSubscriberTopic)) {
-                    DEBUG_PRINT(F("INFO: Sending the MQTT subscribe succeeded for topic: "));
-                } else {
-                    DEBUG_PRINT(F("ERROR: Sending the MQTT subscribe failed for topic: "));
-                }
 
-                DEBUG_PRINTLN(mqttSubscriberTopic);
-                DEBUG_PRINTLN(F("INFO: The client is successfully connected to the MQTT broker"));
                 publishToMQTT(mqttLastWillTopic, "alive");
+
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
                 /*
                                 DynamicmqttBuffer outgoingJsonPayload;
@@ -343,6 +381,12 @@ void connectMQTT(void) {
                                 publishToMQTT(homeAssistantDiscoveryTopic, mqttBuffer);
                                 */
 #endif
+
+                if (restoreStatus == INITIALCONNECTMQTT) {
+                    restoreStatus = SUBSCRIBESTATETOPIC;
+                } else {
+                    restoreStatus = SUBSCRIBECOMMANDTOPIC;
+                }
             } else {
                 DEBUG_PRINTLN(F("ERROR: The connection to the MQTT broker failed"));
                 DEBUG_PRINT(F("Username: "));
@@ -504,6 +548,10 @@ void handleRFRemote(void) {
 ///////////////////////////////////////////////////////////////////////////
 //  SETUP() AND LOOP()
 ///////////////////////////////////////////////////////////////////////////
+
+/**
+ * Create a new char* from input
+ */
 char* makeString(const char* format, ...) {
     char buffer[256];
     va_list args;
@@ -515,7 +563,8 @@ char* makeString(const char* format, ...) {
 
 void setup() {
     Serial.begin(115200);
-    delay(500);
+    delay(10);
+    EEPROM.begin(32); // TODO make some way to get datasize from objects using eeprom
     // chipId : 00FF1234
     chipId = makeString("%08X", ESP.getChipId());
     // ARILUX00FF1234
@@ -524,32 +573,37 @@ void setup() {
     mqttTopicPrefix = makeString(MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipId);
     // RGBW/00FF1234/lastwill
     mqttLastWillTopic = makeString(MQTT_LASTWILL_TOPIC_TEMPLATE, mqttTopicPrefix);
-    //  RGBW/00FF1234/#
+    //  RGBW/00FF1234/+
     mqttSubscriberTopic = makeString(MQTT_SUBSCRIBER_TOPIC_TEMPLATE, mqttTopicPrefix);
+    //  RGBW/00FF1234/+/state
+    mqttSubscriberStateTopic = makeString(MQTT_SUBSCRIBER_STATE_TOPIC_TEMPLATE, mqttTopicPrefix);
     // Calculate length of the subcriber topic
     mqttSubscriberTopicStrLength = strlen(mqttSubscriberTopic) - 2;
+
     // friendlyName : Arilux LC11 RGBW LED Controller 00FF1234
     friendlyName = makeString("Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipId);
     homeAssistantDiscoveryTopic = makeString("%s/light/ARILUX_%s_%s_%s/config", HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, arilux.getColorString(), chipId);
+    // Serial print basic info
     Serial.print("Hostname:");
     Serial.println(mqttClientID);
-    WiFi.hostname(mqttClientID);
-    // Setup Wi-Fi
-    setupWiFi();
-    mqttStore.reset(new MQTTStore(
-                        mqttTopicPrefix,
-                        MQTT_COLOR_STATE_TOPIC,
-                        MQTT_REMOTE_STATE_TOPIC,
-                        mqttClient,
-                        MQTT_STATE_UPDATE_DELAY
-                    ));
-#ifdef TLS
-    // Check the fingerprint of CloudMQTT's SSL cert
-    ve | gerprint();
-#endif
     // Init the Arilux LED controller
     arilux.init();
-    // Set hostname and start OTA
+    // set color from EEPROM to ensure we turn on light as quickly as possible
+    settingsDTO = eepromStore.get();
+    workingHsb = settingsDTO.hsb();
+    currentHsb = workingHsb;
+    uint16_t colors[3];
+    getOnState(workingHsb).constantRGB(colors);
+    arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
+    restoreStatus = INITIALCONNECTMQTT;
+    // Setup Wi-Fi
+    WiFi.hostname(mqttClientID);
+    setupWiFi();
+#ifdef TLS
+    // Check the fingerprint of CloudMQTT's SSL cert
+    verifyFingerprint();
+#endif
+    // Start OTA
     ArduinoOTA.setHostname(mqttClientID);
     ArduinoOTA.onStart([]() {
         arduinoOTAInProgress = true;
@@ -601,19 +655,22 @@ void setup() {
     // Start the RF receiver
     rcSwitch.enableReceive(ARILUX_RF_PIN);
 #endif
-    // Initialise the settings and prever settings from EEPROM during startup
-    EEPROM.begin(32); // TODO make some way to get datasize from objects using eeprom
-    settingsDTO = eepromStore.get();
-    workingHsb = settingsDTO.hsb();
 #ifdef DEBUG_TELNET
     handleTelnet();
 #endif
-    eepromStore.get();
+    mqttStore.reset(new MQTTStore(
+                        mqttTopicPrefix,
+                        MQTT_COLOR_STATE_TOPIC,
+                        MQTT_REMOTE_STATE_TOPIC,
+                        mqttClient,
+                        MQTT_STATE_UPDATE_DELAY
+                    ));
     // Setup mqtt
     mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
     mqttClient.setCallback(callback);
-    connectMQTT();
+
     effectPeriodStartMillis = millis();
+    settingsDTO.reset();
 }
 
 
@@ -644,7 +701,7 @@ void onceASecond() {
 }
 
 #define NUMBER_OF_SLOTS 15
-float avarageTime = 0.0;
+uint32_t totalDuration = 0;
 void loop() {
     const uint32_t currentMillis = millis();
 
@@ -653,8 +710,12 @@ void loop() {
         transitionCounter++;
         handleEffects();
 
+        if (transitionCounter % (FRAMES_PER_SECOND * 5) == 0) {
+            DEBUG_PRINTLN((float)totalDuration / (FRAMES_PER_SECOND * 5));
+            totalDuration = 0;
+        }
+
         if (transitionCounter % FRAMES_PER_SECOND == 10) {
-            DEBUG_PRINTLN(avarageTime / transitionCounter);
             onceASecond();
         }
 
@@ -698,7 +759,9 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             mqttClient.loop();
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
-            mqttStore->handle(settingsDTO);
+            if (restoreStatus == MQTTSTATUSEND) {
+                mqttStore->handle(settingsDTO);
+            }
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
@@ -714,6 +777,18 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             settingsDTO.reset();
             EEPROM.commit();
+        } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+            connectMQTTTopic();
+        } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+        }
+
+        // Wait two seconds after we are running to capture state
+        // it´s just a hack for the moment....
+        if (!justOnceStateCapture && 
+            restoreStatus == WAITFORSTATECAPTURE && 
+            transitionCounter-waitingForStateCaptureAt==(FRAMES_PER_SECOND*2) ) {
+            restoreStatus = UNSUBSCRIBESTATETOPIC;
+            justOnceStateCapture = true;
         }
 
         const uint32_t thisDuration = (millis() - currentMillis);
@@ -725,6 +800,6 @@ void loop() {
             DEBUG_PRINTLN(thisDuration);
         }
 
-        avarageTime = avarageTime + thisDuration;
+        totalDuration += thisDuration;
     }
 }

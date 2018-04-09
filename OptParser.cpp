@@ -37,7 +37,7 @@ void OptParser::get(const char* p_options, TValueFunction f) {
     get(p_options, " ", f);
 }
 
-void OptParser::get(const char* p_options, const char* m_sep, TValueFunction f) {
+void OptParser::get(const char* p_options, const char* m_sep, TValueFunction callBack) {
     char* token;
     char* work = strdup(p_options);
     cleanUp(work, 0);
@@ -50,7 +50,7 @@ void OptParser::get(const char* p_options, const char* m_sep, TValueFunction f) 
 
         if (key != nullptr && strlen(key) > 0) {
             val = strsep(&token, "=");
-            f(OptValue(pos++, key, val == nullptr ? key : val));
+            callBack(OptValue(pos++, key, val == nullptr ? key : val));
         }
     }
 
@@ -78,8 +78,6 @@ void OptParser::cleanUp(char* str, uint8_t pos) {
         if (str[pos + 1] == '=') {
             p = &str[pos + 0];
             s = &str[pos + 1];
-
-            while ((*p++) = (*s++));
         } else {
             p = &str[pos + 1];
             s = &str[pos + 2];

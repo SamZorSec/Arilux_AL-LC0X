@@ -2,12 +2,6 @@
 
 # Alternative - Alternative firmware for Arilux LED controllers
 
-# WARNING:
-I am working on a change, I decied not to use JSON payloads anymore 
-because I believe that it's not the right payload for these style projects.
-If you really need JSON mnessages, this project isnot for you.
-
-
 This is an alternative version of the [Alternative firmware] for Arilux LED Controllers with a few modifications and enhancements.
 
 Differences are between the original Arilux alternative firmware:
@@ -17,7 +11,7 @@ Differences are between the original Arilux alternative firmware:
 
 Enhancements are:
 - Fade from any color to any other color smoothly without apparent brightness changes
-- ON/OFF states will correctly fade and remember the last color (in EEPROM)
+- ON/OFF states will correctly fade and remember the last color (in EEPROM) (WORK IN PROGRESS)
 - Easy to make new effects, See Effect.h and some of the including Effects
 - You can send partial updates for the color, for example just the hue, brightness or white values
 - After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch)
@@ -62,7 +56,7 @@ The controllers are also known to sell under different manufacturer names such a
 ![Arilux](images/Arilux.png)
 
 ## Features
-- Remote control over the MQTT protocol via individual topics or JSON
+- Remote control over the MQTT protocol via individual topics
 - Supports transitions, flashing and other effects
 - Remote control with the included IR control (uncomment `#define IR_REMOTE` in `config.h`)
 - Remote control with the included RF control (uncomment `#define RF_REMOTE` in `config.h`)
@@ -163,83 +157,53 @@ can be active at a time. NOTE: List of filter is on my todo..
 #### Control 
 
 1. Only one topic will be published and subscribed to (as well as the Last Will and Testament topic). 
-   JSON is great because it reduces roundtrips across the network. 
+   We use individual topics to take advantage of retain and other features MQTT has to offer
    If you are have Home Assistant MQTT Discovery enabled, the `light.mqtt_json` platform will be loaded by Home Assistant instead of the `light.mqtt` platform.
 
-   ##### HSB properties
-   | Name          | Data Type                                | Example | Description                                                                                                                                                                              |
-   |---------------|------------------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-   | `hsb`       | Object/dictionary                        | `{}`    | A dictionary with the below RGB values                                                                                                                                                   |
-   | `hsb.h`     | Integer, 0-359                           | `120`   | Hue of the color                                                                                                                                                                |
-   | `hsb.s`     | Integer, 0-255                           | `255`   | Saturation of the color                                                                                                                                                             |
-   | `hsb.b`     | Integer, 0-255                           | `255`   | Brightness of the color                                                                                                                                                             |
-   | `w1` | Integer, 0-255                           | `255`   | Controls the whiteness level of the lights. Only supported for RGBW.|
-   | `w2` | Integer, 0-255                           | `255`   | Controls the whiteness level of the lights. Only supported for RGBWW.|
-            
+   ##### /color topic
+   | Name             | format                | Example                | Description                                                                                                                                                                              |
+   |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
+   | `simple format`  | int,float,float       | 0,100,100              | Set Hue, Saturation and Brightness                                                        |
+   | `hsb`            | hsb=int,float,float   | hsb=0,100,100          | Set Hue, Saturation and Brightnes with assignment                                                        |
+   | `seperate`       | h=int s=float b=float w1=float w2=float | h=0 s=100 w1=25 w2=100 | Set as separate assignments  |
+   | `combined`       | hsb=int,float,float b=float         | hsb=0,100,100 b=25     | Wil take brightness as 25  |
+
  
-   ##### Filter properties
-   | Name          | Data Type                                | Example | Description                                                                                                                                                                              |
-   |---------------|------------------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-   | `filter`       | Object/dictionary  or String            | `{}` or `fade`    | A dictionary or string for simple filters                                                                                                                                                |
-   | `filter.name`     | Integer, 0-359                       | `fade`   | Name of the filter to activate                                                                                                                                                               |
-   | `filter.XXX`     | properries                           |    | Properties                                                                                                                                              |
-
-   ##### Effect properties
-   | Name          | Data Type                                | Example | Description                                                                                                                                                                              |
-   |---------------|------------------------------------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-   | `effect`       | Object/dictionary                      | `{}`  | A dictionary with effect config                                                                                                                                               |
-   | `effect.name`     | Integer, 0-359                       | `rainbow`   | Name of the effect to activate                                                                                                                                                               |
-   | `effect.XXX`     | properries                           |    | Properties                                                                                                                                              |
+   ##### /filter topic
+   | Name             | format                | Example                | Description                                                                                                                                                                              |
+   |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
+   | `Filter`          | name=XXX ....         | name=foo parm=XYZ      | Turn on a filter |
 
 
-   ## State
-   ```
-     "state": "ON" 
-   ```
-   #### Example
-   ```
-     # Turn device on
-     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"state":"ON"}'
-     # Turn device off
-     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"state":"OFF"}'
-     # Turn device off and remove current effect
-     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"state":"OFF", "effect":{"name":"none"}}'
-   ```
-   Note: If you expect active transitions, it´ always a good idea to turn them off
-   state ON/OFF is implemented as a birghtness of 0 or previous brightness
-   soo effects might override this command.
+   ##### /effect topic
+   | Name             | format                | Example                | Description                                                                                                                                                                              |
+   |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
+   | `Effect`          | name=XXX ....         | name=foo parm=XYZ      | Turn on a effect |
+
+
 
    ## Available Filters
 
    ### Disable Filtering
    Disable any filtering on the colors, color switch between current and new color.
    ```
-     "filter": {
-       "name":"none" 
-     }
-     or
-     "filter": "none"
+    name=none
    ```
 
    #### Example
    ```
-     mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"filter":"none"}'
+     mosquitto_pub -t "RGBW/001F162E/filter" -m 'name=none'
    ```
 
    ### fade filter
    Will smoothly fade between colors when a new color is set.
    ```
-     "filter": {
-       "name":"fade",
-       "alpha":0.05   // How fast the colors will fade, the lower the value the longer it takes to fade between colors
-     }
-     or
-     "filter": "fade" // Set a 
+     name=fading alpha=float
    ```
    #### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"filter":{"name":"fading", "alpha":0.02}}'
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"filter":"fading"}'
+   mosquitto_pub -t "RGBW/001F162E/filter" -m 'name=fading alpha=0.1'
+   mosquitto_pub -t "RGBW/001F162E/filter" -m 'name=fading'
    ```
     
    ## Available effects 
@@ -248,91 +212,71 @@ can be active at a time. NOTE: List of filter is on my todo..
    ### none
    Turn of any effect
    ```
-     "effect": {
-       "name":"none" 
-     }
+     name=none
    ```
    
    ### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"effect":{"name":"none"}}}'
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=none'
    ```
    
    ### rainbow
    Smoothly changes through all colors
    ```
-     "effect": {
-       "name":"rainbow" 
-     }
+    name=rainbow
    ```
 
    ### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"effect":{"name":"rainbow"}}}'
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=rainbow'
    ```
 
    ### Flash
    Change between two colors
    ```
-     "effect": {
-       "name":"flash",
-       "width":2         // Width of the pulse (00..25)
-     }
+   ....
    ```
    ### Example
    ```
-   # flash between current color and off
-   mosquitto_pub  -t "RGBW/001F162E/json/set" -m '{"effect":{"name":flash}}}'
-   # Flash between two colors red and green
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"hsb":{"h":0},"effect":{"name":flash,"hsb":{"h":180}}}'
-   # Stobe light
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"hsb":{"h":0},"w1":0,"effect":{"name":flash,"width":1,"w1":255,"hsb":{"b":255,"s":0}}}'
+   ....
    ```
 
    ### Fade
    Gradually fade between two colors in a custom time
    ```
-     "effect": {
-       "name":"fade",
-       "duration":20000         // Duration in millis of the total transition
-     }
+   ....
    ```
    ### Example
    ```
-   # Fade to 0 in 10 seconds
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"effect":{"name":fade,"duration":10000,"hsb":{"b":0}}}'
-   # Fade from red to green with a little bit of white in 15 seconds
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"hsb":{"h":0,"b":25},"effect":{"name":fade,"duration":10000,"hsb":{"h":"120", "w1":10}}}'
-   # Fade from current color to blue
-   mosquitto_pub -u admin -P admin1234 -t "RGBW/001F162E/json/set" -m '{"effect":{"name":fade,"duration":10000,"hsb":{"h":240}}}'
+   ....
    ```
 
    ### Other things you can do
    Restart the device from mqtt
    ```
-     "restart": 1
+    1
    ```
    ### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"restart":1}'
+   mosquitto_pub -t "RGBW/001F162E/restart" -m '1'
    ```
 
    Set the base address of the remote control, value will be stored in EEPROM. Currently only tested with RF
    ```
-     "remote":10622464
+     long
    ```
    ### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"remote":10622464}'
+   mosquitto_pub -t "RGBW/001F162E/remote" -m '10622464'
    ```
 
    Force storage of settings in eeprom, otherwhise it will wait for some time, see also EEPROM_COMMIT_WAIT_DELAY
    ```
-     "store":1
+     1
    ```
    ### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/json/set" -m '{"store":1}'
+   mosquitto_pub -t "RGBW/001F162E/store" -m '1'
    ```
 
 #### Last Will and Testament
@@ -341,6 +285,8 @@ The firmware will publish a [MQTT Last Will and Testament] at `rgb(w/ww)/<chipid
 When the device successfully connects it will publish `alive` to that topic and when it disconnects `dead` will automatically be published.
 
 #### Discovery
+
+##### Discovery is WORK IN PROGRESS AND TO BE TESTED
 
 This firmware supports [Home Assistant's MQTT discovery functionality], added in 0.40.
 This allows for instant setup and use of your device without requiring any manual configuration in Home Assistant.

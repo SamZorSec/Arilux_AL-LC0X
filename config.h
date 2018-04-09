@@ -66,22 +66,21 @@
 // Last Will and Testament topic : RGBW/00FF1234/lastwill
 #define MQTT_LASTWILL_TOPIC_TEMPLATE           "%s/lastwill"
 
-#define MQTT_SUBSCRIBER_TOPIC_TEMPLATE         "%s/#"
-
+#define MQTT_SUBSCRIBER_TOPIC_TEMPLATE          "%s/+"
+#define MQTT_SUBSCRIBER_STATE_TOPIC_TEMPLATE    "%s/+/state"
+#define MQTT_LASTWILL_TOPIC_TEMPLATE            "%s/lastwill"
+// State Topics
 #define MQTT_STATE_STATE_TOPIC_TEMPLATE        "/state/state"
-#define MQTT_STATE_TOPIC_TEMPLATE              "/state"
-
 #define MQTT_REMOTE_STATE_TOPIC                "/remote/state"
-#define MQTT_REMOTE_TOPIC                      "/remote"
-
 #define MQTT_COLOR_STATE_TOPIC                 "/color/state"
-#define MQTT_COLOR_TOPIC                       "/color"
-
 #define MQTT_FILTER_STATE_TOPIC                "/filter/state"
+
+// Command Topics
 #define MQTT_FILTER_TOPIC                      "/filter"
-
+#define MQTT_COLOR_TOPIC                       "/color"
+#define MQTT_REMOTE_TOPIC                      "/remote"
+#define MQTT_STATE_TOPIC_TEMPLATE              "/state"
 #define MQTT_EFFECT_TOPIC                      "/effect"
-
 #define MQTT_STORE_TOPIC                       "/store"
 #define MQTT_RESTART_TOPIC                     "/restart"
 
@@ -110,14 +109,6 @@
 #define FILTER_FADING               "fading"
 #define FALPHA                      "alpha"
 #define FILTER_FADING_ALPHA         0.04
-
-// Command to set base address of the remote control
-#define REMOTECMD              "remote"
-
-// When received, force storage in eeprom (don´t call this unless you have to)
-#define STORECMD              "store"
-
-#define RESTARTCMD                  "restart"
 
 #define EFFECT                  "effect"
 #define ENAME                  "name"

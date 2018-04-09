@@ -21,10 +21,10 @@ blobData_t EEPromStore::getBlob() const {
     const uint16_t calculcatedCRC = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
 
     if (storedCRC == calculcatedCRC) {
-        DEBUG_PRINT(F("EEPromStore : CRC matched "));
+        DEBUG_PRINTLN(F("EEPromStore : CRC matched "));
         return data;
     } else {
-        DEBUG_PRINT(F("EEPromStore : CRC mismatch "));
+        DEBUG_PRINTLN(F("EEPromStore : CRC mismatch "));
         return {0, 0, 0, 0, 0, 0, 0};
     }
 }

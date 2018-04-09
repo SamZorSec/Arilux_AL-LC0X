@@ -22,8 +22,8 @@ public:
 class OptParser {
 public:
     typedef std::function<void(const OptValue&)> TValueFunction;
-    static void get(const char* p_options, TValueFunction f);
-    static void get(const char* p_options, const char* sep, TValueFunction f);
+    static void get(const char* p_options, TValueFunction callBack);
+    static void get(const char* p_options, const char* sep, TValueFunction callBack);
 private:
     // Very simply cleanup routine to remove some whitespace from the string
     // while respecting space between variables
