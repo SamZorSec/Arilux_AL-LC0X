@@ -1,5 +1,6 @@
 #include "setup.h"
 
+
 // #define DEVICE_MODEL                           "LC01"
 // #define DEVICE_MODEL                           "LC02"
 // #define DEVICE_MODEL                           "LC03"
@@ -135,3 +136,5 @@
 // Number of ms we wait untill we store to prevent storing to eeprom to many times
 #define EEPROM_COMMIT_BOUNCE_DELAY       5000
 #endif
+
+#define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))

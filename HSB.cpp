@@ -101,11 +101,7 @@ bool HSB::operator ==(const HSB& rhs) const {
 }
 
 bool HSB::operator !=(const HSB& rhs) const {
-    return m_hue != rhs.m_hue ||
-           m_brightness != rhs.m_brightness ||
-           m_saturation != rhs.m_saturation ||
-           m_white1 != rhs.m_white1 ||
-           m_white2 != rhs.m_white2;
+    return !(m_hue == rhs.m_hue);
 }
 
 HSB& HSB::operator = (const HSB& rhs) {

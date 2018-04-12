@@ -153,6 +153,28 @@ A filter will take the output of a effect and apply an additional transformation
 color correct and/or fading the HSB to create smooth transitions between colors. Only one filter
 can be active at a time. NOTE: List of filter is on my todo..
 
+### Boot Sequence
+For savety reasons we want to turn the lights on regardless of any settings,
+for this reason the firmware provides a specific boot sequence to guarantee this.
+
+Bootsequence is done by prioritising where the initial light status come from and will insuring 
+that during boot the lights will always be on with the last set hue and saturation value.
+
+
+Bootorder:
+
+* Load default settings
+* Get HSB values from EEPROM and turn on LED with these values immediatly
+* Subscribe state topic for two seconds, use any found settings over a period of two seconds
+* Subscribe to command topic and overwrite any settings found in state over a period of two seconds
+
+Considarations:
+
+* After bootsequence the device will always be on in the last configured color setting
+* If no wifi and/or mqtt server found we load up color from EEPROM 
+* When EEPROM is empty we load up a brightness of 50
+* When EEPROM has stored brightness of 0 we load up a brightness of minimum 5
+
 
 #### Control 
 
