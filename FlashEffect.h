@@ -24,6 +24,10 @@ public:
                              const uint32_t p_time,
                              const HSB& p_hsb) ;
 
+    virtual bool isCompleted(const uint32_t p_count,
+                             const uint32_t p_time,
+                             const HSB& p_hsb)  const;
+
     virtual HSB finalState(const uint32_t p_count,
                            const uint32_t p_time,
                            const HSB& p_hsb)  const;

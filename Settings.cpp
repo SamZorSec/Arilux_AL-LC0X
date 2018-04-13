@@ -50,6 +50,11 @@ void SettingsDTO::reset() {
     m_mHsb = false;
 }
 
+
+
+
+
+
 Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWaitTime):
     m_debounceWaitTime(p_debounceWaitTime),
     m_commitWaitTime(p_commitWaitTime),
