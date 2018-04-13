@@ -20,7 +20,7 @@ public:
     virtual bool isCompleted(const uint32_t p_count,
                              const uint32_t p_time,
                              const HSB& p_hsb) const {
-        return false;                             
+        return false;
     };
 
     /*

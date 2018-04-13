@@ -277,7 +277,7 @@ Considarations:
    mosquitto_pub -t "RGBW/001F162E/color" -m 'hsb=0,100,100,0,0'
    mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=flash period=100 pulse=10 hsb=240,100,100 period=25'
    ```
-
+  
    #### Fade
    Gradually fade between two colors in a custom time
    ```

@@ -292,16 +292,18 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     } else if (strstr(topicPos, MQTT_EFFECT_TOPIC) != nullptr) {
         // Get variables from payload
         const char* name;
-        int16_t pulse=-1;
-        int16_t period=-1;
+        int16_t pulse = -1;
+        int16_t period = -1;
         OptParser::get(mqttBuffer, [&name, &period, &pulse](OptValue v) {
             // Get variables from filter
             if (strcmp(v.key(), ENAME) == 0) {
                 name = v.asChar();
             }
+
             if (strcmp(v.key(), "period") == 0) {
                 period = v.asInt();
             }
+
             if (strcmp(v.key(), "pulse") == 0) {
                 pulse = v.asInt();
             }
@@ -312,10 +314,11 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         } else if (strcmp(name, EFFECT_RAINBOW) == 0) {
             currentEffect.reset(new RainbowEffect());
         } else if (strcmp(name, EFFECT_FLASH) == 0) {
-            period = period<2?FRAMES_PER_SECOND:period;
-            pulse = pulse<period&&pulse>0?pulse:period >> 1;
+            period = period < 2 ? FRAMES_PER_SECOND : period;
+            pulse = pulse < period && pulse > 0 ? pulse : period >> 1;
             const HSB hsb = hsbFromString(workingHsb, mqttBuffer);
-            if (hsb==workingHsb) {
+
+            if (hsb == workingHsb) {
                 currentEffect.reset(new FlashEffect(workingHsb.toBuilder().brightness(0).build(), transitionCounter, period, pulse));
             } else {
                 currentEffect.reset(new FlashEffect(hsb, transitionCounter, period, pulse));
@@ -460,9 +463,10 @@ void handleRFRemote(void) {
     if (rcSwitch.available()) {
         // Before boot is finnished and the remote
         // is pressed we will store the remote controle base code
-        if (!bootSequence->finnished()) {            
+        if (!bootSequence->finnished()) {
             settingsDTO.remote(rcSwitch.getReceivedValue() & 0xFFFF00);
         }
+
         const uint32_t value = rcSwitch.getReceivedValue() - settingsDTO.remote();
         DEBUG_PRINT(F("Key Received : "));
         DEBUG_PRINT(value & 0xFFFF00);
@@ -613,7 +617,6 @@ void setup() {
     // Serial print basic info
     Serial.print("Hostname:");
     Serial.println(mqttClientID);
-
     // Init the Arilux LED controller
     arilux.init();
     // set color from EEPROM to ensure we turn on light as quickly as possible
@@ -625,7 +628,6 @@ void setup() {
     uint16_t colors[3];
     workingHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
-
     // Setup Wi-Fi
     WiFi.hostname(mqttClientID);
     setupWiFi();
