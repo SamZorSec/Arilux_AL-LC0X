@@ -292,10 +292,18 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     } else if (strstr(topicPos, MQTT_EFFECT_TOPIC) != nullptr) {
         // Get variables from payload
         const char* name;
-        OptParser::get(mqttBuffer, [&name   ](OptValue v) {
+        int16_t pulse=-1;
+        int16_t period=-1;
+        OptParser::get(mqttBuffer, [&name, &period, &pulse](OptValue v) {
             // Get variables from filter
             if (strcmp(v.key(), ENAME) == 0) {
                 name = v.asChar();
+            }
+            if (strcmp(v.key(), "period") == 0) {
+                period = v.asInt();
+            }
+            if (strcmp(v.key(), "pulse") == 0) {
+                pulse = v.asInt();
             }
         });
 
@@ -303,6 +311,15 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             currentEffect.reset(new NoEffect());
         } else if (strcmp(name, EFFECT_RAINBOW) == 0) {
             currentEffect.reset(new RainbowEffect());
+        } else if (strcmp(name, EFFECT_FLASH) == 0) {
+            period = period<2?FRAMES_PER_SECOND:period;
+            pulse = pulse<period&&pulse>0?pulse:period >> 1;
+            const HSB hsb = hsbFromString(workingHsb, mqttBuffer);
+            if (hsb==workingHsb) {
+                currentEffect.reset(new FlashEffect(workingHsb.toBuilder().brightness(0).build(), transitionCounter, period, pulse));
+            } else {
+                currentEffect.reset(new FlashEffect(hsb, transitionCounter, period, pulse));
+            }
         }
     } else if (strstr(topicPos, MQTT_RESTART_TOPIC) != nullptr) {
         if (strcmp(mqttBuffer, "1") == 0) {
@@ -441,6 +458,11 @@ void setupWiFi() {
 #ifdef RF_REMOTE
 void handleRFRemote(void) {
     if (rcSwitch.available()) {
+        // Before boot is finnished and the remote
+        // is pressed we will store the remote controle base code
+        if (!bootSequence->finnished()) {            
+            settingsDTO.remote(rcSwitch.getReceivedValue() & 0xFFFF00);
+        }
         const uint32_t value = rcSwitch.getReceivedValue() - settingsDTO.remote();
         DEBUG_PRINT(F("Key Received : "));
         DEBUG_PRINT(value & 0xFFFF00);

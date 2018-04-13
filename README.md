@@ -186,7 +186,8 @@ Considarations:
    | Name             | format                | Example                | Description                                                                                                                                                                              |
    |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
    | `simple format`  | int,float,float       | 0,100,100              | Set Hue, Saturation and Brightness                                                        |
-   | `hsb`            | hsb=int,float,float   | hsb=0,100,100          | Set Hue, Saturation and Brightnes with assignment                                                        |
+   | `hsb`            | hsb=int,float,float   | hsb=0,100,100          | Set Hue, Saturation and Brightnes with assignment                                         |
+   | `hsb`            | hsb=int,float,float,float,float   | hsb=0,100,100,20,30          | Set Hue, Saturation and Brightness white1 and white 2 with assignment   |
    | `seperate`       | h=int s=float b=float w1=float w2=float | h=0 s=100 w1=25 w2=100 | Set as separate assignments  |
    | `combined`       | hsb=int,float,float b=float         | hsb=0,100,100 b=25     | Wil take brightness as 25  |
 
@@ -206,97 +207,115 @@ Considarations:
 
    ## Available Filters
 
-   ### Disable Filtering
-   Disable any filtering on the colors, color switch between current and new color.
-   ```
-    name=none
-   ```
+   #### Disable Filtering
+   Topic: ``/filter`` name=``none``
 
-   #### Example
+   Disable any filtering on the colors, color switch between current and new color.
+
+   ##### Example
    ```
      mosquitto_pub -t "RGBW/001F162E/filter" -m 'name=none'
    ```
 
-   ### fade filter
+   #### Fade filter
+   Topic: ``/filter`` name=``fading``
+
    Will smoothly fade between colors when a new color is set.
-   ```
-     name=fading alpha=float
-   ```
-   #### Example
+   This filter is implemented as fromValue + (toValue - fromValue) * m_alpha;
+   
+   | Parameter  | type     | default  | Description          |
+   | ---------- | -------- | -------- | -------------------- |
+   | alpha      | float    | 0.05     | Speed of fading, keep this between 0.001 and 0.99   |
+
+   ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/filter" -m 'name=fading alpha=0.1'
    mosquitto_pub -t "RGBW/001F162E/filter" -m 'name=fading'
    ```
     
    ## Available effects 
-   
-   
-   ### none
-   Turn of any effect
-   ```
-     name=none
-   ```
-   
-   ### Example
+   All effects require the `name` parameter.   
+      
+   #### none
+   Topic: ``/effect`` name=``none``
+  
+   Turn of any running effect   
+   ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=none'
    ```
    
-   ### rainbow
-   Smoothly changes through all colors
-   ```
-    name=rainbow
-   ```
-
-   ### Example
+   #### rainbow
+   Topic: ``/effect`` name=``rainbow``
+   
+   Smoothly fades between all colors
+   ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=rainbow'
    ```
 
-   ### Flash
-   Change between two colors
+   #### Flash
+   Topic: ``/effect`` name=``flash``
+   Flash or strobe between off/on or between two colors
+   Note: For some effects you might want to turn the filter off, specially for strobe style effects.
+
+   | Parameter  | type     | default  | Description          |
+   | ---------- | -------- | -------- | -------------------- |
+   | period     | int      | 50       | Total period measured in ticks. There are 50 ticks per second   |
+   | pulse      | int      | 25       | Width of the on/color pulse measured in ticks    |
+   | hsb        | hsb      |          | When a color is given we flash between this color and the current color insteadof off     |
+
    ```
    ....
    ```
-   ### Example
+   ##### Example
    ```
-   ....
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=flash'  # 50% duty cycle, on/off
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=flash pulse=1 b=100 s=0' # 2% duty cycle strobe to white once a second
+    
+   # two commands red short and blue longer 
+   mosquitto_pub -t "RGBW/001F162E/color" -m 'hsb=0,100,100,0,0'
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=flash period=100 pulse=10 hsb=240,100,100 period=25'
    ```
 
-   ### Fade
+   #### Fade
    Gradually fade between two colors in a custom time
    ```
    ....
    ```
-   ### Example
+   ##### Example
    ```
    ....
    ```
 
    ### Other things you can do
-   Restart the device from mqtt
-   ```
-    1
-   ```
-   ### Example
+
+   #### Restart the device from mqtt
+   Topic: ``/restart``
+
+   Restart the device (handy for development)
+   ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/restart" -m '1'
    ```
 
-   Set the base address of the remote control, value will be stored in EEPROM. Currently only tested with RF
-   ```
-     long
-   ```
-   ### Example
+   #### Set base address of the remote control
+   Topic: ``/remote``
+   
+   Set the base address of the remote control, value will be stored in EEPROM. Currently only tested with RF.
+   You can also pair the remote control by pressing in the first few seconds a key on the remote control.
+   The value will be stored in EEPROM and in mqtt.
+
+   ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/remote" -m '10622464'
    ```
 
-   Force storage of settings in eeprom, otherwhise it will wait for some time, see also EEPROM_COMMIT_WAIT_DELAY
-   ```
-     1
-   ```
-   ### Example
+   #### Force storage of settings
+   Topic: ``/store``
+
+   See also EEPROM_COMMIT_WAIT_DELAY   
+   ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/store" -m '1'
    ```
