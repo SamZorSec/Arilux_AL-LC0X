@@ -19,7 +19,9 @@ public:
        */
     virtual bool isCompleted(const uint32_t p_count,
                              const uint32_t p_time,
-                             const HSB& p_hsb) const = 0;
+                             const HSB& p_hsb) const {
+        return false;                             
+    };
 
     /*
        * Caluculate the final state, usually this is the same value as from handleEffect

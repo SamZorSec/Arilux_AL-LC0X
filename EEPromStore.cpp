@@ -1,7 +1,6 @@
 #include "EEPromStore.h"
 
 #include <EEPROM.h>
-#include <Arduino.h>
 #include "debug.h"
 
 #define HSB_START_ADDRESS 0
