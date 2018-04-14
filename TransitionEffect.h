@@ -11,13 +11,13 @@ private:
     const HSB m_hsb;
     const uint32_t m_startMillis;
     const uint32_t m_endMillis;
-    const uint16_t m_totalMillis;
+    const uint32_t m_duration;
 
 public:
     /**
-     * p_hsb     : Eding HSB value
+     * p_hsb     : Ending HSB value
      */
-    TransitionEffect(const HSB& p_hsb, const uint32_t p_startMillis, const uint16_t p_millis);
+    TransitionEffect(const HSB& p_hsb, const uint32_t p_startMillis, const uint32_t m_duration);
 
     virtual HSB handleEffect(const uint32_t p_count,
                              const uint32_t p_time,

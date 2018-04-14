@@ -12,11 +12,11 @@ const char* OptValue::key() const {
     return m_key;
 }
 
-uint16_t OptValue::asInt() const {
+int16_t OptValue::asInt() const {
     return atoi(m_value);
 }
 
-uint32_t OptValue::asLong() const {
+int32_t OptValue::asLong() const {
     return atol(m_value);
 }
 

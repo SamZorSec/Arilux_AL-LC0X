@@ -142,7 +142,6 @@ The LED controller can be controlled with the RF remote included with the Arilux
 ### MQTT
 
 ## Filter vs Effect
-What.s the difference in this firmware
 
 ### Effect
 An effect will set the color, effects are usually based on timings like flashing leds, strobe or
@@ -178,11 +177,10 @@ Considarations:
 
 #### Control 
 
-1. Only one topic will be published and subscribed to (as well as the Last Will and Testament topic). 
-   We use individual topics to take advantage of retain and other features MQTT has to offer
+1. We use individual topics to take advantage of retain and other features MQTT has to offer
    If you are have Home Assistant MQTT Discovery enabled, the `light.mqtt_json` platform will be loaded by Home Assistant instead of the `light.mqtt` platform.
 
-   ##### /color topic
+   Topic: ``/color``
    | Name             | format                | Example                | Description                                                                                                                                                                              |
    |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
    | `simple format`  | int,float,float       | 0,100,100              | Set Hue, Saturation and Brightness                                                        |
@@ -190,20 +188,6 @@ Considarations:
    | `hsb`            | hsb=int,float,float,float,float   | hsb=0,100,100,20,30          | Set Hue, Saturation and Brightness white1 and white 2 with assignment   |
    | `seperate`       | h=int s=float b=float w1=float w2=float | h=0 s=100 w1=25 w2=100 | Set as separate assignments  |
    | `combined`       | hsb=int,float,float b=float         | hsb=0,100,100 b=25     | Wil take brightness as 25  |
-
- 
-   ##### /filter topic
-   | Name             | format                | Example                | Description                                                                                                                                                                              |
-   |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
-   | `Filter`          | name=XXX ....         | name=foo parm=XYZ      | Turn on a filter |
-
-
-   ##### /effect topic
-   | Name             | format                | Example                | Description                                                                                                                                                                              |
-   |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
-   | `Effect`          | name=XXX ....         | name=foo parm=XYZ      | Turn on a effect |
-
-
 
    ## Available Filters
 
@@ -265,9 +249,6 @@ Considarations:
    | pulse      | int      | 25       | Width of the on/color pulse measured in ticks    |
    | hsb        | hsb      |          | When a color is given we flash between this color and the current color insteadof off     |
 
-   ```
-   ....
-   ```
    ##### Example
    ```
    mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=flash'  # 50% duty cycle, on/off
@@ -279,13 +260,16 @@ Considarations:
    ```
   
    #### Fade
-   Gradually fade between two colors in a custom time
-   ```
-   ....
-   ```
+   Topic: ``/effect`` name=``fade``
+   Gradually fade between two colors with a given duration
+
+   | Parameter  | type     | default  | Description          |
+   | ---------- | -------- | -------- | -------------------- |
+   | duration   | long     |          | Total time in ms the fade will take   |
+
    ##### Example
    ```
-   ....
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=fade duration=15000 hsb=240,100,60' # Fade from current color to blue over 15 seconds
    ```
 
    ### Other things you can do

@@ -11,8 +11,8 @@ private:
 public:
     OptValue(const uint8_t m_pos, const char* p_key, const char* p_value);
     const char* key() const;
-    uint16_t asInt() const;
-    uint32_t asLong() const;
+    int16_t asInt() const;
+    int32_t asLong() const;
     float asFloat() const;
     const char* asChar() const;
     uint8_t pos() const;

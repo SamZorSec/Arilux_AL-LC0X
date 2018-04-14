@@ -29,6 +29,3 @@ void startTelnet(void);
 #define DEBUG_PRINTLN(x)
 #define DEBUG_PRINTLN_WITH_FMT(x, fmt)
 #endif
-
-
-

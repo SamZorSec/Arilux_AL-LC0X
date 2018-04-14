@@ -4,6 +4,7 @@
   Licensed under the MIT license.
 */
 #include <memory>
+#include "debug.h"
 
 #include <ESP8266WiFi.h>  // https://github.com/esp8266/Arduino
 
@@ -20,7 +21,6 @@
 #include <EEPROM.h>
 
 
-#include "debug.h"
 
 #include "Arilux.h"
 #include "HSB.h"
@@ -133,7 +133,7 @@ enum BootSequenceStatus {
     END
 };
 
-
+// Boot sequence setup
 BootSequenceStatus timedStates[] = {WAITFORSTATECAPTURE, WAITFORCOMMANDCAPTURE};
 uint32_t timeTimedStates2[] = {2000, 2000};
 std::unique_ptr<StateMachine<BootSequenceStatus>> bootSequence(nullptr);
@@ -187,12 +187,6 @@ void publishToMQTT(const char* topic, const char* payload) {
 ///////////////////////////////////////////////////////////////////////////
 //  MQTT
 ///////////////////////////////////////////////////////////////////////////
-/*
-   Function called when a MQTT message arrived
-   @param p_topic   The topic of the MQTT message
-   @param p_payload The payload of the MQTT message
-   @param p_length  The length of the payload
-*/
 
 /**
  * Parse a potential color string from a topic´s value
@@ -255,8 +249,19 @@ HSB hsbFromString(const HSB& hsb, const char* data) {
     return HSB(h, s, b, w1, w2);
 }
 
+/*
+   Function called when a MQTT message arrived
+   @param p_topic   The topic of the MQTT message
+   @param p_payload The payload of the MQTT message
+   @param p_length  The length of the payload
+*/
 void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     // Mem copy into own buffer, I am not sure if p_payload is null terminated
+    if (p_length >= sizeof(mqttBuffer)) {
+        DEBUG_PRINT(F("MQTT Message to long."));
+        return;
+    }
+
     memcpy(mqttBuffer, p_payload, p_length);
     mqttBuffer[p_length] = 0;
     DEBUG_PRINT(F("MQTT Message received: "));
@@ -294,7 +299,9 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         const char* name;
         int16_t pulse = -1;
         int16_t period = -1;
-        OptParser::get(mqttBuffer, [&name, &period, &pulse](OptValue v) {
+        int32_t duration = -1;
+        const HSB hsb = hsbFromString(workingHsb, mqttBuffer);
+        OptParser::get(mqttBuffer, [&name, &period, &pulse, &duration](OptValue v) {
             // Get variables from filter
             if (strcmp(v.key(), ENAME) == 0) {
                 name = v.asChar();
@@ -307,21 +314,28 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             if (strcmp(v.key(), "pulse") == 0) {
                 pulse = v.asInt();
             }
+
+            if (strcmp(v.key(), "duration") == 0) {
+                duration = v.asLong();
+            }
         });
 
-        if (strstr(name, EFFECT_NONE) != nullptr) {
+        if (strcmp(name, EFFECT_NONE) == 0) {
             currentEffect.reset(new NoEffect());
         } else if (strcmp(name, EFFECT_RAINBOW) == 0) {
             currentEffect.reset(new RainbowEffect());
         } else if (strcmp(name, EFFECT_FLASH) == 0) {
             period = period < 2 ? FRAMES_PER_SECOND : period;
             pulse = pulse < period && pulse > 0 ? pulse : period >> 1;
-            const HSB hsb = hsbFromString(workingHsb, mqttBuffer);
 
             if (hsb == workingHsb) {
                 currentEffect.reset(new FlashEffect(workingHsb.toBuilder().brightness(0).build(), transitionCounter, period, pulse));
             } else {
                 currentEffect.reset(new FlashEffect(hsb, transitionCounter, period, pulse));
+            }
+        } else if (strcmp(name, EFFECT_FADE) == 0) {
+            if (duration > 0) {
+                currentEffect.reset(new TransitionEffect(hsb, millis(), duration));
             }
         }
     } else if (strstr(topicPos, MQTT_RESTART_TOPIC) != nullptr) {
@@ -764,6 +778,7 @@ void loop() {
         if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             ArduinoOTA.handle();
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+            // This might 'overshoot' the effect by a littie,, do we accept that?
             if (currentEffect->isCompleted(transitionCounter, currentMillis, workingHsb)) {
                 DEBUG_PRINTLN(F("Transition Completed, setting NoEffect"));
                 workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);

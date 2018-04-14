@@ -3,11 +3,11 @@
 
 TransitionEffect::TransitionEffect(const HSB& p_hsb,
                                    const uint32_t p_startMillis,
-                                   const uint16_t p_millis) : Effect(),
+                                   const uint32_t m_duration) : Effect(),
     m_hsb(p_hsb),
     m_startMillis(p_startMillis),
-    m_endMillis(p_startMillis + p_millis),
-    m_totalMillis(p_millis) {
+    m_endMillis(p_startMillis + m_duration),
+    m_duration(m_duration) {
 }
 
 HSB TransitionEffect::handleEffect(const uint32_t p_count,
@@ -25,13 +25,13 @@ HSB TransitionEffect::finalState(const uint32_t p_count,
 bool TransitionEffect::isCompleted(const uint32_t p_count,
                                    const uint32_t p_time,
                                    const HSB& hsb) const {
-    return p_time >= m_startMillis + m_totalMillis;
+    return p_time > m_endMillis;
 }
 
 HSB TransitionEffect::calcHSB(const uint32_t p_count,
                               const uint32_t p_time,
                               const HSB& _hsb) const {
-    const uint16_t percent = ((p_time - m_startMillis) * 1000) / m_totalMillis;
+    const uint16_t percent = ((p_time - m_startMillis) * 1000) / m_duration;
     const uint16_t m_hsbsPath = HSB::hueShortestPath(_hsb.hue(), m_hsb.hue());
     const uint16_t newHue = map(percent, 0, 1000, _hsb.hue(), m_hsbsPath);
     return HSB(
