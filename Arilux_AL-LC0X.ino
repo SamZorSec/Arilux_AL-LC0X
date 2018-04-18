@@ -294,7 +294,7 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             // visible
             currentFilter.reset(new FadingFilter(currentHsb, alpha));
         }
-    } else if (strstr(topicPos, MQTT_EFFECT_TOPIC) != nullptr) {
+    } else if (strcmp(topicPos, MQTT_EFFECT_TOPIC) == 0) { // Intentionlly strcmp, we don´t want filters to start on reboot of app
         // Get variables from payload
         const char* name;
         int16_t pulse = -1;
@@ -342,13 +342,18 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         if (strcmp(mqttBuffer, "1") == 0) {
             ESP.restart();
         }
+    } else if (strstr(topicPos, MQTT_STATE_TOPIC) != nullptr) {
+        if (strcmp(mqttBuffer, "ON") == 0) {
+            workingHsb = getOnState(workingHsb);
+        } else if (strcmp(mqttBuffer, "OFF") == 0) {
+            workingHsb = getOffState(workingHsb);
+        }
     } else if (strstr(topicPos, MQTT_STORE_TOPIC) != nullptr) {
         if (strcmp(mqttBuffer, "1") == 0) {
             eepromStore.forceStorage(settingsDTO);
         }
     } else if (strstr(topicPos, MQTT_REMOTE_TOPIC) != nullptr) {
         const uint32_t base = atol(mqttBuffer);
-
         if (base > 0) {
             settingsDTO.remote(base);
         }
@@ -711,6 +716,7 @@ void setup() {
                         mqttTopicPrefix,
                         MQTT_COLOR_STATE_TOPIC,
                         MQTT_REMOTE_STATE_TOPIC,
+                        MQTT_STATE_STATE_TOPIC,
                         mqttClient,
                         MQTT_STATE_UPDATE_DELAY
                     ));

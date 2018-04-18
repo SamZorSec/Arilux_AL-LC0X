@@ -9,13 +9,16 @@ MQTTStore::MQTTStore(
     const char* p_baseTopic,
     const char* p_hsbTopic,
     const char* p_remoteBaseTopic,
+    const char* p_stateTopic,
     const PubSubClient& p_mqttClient,
     const uint32_t p_debounceWaitTime) :
     Settings(0, p_debounceWaitTime),
     m_baseTopic(p_baseTopic),
     m_hsbTopic(p_hsbTopic),
     m_remoteBaseTopic(p_remoteBaseTopic),
-    m_mqttClient(p_mqttClient) {
+    m_stateTopic(p_stateTopic),
+    m_mqttClient(p_mqttClient),
+    m_previousOnState(false) {
 }
 
 void MQTTStore::storeHsb(const HSB& p_hsb) {
@@ -29,6 +32,12 @@ void MQTTStore::storeHsb(const HSB& p_hsb) {
             (p_hsb.white2() / 10.2)
            );
     publish(m_baseTopic, m_hsbTopic, payloadBuffer);
+
+    // Publish state only when it changes
+    if (m_previousOnState != p_hsb.brightness() > 0) {
+        m_previousOnState = p_hsb.brightness() > 0;
+        publish(m_baseTopic, m_stateTopic, m_previousOnState ? "ON" : "OFF");
+    }
 }
 
 void MQTTStore::storeRemoteBase(const uint32_t p_remoteBase) {

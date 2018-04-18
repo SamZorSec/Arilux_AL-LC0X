@@ -77,6 +77,7 @@ public:
 
     void advance() {
         if (m_status == m_lastItem) {
+            m_bootSequenceFinnished = true;
             return;
         }
 

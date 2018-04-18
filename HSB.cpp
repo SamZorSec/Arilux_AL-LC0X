@@ -101,7 +101,7 @@ bool HSB::operator ==(const HSB& rhs) const {
 }
 
 bool HSB::operator !=(const HSB& rhs) const {
-    return !(m_hue == rhs.m_hue);
+    return !(*this == rhs);
 }
 
 HSB& HSB::operator = (const HSB& rhs) {

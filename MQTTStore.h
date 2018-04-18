@@ -10,11 +10,14 @@ private:
     const char* m_baseTopic;
     const char* m_hsbTopic;
     const char* m_remoteBaseTopic;
+    const char* m_stateTopic;
+    bool m_previousOnState;
 public:
     MQTTStore(
         const char* p_baseTopic,
         const char* p_hsbTopic,
         const char* p_remoteBaseTopic,
+        const char* p_stateTopic,
         const PubSubClient& p_mqttClient,
         const uint32_t p_debounceWaitTime);
 
