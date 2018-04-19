@@ -738,8 +738,9 @@ void handleEffects() {
 
     currentHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
     currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
-    currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
+    // Last filter is fading filter and we don´t want to store this in settings.
     settingsDTO.hsb(currentHsb);
+    currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
     uint16_t colors[3];
     currentHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
