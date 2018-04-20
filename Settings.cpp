@@ -2,52 +2,35 @@
 #include "debug.h"
 
 SettingsDTO::SettingsDTO() :
-    SettingsDTO(HSB(0, 0, 50, 0, 0), 0, 0) {
+    SettingsDTO(HSB(0, 0, 50, 0, 0), 0, 0, false) {
 }
 
-SettingsDTO::SettingsDTO(const HSB& p_hsb, const uint32_t p_remoteBase, const uint8_t p_filters) :
+SettingsDTO::SettingsDTO(const HSB& p_hsb,
+                         const uint32_t p_remoteBase,
+                         const uint8_t p_filters,
+                         const bool p_power) :
     m_hsb(p_hsb),
     m_remoteBase(p_remoteBase),
-    m_filters(p_filters),
-    m_mHsb(false),
-    m_mRemoteBase(false) {
-}
+    m_filter(p_filters),
+    m_power(p_power),
 
-void SettingsDTO::hsb(const HSB& p_hsb) {
-    m_mHsb = m_mHsb || p_hsb != m_hsb;
-    m_hsb = p_hsb;
-}
-
-HSB SettingsDTO::hsb() const {
-    return m_hsb;
-}
-
-void SettingsDTO::filter(const uint8_t num, const bool stat) {
-    //    const uint8_t before = m_data.m_filters;
-    //    m_data.m_filters = stat ? m_data.m_filters |= (uint8_t)0x01 << num : m_data.m_filters &= ~((uint8_t)0x01 << num);
-    //    m_modified = m_modified || m_data.m_filters != before;
-}
-
-bool SettingsDTO::filter(const uint8_t num) const {
-    return 0;
-    //    return (1 >> num) & 0x01;
-}
-void SettingsDTO::remote(const uint32_t p_remoteBase) {
-    m_remoteBase = m_remoteBase || p_remoteBase != m_remoteBase;
-    m_remoteBase = p_remoteBase;
-}
-
-uint32_t SettingsDTO::remote() const {
-    return m_remoteBase;
+    m_anyModified(false),
+    mod_hsb(false),
+    mod_remoteBase(false),
+    mod_filter(false),
+    mod_power(false) {
 }
 
 bool SettingsDTO::modified() const {
-    return m_mHsb || m_mRemoteBase;
+    return m_anyModified;
 }
 
 void SettingsDTO::reset() {
-    m_mRemoteBase = false;
-    m_mHsb = false;
+    mod_hsb = false;
+    mod_remoteBase = false;
+    mod_filter = false;
+    mod_power = false;
+    m_anyModified = false;
 }
 
 Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWaitTime):
@@ -91,10 +74,12 @@ bool Settings::handle(SettingsDTO& settings) {
 void Settings::forceStorage(SettingsDTO& settings) {
     // TODO optimise for each changed variable
     // We have to keep this local for multiple settings
-    storeHsb(settings.hsb());
     DEBUG_PRINTLN(F("Settings : Store HSB"));
-    storeRemoteBase(settings.remote());
+    storeHsb(settings);
     DEBUG_PRINTLN(F("Settings : Store Remote"));
+    storeRemoteBase(settings);
+    DEBUG_PRINTLN(F("Settings : Store Power"));
+    storePower(settings);
     m_startCommitTime = millis();
     m_modified = false;
 }

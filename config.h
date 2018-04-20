@@ -92,6 +92,13 @@
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 #endif
 
+// When set we store the state (ON/OFF) in the color/state topic
+// Usefull for limited systems like HASS where you cannot easely use different mqtt topics
+#ifndef STATE_IN_COLOR_TOPIC
+#define STATE_IN_COLOR_TOPIC                    false
+#endif
+
+
 // Base hostname, used for the MQTT Client ID and OTA hostname
 #ifndef HOSTNAME_TEMPLATE
 #define HOSTNAME_TEMPLATE                       "ARILUX%s"
@@ -125,8 +132,8 @@
 #define SON                         "ON"
 #define SOFF                        "OFF"
 
-#define BRIGHTNESS_INCREASE     5
-#define BRIGHTNESS_DECREASE     -5
+#define BRIGHTNESS_INCREASE     50
+#define BRIGHTNESS_DECREASE     -50
 
 #ifndef EEPROM_COMMIT_WAIT_DELAY
 // Number of milli seconds to wait untill we commit to EEPROM

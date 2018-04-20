@@ -11,40 +11,44 @@ MQTTStore::MQTTStore(
     const char* p_remoteBaseTopic,
     const char* p_stateTopic,
     const PubSubClient& p_mqttClient,
-    const uint32_t p_debounceWaitTime) :
+    const uint32_t p_debounceWaitTime,
+    const bool p_stateInColorTopic) :
     Settings(0, p_debounceWaitTime),
     m_baseTopic(p_baseTopic),
     m_hsbTopic(p_hsbTopic),
     m_remoteBaseTopic(p_remoteBaseTopic),
     m_stateTopic(p_stateTopic),
     m_mqttClient(p_mqttClient),
-    m_previousOnState(false) {
+    m_stateInColorTopic(p_stateInColorTopic) {
 }
 
-void MQTTStore::storeHsb(const HSB& p_hsb) {
-    char topicBuffer[64];
+
+void MQTTStore::storeHsb(const SettingsDTO& settings) {
     char payloadBuffer[64];
+    const HSB hsb = settings.hsb();
     sprintf(payloadBuffer, "hsb=%d,%.2f,%.2f,%.2f,%.2f",
-            p_hsb.hue(),
-            (p_hsb.saturation() / 10.2),
-            (p_hsb.brightness() / 10.2),
-            (p_hsb.white1() / 10.2),
-            (p_hsb.white2() / 10.2)
+            hsb.hue(),
+            (hsb.saturation() / 10.2),
+            (hsb.brightness() / 10.2),
+            (hsb.white1() / 10.2),
+            (hsb.white2() / 10.2)
            );
-    publish(m_baseTopic, m_hsbTopic, payloadBuffer);
 
-    // Publish state only when it changes
-    if (m_previousOnState != p_hsb.brightness() > 0) {
-        m_previousOnState = p_hsb.brightness() > 0;
-        publish(m_baseTopic, m_stateTopic, m_previousOnState ? "ON" : "OFF");
+    if (m_stateInColorTopic) {
+        sprintf(payloadBuffer + strlen(payloadBuffer), " state=%s", settings.power() ? "ON" : "OFF");
     }
+
+    publish(m_baseTopic, m_hsbTopic, payloadBuffer);
 }
 
-void MQTTStore::storeRemoteBase(const uint32_t p_remoteBase) {
-    char topicBuffer[64];
+void MQTTStore::storeRemoteBase(const SettingsDTO& settings) {
     char payloadBuffer[16];
-    sprintf(payloadBuffer, "%d", p_remoteBase);
+    sprintf(payloadBuffer, "%d", settings.remoteBase());
     publish(m_baseTopic, m_remoteBaseTopic, payloadBuffer);
+}
+
+void MQTTStore::storePower(const SettingsDTO& settings) {
+    publish(m_baseTopic, m_stateTopic, settings.power() ? "ON" : "OFF");
 }
 
 void MQTTStore::publish(const char* baseTopic, const char* topic, const char* payload) {

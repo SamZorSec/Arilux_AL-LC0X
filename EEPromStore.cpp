@@ -24,26 +24,34 @@ blobData_t EEPromStore::getBlob() const {
         return data;
     } else {
         DEBUG_PRINTLN(F("EEPromStore : CRC mismatch "));
-        return {0, 0, 0, 0, 0, 0, 0};
+        return {0, 0, 50, 0, 0, 0, 0};
     }
 }
 
-void EEPromStore::storeHsb(const HSB& p_hsb) {
+void EEPromStore::storeHsb(const SettingsDTO& settings) {
+    const HSB hsb = settings.hsb();
     blobData_t data = getBlob();
-    data.m_hue = p_hsb.hue();
-    data.m_saturation = p_hsb.saturation();
-    data.m_brightness = p_hsb.brightness();
-    data.m_white1 = p_hsb.white1();
-    data.m_white2 = p_hsb.white2();
+    data.m_hue = hsb.hue();
+    data.m_saturation = hsb.saturation();
+    data.m_brightness = hsb.brightness();
+    data.m_white1 = hsb.white1();
+    data.m_white2 = hsb.white2();
     storeBlob(data);
     DEBUG_PRINTLN(F("EEPromStore : HSB "));
 }
 
-void EEPromStore::storeRemoteBase(const uint32_t p_remoteBase) {
+void EEPromStore::storeRemoteBase(const SettingsDTO& settings) {
     blobData_t data = getBlob();
-    data.m_remoteBase = p_remoteBase;
+    data.m_remoteBase = settings.remoteBase();
     storeBlob(data);
     DEBUG_PRINTLN(F("EEPromStore : remoteBase "));
+}
+
+void EEPromStore::storePower(const SettingsDTO& settings) {
+    blobData_t data = getBlob();
+    data.m_power = settings.power();
+    storeBlob(data);
+    DEBUG_PRINTLN(F("EEPromStore : power "));
 }
 
 SettingsDTO EEPromStore::get() const {
@@ -58,7 +66,8 @@ SettingsDTO EEPromStore::get() const {
         return SettingsDTO(
                    HSB(data.m_hue, data.m_saturation, data.m_brightness, data.m_white1, data.m_white2),
                    data.m_remoteBase,
-                   0);
+                   0,
+                   data.m_power);
     } else {
         DEBUG_PRINT(F("EEPromStore : CRC mismatch "));
         return SettingsDTO();

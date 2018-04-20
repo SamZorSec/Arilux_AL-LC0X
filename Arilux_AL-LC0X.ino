@@ -45,7 +45,7 @@
 // Filters
 #include "NoFilter.h"
 #include "FadingFilter.h"
-#include "BrightnessFilter.h"
+#include "BasicFilters.h"
 
 // Number of ms per effect transistion, 20ms == 50 Hz
 #define FRAMES_PER_SECOND        50
@@ -99,6 +99,7 @@ std::unique_ptr<Filter> currentFilter(new FadingFilter(workingHsb, FILTER_FADING
 
 // Filter to control overall brightness
 BrightnessFilter brightnessFilter(100);
+PowerFilter powerFilter(true);
 
 // Arilux device interface
 Arilux arilux;
@@ -273,6 +274,15 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     // Process topics
     if (strstr(topicPos, MQTT_COLOR_TOPIC) != nullptr) {
         workingHsb = hsbFromString(workingHsb, mqttBuffer);
+        bool power;
+        OptParser::get(mqttBuffer, [&power](OptValue v) {
+            if (strcmp(v.asChar(), "ON") == 0) {
+                power = true;
+            } else if (strcmp(v.asChar(), "OFF") == 0) {
+                power = false;
+            }
+        });
+        settingsDTO.power(power);
     } else if (strstr(topicPos, MQTT_FILTER_TOPIC) != nullptr) {
         // Get variables from payload
         const char* name;
@@ -344,9 +354,9 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         }
     } else if (strstr(topicPos, MQTT_STATE_TOPIC) != nullptr) {
         if (strcmp(mqttBuffer, "ON") == 0) {
-            workingHsb = getOnState(workingHsb);
+            settingsDTO.power(true);
         } else if (strcmp(mqttBuffer, "OFF") == 0) {
-            workingHsb = getOffState(workingHsb);
+            settingsDTO.power(false);
         }
     } else if (strstr(topicPos, MQTT_STORE_TOPIC) != nullptr) {
         if (strcmp(mqttBuffer, "1") == 0) {
@@ -354,8 +364,9 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         }
     } else if (strstr(topicPos, MQTT_REMOTE_TOPIC) != nullptr) {
         const uint32_t base = atol(mqttBuffer);
+
         if (base > 0) {
-            settingsDTO.remote(base);
+            settingsDTO.remoteBase(base);
         }
     }
 }
@@ -483,10 +494,10 @@ void handleRFRemote(void) {
         // Before boot is finnished and the remote
         // is pressed we will store the remote controle base code
         if (!bootSequence->finnished()) {
-            settingsDTO.remote(rcSwitch.getReceivedValue() & 0xFFFF00);
+            settingsDTO.remoteBase(rcSwitch.getReceivedValue() & 0xFFFF00);
         }
 
-        const uint32_t value = rcSwitch.getReceivedValue() - settingsDTO.remote();
+        const uint32_t value = rcSwitch.getReceivedValue() - settingsDTO.remoteBase();
         DEBUG_PRINT(F("Key Received : "));
         DEBUG_PRINT(value & 0xFFFF00);
         DEBUG_PRINT(F(" / key:"));
@@ -504,15 +515,19 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_OFF:
-                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-                currentEffect.reset(new NoEffect());
-                workingHsb = getOffState(workingHsb);
+                settingsDTO.power(false);
+                //                powerFilter.power(false);
+                //                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
+                //                currentEffect.reset(new NoEffect());
+                //                workingHsb = getOffState(workingHsb);
                 break;
 
             case ARILUX_REMOTE_KEY_ON:
-                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-                currentEffect.reset(new NoEffect());
-                workingHsb = getOnState(workingHsb);
+                settingsDTO.power(true);
+                //                powerFilter.power(true);
+                //                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
+                //                currentEffect.reset(new NoEffect());
+                //                workingHsb = getOnState(workingHsb);
                 break;
 
             case ARILUX_REMOTE_KEY_RED:
@@ -718,7 +733,8 @@ void setup() {
                         MQTT_REMOTE_STATE_TOPIC,
                         MQTT_STATE_STATE_TOPIC,
                         mqttClient,
-                        MQTT_STATE_UPDATE_DELAY
+                        MQTT_STATE_UPDATE_DELAY,
+                        STATE_IN_COLOR_TOPIC
                     ));
     // Setup mqtt
     mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
@@ -740,6 +756,7 @@ void handleEffects() {
     currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     // Last filter is fading filter and we don´t want to store this in settings.
     settingsDTO.hsb(currentHsb);
+    currentHsb = powerFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
     uint16_t colors[3];
     currentHsb.constantRGB(colors);
@@ -837,11 +854,11 @@ void loop() {
                 eepromStore.handle(settingsDTO);
             }
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
-            settingsDTO.reset();
-            EEPROM.commit();
-        } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             connectMQTTTopic();
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+            powerFilter.power(settingsDTO.power());
+            settingsDTO.reset();
+            EEPROM.commit();
             bootSequence->handle();
         }
 

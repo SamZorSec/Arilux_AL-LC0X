@@ -11,7 +11,7 @@ private:
     const char* m_hsbTopic;
     const char* m_remoteBaseTopic;
     const char* m_stateTopic;
-    bool m_previousOnState;
+    bool m_stateInColorTopic;
 public:
     MQTTStore(
         const char* p_baseTopic,
@@ -19,10 +19,12 @@ public:
         const char* p_remoteBaseTopic,
         const char* p_stateTopic,
         const PubSubClient& p_mqttClient,
-        const uint32_t p_debounceWaitTime);
+        const uint32_t p_debounceWaitTime,
+        const bool p_stateInColorTopic);
 
 private:
-    virtual void storeHsb(const HSB& p_hsb) override;
-    virtual void storeRemoteBase(const uint32_t p_remoteBase) override;
+    virtual void storeHsb(const SettingsDTO& settings) override;
+    virtual void storeRemoteBase(const SettingsDTO& settings) override;
+    virtual void storePower(const SettingsDTO& settings) override;
     void publish(const char* baseTopic, const char* topic, const char* payload);
 };

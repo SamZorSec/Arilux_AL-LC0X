@@ -10,6 +10,7 @@ struct blobData_t {
     uint16_t m_white2;
     uint16_t m_filters;
     uint32_t m_remoteBase;
+    bool     m_power;
 };
 
 class EEPromStore final : public Settings {
@@ -21,8 +22,9 @@ public:
     SettingsDTO get() const;
 
 private:
-    virtual void storeHsb(const HSB& p_hsb) override;
-    virtual void storeRemoteBase(const uint32_t p_remoteBase) override;
+    virtual void storeHsb(const SettingsDTO& settings) override;
+    virtual void storeRemoteBase(const SettingsDTO& settings) override;
+    virtual void storePower(const SettingsDTO& settings) override;
 
     blobData_t getBlob() const;
     void storeBlob(const blobData_t& p_blob) const;
