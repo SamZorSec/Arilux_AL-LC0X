@@ -275,14 +275,20 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     if (strstr(topicPos, MQTT_COLOR_TOPIC) != nullptr) {
         workingHsb = hsbFromString(workingHsb, mqttBuffer);
         bool power;
-        OptParser::get(mqttBuffer, [&power](OptValue v) {
+        bool hasPowerValue = false;
+        OptParser::get(mqttBuffer, [&power, &hasPowerValue](OptValue v) {
             if (strcmp(v.asChar(), "ON") == 0) {
+                hasPowerValue = true;
                 power = true;
             } else if (strcmp(v.asChar(), "OFF") == 0) {
+                hasPowerValue = true;
                 power = false;
             }
         });
-        settingsDTO.power(power);
+
+        if (hasPowerValue) {
+            settingsDTO.power(power);
+        }
     } else if (strstr(topicPos, MQTT_FILTER_TOPIC) != nullptr) {
         // Get variables from payload
         const char* name;

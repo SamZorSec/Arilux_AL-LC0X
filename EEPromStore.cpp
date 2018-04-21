@@ -62,7 +62,7 @@ SettingsDTO EEPromStore::get() const {
     const uint16_t calculcatedCRC = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
 
     if (storedCRC == calculcatedCRC) {
-        DEBUG_PRINT(F("EEPromStore : CRC match "));
+        DEBUG_PRINTLN(F("EEPromStore : CRC match "));
         return SettingsDTO(
                    HSB(data.m_hue, data.m_saturation, data.m_brightness, data.m_white1, data.m_white2),
                    data.m_remoteBase,

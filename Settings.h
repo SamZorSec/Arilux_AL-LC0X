@@ -5,7 +5,45 @@
 
 #define SETTINGS_PROPERTY(typeIn,name) \
     typeIn name() const {return m_##name;} \
-    void name(const typeIn& value){mod_##name = mod_##name || value != m_##name; m_anyModified=m_anyModified || mod_##name;m_##name=value;}
+    void name(const typeIn& value){m_modifications.name = m_modifications.name || value != m_##name; m_##name = value;}
+
+struct Modifications {
+    Modifications() : hsb(false), remoteBase(false), filter(false), power(false) {}
+    Modifications(bool p_Hsb, bool p_RemoteBase, bool p_Filter, bool p_Power) :
+        hsb(p_Hsb), remoteBase(p_RemoteBase), filter(p_Filter), power(p_Power) {}
+    bool hsb;
+    bool remoteBase;
+    bool filter;
+    bool power;
+    void reset() {
+        hsb = false;
+        remoteBase = false;
+        filter = false;
+        power = false;
+    }
+    bool modified() const {
+        return hsb || power || remoteBase || filter;
+    }
+    Modifications& operator|(const Modifications& m) {
+        hsb = hsb || m.hsb;
+        remoteBase = remoteBase || m.remoteBase;
+        filter = filter || m.filter;
+        power = power || m.power;
+        return *this;
+    }
+
+    Modifications& operator = (const Modifications& rhs) {
+        if (&rhs == this) {
+            return *this;
+        }
+
+        hsb = rhs.hsb;
+        remoteBase = rhs.remoteBase;
+        filter = rhs.filter;
+        power = rhs.power;
+        return *this;
+    }
+};
 
 class SettingsDTO final {
 private:
@@ -14,11 +52,7 @@ private:
     uint8_t m_filter;
     bool m_power;
 
-    bool m_anyModified;
-    bool mod_hsb;
-    bool mod_remoteBase;
-    bool mod_filter;
-    bool mod_power;
+    Modifications m_modifications;
 public:
     explicit SettingsDTO();
     SettingsDTO(const HSB& p_hsb,
@@ -31,6 +65,10 @@ public:
     SETTINGS_PROPERTY(uint8_t, filter)
     SETTINGS_PROPERTY(uint32_t, remoteBase)
 
+    Modifications modifications() const {
+        return m_modifications;
+    }
+
     bool modified() const;
 
     void reset();
@@ -42,7 +80,7 @@ private:
     const uint32_t m_commitWaitTime;
     uint32_t m_startCommitTime;
     uint32_t m_startDebounceTime;
-    bool m_modified;
+    Modifications m_modifications;
 private:
     virtual void storeHsb(const SettingsDTO& settings) = 0;
     virtual void storeRemoteBase(const SettingsDTO& settings) = 0;
@@ -51,6 +89,7 @@ public:
     Settings(const uint32_t p_debounceWaitTime, const uint32_t p_startDebounceTime);
     bool handle(SettingsDTO& settingsDTO);
     void forceStorage(SettingsDTO& settingsDTO);
+    void reset();
 };
 
 

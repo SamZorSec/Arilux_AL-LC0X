@@ -13,24 +13,16 @@ SettingsDTO::SettingsDTO(const HSB& p_hsb,
     m_remoteBase(p_remoteBase),
     m_filter(p_filters),
     m_power(p_power),
-
-    m_anyModified(false),
-    mod_hsb(false),
-    mod_remoteBase(false),
-    mod_filter(false),
-    mod_power(false) {
+    m_modifications() {
 }
 
 bool SettingsDTO::modified() const {
-    return m_anyModified;
+    return m_modifications.modified();
 }
 
+
 void SettingsDTO::reset() {
-    mod_hsb = false;
-    mod_remoteBase = false;
-    mod_filter = false;
-    mod_power = false;
-    m_anyModified = false;
+    m_modifications.reset();
 }
 
 Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWaitTime):
@@ -38,7 +30,7 @@ Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWai
     m_commitWaitTime(p_commitWaitTime),
     m_startCommitTime(millis() - p_commitWaitTime),
     m_startDebounceTime(millis()),
-    m_modified(false) {
+    m_modifications() {
 }
 
 bool Settings::handle(SettingsDTO& settings) {
@@ -53,13 +45,13 @@ bool Settings::handle(SettingsDTO& settings) {
     } else {
         if (settings.modified()) {
             m_startDebounceTime = millis();
-            m_modified = true;
+            m_modifications = m_modifications | settings.modifications();
         } else {
             // Only write HSB to EEPROM if
             // if HSB changed..
             // If we are not debouncing, eg, user changes HSB within XX ms of last change
             // We didn´t write to EEPROM in the last m_commitWaitTime ms
-            if (m_modified &&
+            if (m_modifications.modified() &&
                 millis() - m_startDebounceTime > m_debounceWaitTime &&
                 millis() - m_startCommitTime > m_commitWaitTime) {
                 forceStorage(settings);
@@ -74,12 +66,22 @@ bool Settings::handle(SettingsDTO& settings) {
 void Settings::forceStorage(SettingsDTO& settings) {
     // TODO optimise for each changed variable
     // We have to keep this local for multiple settings
-    DEBUG_PRINTLN(F("Settings : Store HSB"));
-    storeHsb(settings);
-    DEBUG_PRINTLN(F("Settings : Store Remote"));
-    storeRemoteBase(settings);
-    DEBUG_PRINTLN(F("Settings : Store Power"));
-    storePower(settings);
+    if (m_modifications.hsb || true) {
+        DEBUG_PRINTLN(F("Settings : Store HSB"));
+        storeHsb(settings);
+    }
+
+    if (m_modifications.remoteBase || true) {
+        DEBUG_PRINTLN(F("Settings : Store Remote"));
+        storeRemoteBase(settings);
+    }
+
+    if (m_modifications.power || true) {
+        DEBUG_PRINTLN(F("Settings : Store Power"));
+        storePower(settings);
+    }
+
+    // Need to implement filter
     m_startCommitTime = millis();
-    m_modified = false;
+    m_modifications.reset();
 }

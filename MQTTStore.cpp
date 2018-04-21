@@ -49,6 +49,10 @@ void MQTTStore::storeRemoteBase(const SettingsDTO& settings) {
 
 void MQTTStore::storePower(const SettingsDTO& settings) {
     publish(m_baseTopic, m_stateTopic, settings.power() ? "ON" : "OFF");
+
+    if (m_stateInColorTopic) {
+        storeHsb(settings);
+    }
 }
 
 void MQTTStore::publish(const char* baseTopic, const char* topic, const char* payload) {
