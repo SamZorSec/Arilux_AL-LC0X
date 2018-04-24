@@ -27,7 +27,8 @@
 
 // Included in code so we can increase packet size
 // This is something that´s not possible with Arduino IDE, currently using v2.6
-#define MQTT_MAX_PACKET_SIZE 256
+// #define MQTT_MAX_PACKET_SIZE 128
+// #define MQTT_MAX_TRANSFER_SIZE 128
 #include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
 #include "Settings.h"
@@ -56,9 +57,12 @@ const char* chipId;
 const char* mqttClientID;
 const char* mqttTopicPrefix;
 const char* mqttLastWillTopic;
+const char* mqttColorTopic;
 const char* mqttSubscriberTopic;
 const char* mqttSubscriberStateTopic;
 const char* homeAssistantDiscoveryTopic;
+const char* homeAssistantDiscoveryMsg;
+
 // length of the base (#) topic we subscribe to, we use this as an offset
 // when we get topics so we can easely compare this with our seperate topics
 size_t mqttSubscriberTopicStrLength = 0;
@@ -366,7 +370,7 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
         }
     } else if (strstr(topicPos, MQTT_STORE_TOPIC) != nullptr) {
         if (strcmp(mqttBuffer, "1") == 0) {
-            eepromStore.forceStorage(settingsDTO);
+            eepromStore.store(settingsDTO, true);
         }
     } else if (strstr(topicPos, MQTT_REMOTE_TOPIC) != nullptr) {
         const uint32_t base = atol(mqttBuffer);
@@ -426,22 +430,11 @@ void connectMQTT(void) {
         if (millis() - currentMqttReconnect > 1000) {
             currentMqttReconnect = millis();
 
-            if (mqttClient.connect(mqttClientID, MQTT_USER, MQTT_PASS, mqttLastWillTopic, 0, 1, "dead")) {
-                publishToMQTT(mqttLastWillTopic, "alive");
+            if (mqttClient.connect(mqttClientID, MQTT_USER, MQTT_PASS, mqttLastWillTopic, 0, 1, MQTT_LASTWILL_OFFLINE)) {
+                publishToMQTT(mqttLastWillTopic, MQTT_LASTWILL_ONLINE);
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-                /*
-                                DynamicmqttBuffer outgoingJsonPayload;
-                                JsonObject& root = outgoingJsonPayload.createObject();
-                                root["name"] = friendlyName;
-                                root["platform"] = "mqtt_json";
-                                root["state_topic"] = mqttStateTopic;
-                                root["command_topic"] = mqttCommandTopic;
-                                root["brightness"] = true;
-                                root["rgb"] = true;
-                                root["white_value"] = true;
-                                root.printTo(mqttBuffer, sizeof(mqttBuffer));
-                                publishToMQTT(homeAssistantDiscoveryTopic, mqttBuffer);
-                                */
+                DEBUG_PRINTLN(homeAssistantDiscoveryMsg);
+                publishToMQTT(homeAssistantDiscoveryTopic, homeAssistantDiscoveryMsg);
 #endif
 
                 if (bootSequence->finnished()) {
@@ -653,7 +646,16 @@ void setup() {
     mqttSubscriberTopicStrLength = strlen(mqttSubscriberTopic) - 2;
     // friendlyName : Arilux LC11 RGBW LED Controller 00FF1234
     friendlyName = makeString("Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipId);
-    homeAssistantDiscoveryTopic = makeString("%s/light/ARILUX_%s_%s_%s/config", HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, arilux.getColorString(), chipId);
+    homeAssistantDiscoveryTopic = makeString(HOME_ASSISTANCE_MQTT_DISCOVERY_TOPIC_TEMPLATE,
+                                             HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, arilux.getColorString(), chipId);
+    // Hass Message for auto discovery
+    homeAssistantDiscoveryMsg = makeString(MQTT_HASS_DISCOVERY_TEMPLATE,
+                                           friendlyName,
+                                           mqttTopicPrefix,
+                                           MQTT_COLOR_TOPIC,
+                                           mqttTopicPrefix,
+                                           MQTT_COLOR_TOPIC,
+                                           mqttLastWillTopic);
     // Serial print basic info
     Serial.print("Hostname:");
     Serial.println(mqttClientID);
@@ -748,7 +750,6 @@ void setup() {
     effectPeriodStartMillis = millis();
     settingsDTO.reset();
 }
-
 
 void handleEffects() {
     const uint32_t currentMillies = millis();

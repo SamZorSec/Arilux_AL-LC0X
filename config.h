@@ -68,6 +68,7 @@
 #define MQTT_LASTWILL_TOPIC_TEMPLATE           "%s/lastwill"
 
 #define MQTT_SUBSCRIBER_TOPIC_TEMPLATE          "%s/+"
+#define MQTT_COLOR_TOPIC_TEMPLATE               "%s/color"
 #define MQTT_SUBSCRIBER_STATE_TOPIC_TEMPLATE    "%s/+/state"
 #define MQTT_LASTWILL_TOPIC_TEMPLATE            "%s/lastwill"
 // State Topics
@@ -85,12 +86,27 @@
 #define MQTT_STORE_TOPIC                       "/store"
 #define MQTT_RESTART_TOPIC                     "/restart"
 
+#define MQTT_HASS_DISCOVERY_TEMPLATE "{"\
+    "\"platform\": \"mqtt_template\","\
+    "\"name\": \"%s\","\
+    "\"command_topic\": \"%s%s\","\
+    "\"state_topic\": \"%s%s/state\","\
+    "\"state_template\": \"{{value.split('state=')[1] | lower}}\","\
+    "\"command_on_template\": \"state=" STATE_ON " {%%if brightness%%}b={{brightness/2.55}}{%%endif%%}\","\
+    "\"command_off_template\": \"state=" STATE_OFF "\","\
+    "\"brightness_template\": \"{{(value.split('hsb=')[1].split(' ')[0].split(',')[2] | float *2.55) | int}}\","\
+    "\"availability_topic\": \"%s\","\
+    "\"payload_available\": \"" MQTT_LASTWILL_ONLINE "\","\
+    "\"payload_not_available\": \"" MQTT_LASTWILL_OFFLINE "\""\
+    "}"
+
 
 // Enable Home Assistant MQTT discovery support.
 #define HOME_ASSISTANT_MQTT_DISCOVERY
 #ifndef HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 #endif
+#define HOME_ASSISTANCE_MQTT_DISCOVERY_TOPIC_TEMPLATE "%s/light/ARILUX_%s_%s_%s/config"
 
 // When set we store the state (ON/OFF) in the color/state topic
 // Usefull for limited systems like HASS where you cannot easely use different mqtt topics
@@ -129,8 +145,11 @@
 #define TDURATION                   "duration"
 
 #define STATE                       "state"
-#define SON                         "ON"
-#define SOFF                        "OFF"
+#define STATE_ON                         "ON"
+#define STATE_OFF                        "OFF"
+
+#define MQTT_LASTWILL_ONLINE       "online"
+#define MQTT_LASTWILL_OFFLINE      "offline"
 
 #define BRIGHTNESS_INCREASE     50
 #define BRIGHTNESS_DECREASE     -50

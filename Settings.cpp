@@ -39,7 +39,7 @@ bool Settings::handle(SettingsDTO& settings) {
     if (m_debounceWaitTime == 0) {
         if (settings.modified() &&
             millis() - m_startCommitTime > m_commitWaitTime) {
-            forceStorage(settings);
+            store(settings);
             didStore = true;
         }
     } else {
@@ -54,7 +54,7 @@ bool Settings::handle(SettingsDTO& settings) {
             if (m_modifications.modified() &&
                 millis() - m_startDebounceTime > m_debounceWaitTime &&
                 millis() - m_startCommitTime > m_commitWaitTime) {
-                forceStorage(settings);
+                store(settings);
                 didStore = true;
             }
         }
@@ -63,20 +63,26 @@ bool Settings::handle(SettingsDTO& settings) {
     return didStore;
 }
 
-void Settings::forceStorage(SettingsDTO& settings) {
+void Settings::store(SettingsDTO& settings) {
+    store(settings, false);
+}
+
+void Settings::store(SettingsDTO& settings, bool force) {
     // TODO optimise for each changed variable
     // We have to keep this local for multiple settings
-    if (m_modifications.hsb || true) {
+    const Modifications modifications = settings.modifications();
+
+    if (modifications.hsb || force) {
         DEBUG_PRINTLN(F("Settings : Store HSB"));
         storeHsb(settings);
     }
 
-    if (m_modifications.remoteBase || true) {
+    if (modifications.remoteBase || force) {
         DEBUG_PRINTLN(F("Settings : Store Remote"));
         storeRemoteBase(settings);
     }
 
-    if (m_modifications.power || true) {
+    if (modifications.power || force) {
         DEBUG_PRINTLN(F("Settings : Store Power"));
         storePower(settings);
     }

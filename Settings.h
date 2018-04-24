@@ -65,7 +65,7 @@ public:
     SETTINGS_PROPERTY(uint8_t, filter)
     SETTINGS_PROPERTY(uint32_t, remoteBase)
 
-    Modifications modifications() const {
+    const Modifications& modifications() const {
         return m_modifications;
     }
 
@@ -88,7 +88,8 @@ private:
 public:
     Settings(const uint32_t p_debounceWaitTime, const uint32_t p_startDebounceTime);
     bool handle(SettingsDTO& settingsDTO);
-    void forceStorage(SettingsDTO& settingsDTO);
+    void store(SettingsDTO& settingsDTO);
+    void store(SettingsDTO& settingsDTO, bool force);
     void reset();
 };
 
