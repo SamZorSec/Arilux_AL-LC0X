@@ -215,11 +215,11 @@ HSB hsbFromString(const HSB& hsb, const char* data) {
     w1 = hsb.white1();
     w2 = hsb.white1();
     OptParser::get(data, [cstr1020, &h, &s, &b, &w1, &w2](OptValue f) {
-        if (strcmp(f.key(), "hsb") == 0 || atoi(f.key()) > 0) {
+        if (strcmp(f.key(), "hsb") == 0 || atoi(f.key()) >= 0) {
             OptParser::get(f.asChar(), ",", [cstr1020, &h, &s, &b, &w1, &w2](OptValue c) {
                 switch (c.pos()) {
                     case 0:
-                        h = constrain(c.asInt(), 0, 359);
+                        h = constrain(c.asFloat(), 0, 359);
                         break;
 
                     case 1:
@@ -240,7 +240,7 @@ HSB hsbFromString(const HSB& hsb, const char* data) {
                 }
             });
         } else if (strcmp(f.key(), "h") == 0) {
-            h = f.asInt();
+            h = constrain(f.asFloat(), 0, 359);
         } else if (strcmp(f.key(), "s") == 0) {
             s = cstr1020(f.asFloat());
         } else if (strcmp(f.key(), "b") == 0) {
