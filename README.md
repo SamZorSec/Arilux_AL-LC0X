@@ -3,6 +3,9 @@
 # Alternative - Alternative firmware for Arilux LED controllers
 
 This is an alternative version of the [Alternative firmware] for Arilux LED Controllers with a few modifications and enhancements.
+This firmware has been partially tested with both OpenHAB and Home Assistance.
+- In OpenHAB both brightness, color ON/OFF will work because OpenHAB understands both HSB and RGB color model.
+- In Home Assistant brightness and ON/OFF will work. Note: RGB to HSB model needs to be added to the example of Home Assistant.
 
 Differences are between the original Arilux alternative firmware:
 - Only support for HSB
@@ -11,19 +14,22 @@ Differences are between the original Arilux alternative firmware:
 
 Enhancements are:
 - Fade from any color to any other color smoothly without apparent brightness changes
-- ON/OFF states will correctly fade and remember the last color (in EEPROM) (WORK IN PROGRESS)
+- ON/OFF states will correctly fade and remember the last color (in EEPROM)
 - Easy to make new effects, See Effect.h and some of the including Effects
-- You can send partial updates for the color, for example just the hue, brightness or white values
-- After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch)
+- You can send partial updates for the color, for example just can just send he hue, brightness or white values
+- After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch, mqtt down, wifi down etc..)
 
 Current effects are:
 - Rainbow: Will keep fading over the rainbow of colors
 - Transition: Change from color1 to color2 over a period of time 
-- Flash:  Flash between two colors or betwene black and the current color
+- Flash:  Flash between two colors or between black and the current color
 - Strobe: Strobe between two colors, period can be given
 
 Old functionality to be re-added
 - IR Remote control
+
+IDeas
+- instead of using remote use a config topic to store specific configurations
 
 ## Remote Controle changes
 
@@ -307,11 +313,11 @@ Considarations:
 #### Last Will and Testament
 
 The firmware will publish a [MQTT Last Will and Testament] at `rgb(w/ww)/<chipid>/status`.
-When the device successfully connects it will publish `alive` to that topic and when it disconnects `dead` will automatically be published.
+When the device successfully connects it will publish `online` to that topic and when it disconnects `offline` will automatically be published.
 
-#### Discovery
+#### Home Assistance Discovery
 
-##### Discovery is WORK IN PROGRESS AND TO BE TESTED
+##### Current working in progress with a issue publishing the discovery package 
 
 This firmware supports [Home Assistant's MQTT discovery functionality], added in 0.40.
 This allows for instant setup and use of your device without requiring any manual configuration in Home Assistant.
@@ -337,14 +343,53 @@ mqtt:
   discovery: true
 
 light:
-  - platform: mqtt
+  - platform: mqtt_template
     name: 'Arilux RGB Led Controller'
-    state_topic: 'rgb(w/ww)/<chipid>/state/state'
-    command_topic: 'rgb(w/ww)/<chipid>/state/set'
-    brightness_state_topic: 'rgb(w/ww)/<chipid>/brightness/state'
-    brightness_command_topic: 'rgb(w/ww)/<chipid>/brightness/set'
-    rgb_state_topic: 'rgb(w/ww)/<chipid>/color/state'
-    rgb_command_topic: 'rgb(w/ww)/<chipid>/color/set'
+    command_topic: "RGB(W|WW)/<chipid>/color"
+    state_topic: "RGBW(W|WW)/<chipid>/color/state"
+    state_template: "{{value.split('state=')[1] | lower}}"
+    command_on_template: "state=ON {%if brightness%}b={{brightness/2.55}}{%endif%}"
+    command_off_template: "state=OFF"
+    brightness_template: "{{(value.split('hsb=')[1].split(' ')[0].split(',')[2] | float *2.55) | int}}"
+    availability_topic: "RGB(W|WW)/<chipid>/lastwill"
+    payload_available: "online"
+    payload_not_available: "offline"
+```
+
+#### Configuration with OpenHAB 2
+
+You can use this device to connect to OpenHAB 2 with MQTT configured. Makesure MQTT is configured and working
+and both OpenHAB and your light are connecting to the same MQTT broker.
+
+Most simple configuration would be as follows:
+
+
+File: ``items/default.items``
+```
+Color  Item_Arilux_Color "Arilux" <light> ["Lighting"] {mqtt="<[mosquitto:RGB(W|WW)/<chipid>/color/state:state:JS(ariluxhsbToHsb.js)],>[mosquitto:RGB(W|WW)/<chipid>/color:command:*:default]"}
+```
+This will receive updates and send them to the correct mqtt topic.
+
+A transformation to turns the device created payload to something OpenHAB can understand.
+Essentially take out the HSB value from the color state and return that to OpenHAB.
+File: ``transform/ariluxhsbToHsb.js``
+```
+(function(i){
+    regex = /([,.\d]+)/;
+    m=null;
+    if ((m = regex.exec(i)) !== null) {
+        return m[0].split(',').slice(0,3).join(',');
+    }
+    return i;
+})(input);
+```
+
+Adding a color picker to the default sitemap.
+File: ``sitemaps/default.sitemap``
+```
+    Frame label="Arilux" {
+        Colorpicker item=Item_Arilux_Color label="Color" icon="colorwheel"
+    }
 ```
 
 
@@ -361,6 +406,7 @@ light:
 For further information and to join the discussion for this firmware [check out this thread] on the Home Assistant Community Discussion Forum.
 
 ## Contributors
+- [@mertenats]: Initial creator of the project, documention and code
 - [@KmanOz]: Codes for the RF remote (Arilux AL-LC09)
 - [@DanGunvald]: RGBW/RGBWW support
 - [@robbiet480]: General cleanup and merging of RGBW/RGBWW code

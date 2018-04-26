@@ -71,6 +71,7 @@
 #define MQTT_COLOR_TOPIC_TEMPLATE               "%s/color"
 #define MQTT_SUBSCRIBER_STATE_TOPIC_TEMPLATE    "%s/+/state"
 #define MQTT_LASTWILL_TOPIC_TEMPLATE            "%s/lastwill"
+
 // State Topics
 #define MQTT_STATE_STATE_TOPIC                 "/state/state"
 #define MQTT_REMOTE_STATE_TOPIC                "/remote/state"
@@ -109,9 +110,8 @@
 #define HOME_ASSISTANCE_MQTT_DISCOVERY_TOPIC_TEMPLATE "%s/light/ARILUX_%s_%s_%s/config"
 
 // When set we store the state (ON/OFF) in the color/state topic
-// Usefull for limited systems like HASS where you cannot easely use different mqtt topics
 #ifndef STATE_IN_COLOR_TOPIC
-#define STATE_IN_COLOR_TOPIC                    false
+#define STATE_IN_COLOR_TOPIC                    true
 #endif
 
 
@@ -151,8 +151,8 @@
 #define MQTT_LASTWILL_ONLINE       "online"
 #define MQTT_LASTWILL_OFFLINE      "offline"
 
-#define BRIGHTNESS_INCREASE     50
-#define BRIGHTNESS_DECREASE     -50
+#define BRIGHTNESS_INCREASE     100
+#define BRIGHTNESS_DECREASE     -100
 
 #ifndef EEPROM_COMMIT_WAIT_DELAY
 // Number of milli seconds to wait untill we commit to EEPROM
