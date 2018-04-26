@@ -358,11 +358,16 @@ light:
 
 #### Configuration with OpenHAB 2
 
-You can use this device to connect to OpenHAB 2 with MQTT configured. Makesure MQTT is configured and working
+You can use this device to connect to OpenHAB 2 with MQTT configured. Make sure MQTT is configured and working
 and both OpenHAB and your light are connecting to the same MQTT broker.
 
-Most simple configuration would be as follows:
+The below config will also allow you to say to Siri when Homekit is configured on OpenHAB: 
+ - ``Set Arilux to Red``
+ - ``Set briightness of Arilux to fifty percent``
+ - ``Turn off Arilux``
+ - etc...
 
+Most simple configuration would be as follows:
 
 File: ``items/default.items``
 ```
