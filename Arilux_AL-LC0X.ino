@@ -215,7 +215,7 @@ HSB hsbFromString(const HSB& hsb, const char* data) {
     w1 = hsb.white1();
     w2 = hsb.white1();
     OptParser::get(data, [cstr1020, &h, &s, &b, &w1, &w2](OptValue f) {
-        if (strcmp(f.key(), "hsb") == 0 || atoi(f.key()) >= 0) {
+        if (strstr(f.key(), "hsb") != nullptr || strstr(f.key(), ",") != nullptr) {
             OptParser::get(f.asChar(), ",", [cstr1020, &h, &s, &b, &w1, &w2](OptValue c) {
                 switch (c.pos()) {
                     case 0:
@@ -386,14 +386,19 @@ HSB getOffState(const HSB& hsb) {
 }
 
 HSB getOnState(const HSB& hsb) {
-    const HSB settings = eepromStore.get().hsb();
-    return hsb.toBuilder()
-           .white1(settings.white1())
-           .white2(settings.white2())
-           // On state forces lights to go on, so we constrain it with a minimjm brightness value
-           // as a saveguard
-           .brightness(constrain(settings.brightness(), 5, 1020))
-           .build();
+    // If the light is already on, we ignore EEPROM settings
+    if (hsb.brightness()>0) {
+        return hsb;
+    } else {
+        const HSB settings = eepromStore.get().hsb();
+        return hsb.toBuilder()
+            .white1(settings.white1())
+            .white2(settings.white2())
+            // On state forces lights to go on, so we constrain it with a minimjm brightness value
+            // as a saveguard
+            .brightness(constrain(settings.brightness(), 5, 1020))
+            .build();
+    }
 }
 
 void connectMQTTTopic() {
@@ -515,18 +520,10 @@ void handleRFRemote(void) {
 
             case ARILUX_REMOTE_KEY_OFF:
                 settingsDTO.power(false);
-                //                powerFilter.power(false);
-                //                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-                //                currentEffect.reset(new NoEffect());
-                //                workingHsb = getOffState(workingHsb);
                 break;
 
             case ARILUX_REMOTE_KEY_ON:
                 settingsDTO.power(true);
-                //                powerFilter.power(true);
-                //                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
-                //                currentEffect.reset(new NoEffect());
-                //                workingHsb = getOnState(workingHsb);
                 break;
 
             case ARILUX_REMOTE_KEY_RED:

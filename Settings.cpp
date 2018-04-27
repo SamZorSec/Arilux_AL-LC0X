@@ -20,7 +20,6 @@ bool SettingsDTO::modified() const {
     return m_modifications.modified();
 }
 
-
 void SettingsDTO::reset() {
     m_modifications.reset();
 }
@@ -36,8 +35,9 @@ Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWai
 bool Settings::handle(SettingsDTO& settings) {
     bool didStore = false;
 
+    m_modifications = m_modifications | settings.modifications();
     if (m_debounceWaitTime == 0) {
-        if (settings.modified() &&
+        if (m_modifications.modified() &&
             millis() - m_startCommitTime > m_commitWaitTime) {
             store(settings);
             didStore = true;
@@ -45,7 +45,6 @@ bool Settings::handle(SettingsDTO& settings) {
     } else {
         if (settings.modified()) {
             m_startDebounceTime = millis();
-            m_modifications = m_modifications | settings.modifications();
         } else {
             // Only write HSB to EEPROM if
             // if HSB changed..
@@ -68,21 +67,18 @@ void Settings::store(SettingsDTO& settings) {
 }
 
 void Settings::store(SettingsDTO& settings, bool force) {
-    // TODO optimise for each changed variable
-    // We have to keep this local for multiple settings
-    const Modifications modifications = settings.modifications();
 
-    if (modifications.hsb || force) {
+    if (m_modifications.hsb || force) {
         DEBUG_PRINTLN(F("Settings : Store HSB"));
         storeHsb(settings);
     }
 
-    if (modifications.remoteBase || force) {
+    if (m_modifications.remoteBase || force) {
         DEBUG_PRINTLN(F("Settings : Store Remote"));
         storeRemoteBase(settings);
     }
 
-    if (modifications.power || force) {
+    if (m_modifications.power || force) {
         DEBUG_PRINTLN(F("Settings : Store Power"));
         storePower(settings);
     }
