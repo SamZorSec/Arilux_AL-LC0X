@@ -34,8 +34,8 @@ Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWai
 
 bool Settings::handle(SettingsDTO& settings) {
     bool didStore = false;
-
     m_modifications = m_modifications | settings.modifications();
+
     if (m_debounceWaitTime == 0) {
         if (m_modifications.modified() &&
             millis() - m_startCommitTime > m_commitWaitTime) {
@@ -67,7 +67,6 @@ void Settings::store(SettingsDTO& settings) {
 }
 
 void Settings::store(SettingsDTO& settings, bool force) {
-
     if (m_modifications.hsb || force) {
         DEBUG_PRINTLN(F("Settings : Store HSB"));
         storeHsb(settings);

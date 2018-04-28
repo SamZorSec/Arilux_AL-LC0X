@@ -45,7 +45,6 @@ IDeas
  - Store and reload the current active Filter in EEPROM/MQTT so the device comes back up correctly after reboot
  - Check if we can use a better way of debugging lines
  - Check travis and see if that still works (never worked with it...sorry)
- - Implement learning for the remote control. For example 5 seconds after startup or after a mqtt command?
  
 Tested with the [ESP8266 Wi-Fi chip][esp8266].
 
@@ -140,10 +139,14 @@ OTA is enabled on this firmware. Assuming the device is plugged in you should fi
 
 ## Control
 ### IR
-The LED controller can be controlled with the IR remote included with the Arilux AL-LC03 and AL-LC04. The `Flash`, `Strobe`, `Fade` and `Smooth` functionalities are not yet implemented.
+TODO
 
 ### RF
-The LED controller can be controlled with the RF remote included with the Arilux AL-LC09, AL-LC10 and AL-LC11. The `Mode+`, `Mode-`, `Speed+`, `Speed-` and `toggle` functionalities are not yet implemented.
+The LED controller can be controlled with the RF remote included with the Arilux AL-LC09, AL-LC10 and AL-LC11. 
+The `S+` and `S-` buttons can be used to change the color. The `M+` and `M-` buttons can be used to change the saturation. Brightness buttons work as usual.
+
+You can pair a remote control with your arilux by pressing any button on the remote control after powering up
+your arilux device. The pairing will be stored in EEPROM and send over MQTT.
 
 ### MQTT
 
@@ -380,6 +383,7 @@ Essentially take out the HSB value from the color state and return that to OpenH
 File: ``transform/ariluxhsbToHsb.js``
 ```
 (function(i){
+    if (i.indexOf('OFF') !== -1) return 'OFF';
     regex = /([,.\d]+)/;
     m=null;
     if ((m = regex.exec(i)) !== null) {

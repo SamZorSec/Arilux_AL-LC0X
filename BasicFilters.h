@@ -5,22 +5,21 @@
 
 /**
  * ALter the brightness of a HSB value
+ * TODO: Add increse/decrease methods instead of handling this elsewere
  */
 class BrightnessFilter final : public Filter {
 private:
-    float m_brightness;
+    int8_t m_increase;
+    float m_increaseBy;
 public:
     /**
      * p_brightness : Initial brightness
      */
-    BrightnessFilter(const float p_brightness);
+    BrightnessFilter(const float p_increaseBy);
 
-    /**
-     * Set the brightness 0..100
-     */
-    void brightness(const float p_brightness);
+    void increase();
 
-    float brightness() const;
+    void decrease();
 
     virtual HSB handleFilter(const uint32_t p_count,
                              const uint32_t p_time,

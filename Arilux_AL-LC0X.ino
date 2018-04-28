@@ -89,8 +89,6 @@ volatile bool arduinoOTAInProgress = false;
 
 uint16_t waitingForStateCaptureAt = 1;
 
-uint16_t brightnessAtBoot = 50;
-
 // Holds the current working HSB color
 HSB workingHsb(0, 0, 255, 0, 0);
 
@@ -102,7 +100,7 @@ std::unique_ptr<Effect> currentEffect(new NoEffect());
 std::unique_ptr<Filter> currentFilter(new FadingFilter(workingHsb, FILTER_FADING_ALPHA));
 
 // Filter to control overall brightness
-BrightnessFilter brightnessFilter(100);
+BrightnessFilter brightnessFilter(25);
 PowerFilter powerFilter(true);
 
 // Arilux device interface
@@ -290,7 +288,7 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             }
         });
 
-        if (hasPowerValue) {
+        if (hasPowerValue && bootSequence->finnished()) {
             settingsDTO.power(power);
         }
     } else if (strstr(topicPos, MQTT_FILTER_TOPIC) != nullptr) {
@@ -363,10 +361,12 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             ESP.restart();
         }
     } else if (strstr(topicPos, MQTT_STATE_TOPIC) != nullptr) {
-        if (strcmp(mqttBuffer, "ON") == 0) {
-            settingsDTO.power(true);
-        } else if (strcmp(mqttBuffer, "OFF") == 0) {
-            settingsDTO.power(false);
+        if (bootSequence->finnished()) {
+            if (strcmp(mqttBuffer, "ON") == 0) {
+                settingsDTO.power(true);
+            } else if (strcmp(mqttBuffer, "OFF") == 0) {
+                settingsDTO.power(false);
+            }
         }
     } else if (strstr(topicPos, MQTT_STORE_TOPIC) != nullptr) {
         if (strcmp(mqttBuffer, "1") == 0) {
@@ -387,17 +387,17 @@ HSB getOffState(const HSB& hsb) {
 
 HSB getOnState(const HSB& hsb) {
     // If the light is already on, we ignore EEPROM settings
-    if (hsb.brightness()>0) {
+    if (hsb.brightness() > 0) {
         return hsb;
     } else {
         const HSB settings = eepromStore.get().hsb();
         return hsb.toBuilder()
-            .white1(settings.white1())
-            .white2(settings.white2())
-            // On state forces lights to go on, so we constrain it with a minimjm brightness value
-            // as a saveguard
-            .brightness(constrain(settings.brightness(), 5, 1020))
-            .build();
+               .white1(settings.white1())
+               .white2(settings.white2())
+               // On state forces lights to go on, so we constrain it with a minimjm brightness value
+               // as a saveguard
+               .brightness(constrain(settings.brightness(), 5, 1020))
+               .build();
     }
 }
 
@@ -509,13 +509,11 @@ void handleRFRemote(void) {
 
         switch (value) {
             case ARILUX_REMOTE_KEY_BRIGHT_PLUS:
-                brightnessFilter
-                .brightness(constrain(brightnessFilter.brightness() + BRIGHTNESS_INCREASE, 0, 200));
+                brightnessFilter.increase();
                 break;
 
             case ARILUX_REMOTE_KEY_BRIGHT_MINUS:
-                brightnessFilter
-                .brightness(constrain(brightnessFilter.brightness() + BRIGHTNESS_DECREASE, 0, 200));
+                brightnessFilter.decrease();
                 break;
 
             case ARILUX_REMOTE_KEY_OFF:
@@ -660,10 +658,10 @@ void setup() {
     arilux.init();
     // set color from EEPROM to ensure we turn on light as quickly as possible
     settingsDTO = eepromStore.get();
-    workingHsb = settingsDTO.hsb();
+    settingsDTO.power(true);
+    powerFilter.power(true);
+    workingHsb = getOnState(settingsDTO.hsb().toBuilder().brightness(0).build());
     currentHsb = workingHsb;
-    workingHsb = getOnState(workingHsb);
-    brightnessAtBoot = workingHsb.brightness();
     uint16_t colors[3];
     workingHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
@@ -750,15 +748,10 @@ void setup() {
 
 void handleEffects() {
     const uint32_t currentMillies = millis();
-
-    // Guard to ensure that during boot time we never turn off the light
-    if (!bootSequence->finnished() && workingHsb.brightness() == 0) {
-        workingHsb = workingHsb.toBuilder().brightness(brightnessAtBoot).build();
-    }
-
+    workingHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, workingHsb);
     currentHsb = currentEffect->handleEffect(transitionCounter, currentMillies, workingHsb);
-    currentHsb = brightnessFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
-    // Last filter is fading filter and we don´t want to store this in settings.
+    // Last filters are for modification of the HSB values before we send it to the DEVICE_MODEL
+    // and we don´t want to store these
     settingsDTO.hsb(currentHsb);
     currentHsb = powerFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
