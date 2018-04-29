@@ -91,6 +91,8 @@ volatile bool arduinoOTAInProgress = false;
 // Used during startup
 #define STARTUP_MIN_BRIGHTNESS ((uint16_t)SBW_RANGE/100*PERCENT_STARTUP_MINIMUM_BRIGHTNESS)
 
+#define MIN_BRIGHTNESS ((uint16_t)SBW_RANGE/100*PERCENT_MINIMUM_BRIGHTNESS)
+
 // Default brightness if we cannot find any
 #define DEFAULT_BRIGHTNESS_VALUE ((uint16_t)SBW_RANGE/100*PERCENT_DEFAULT_BRIGHTNESS)
 
@@ -876,9 +878,11 @@ void loop() {
                 mqttStore->handle(settingsDTO);
             }
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
-            // If the brightness was set to 0
+            // If the brightness was set to < MIN_BRIGHTNESS
             // We get a stored brightness and use the new color
-            if (workingHsb.brightness() < 10 && settingsDTO.modifications().hsb) {
+            // The idea is we keep a sensible brightness et by the user
+            // improvement would be to use a seperate brightness setting and use that
+            if (workingHsb.brightness() < MIN_BRIGHTNESS && settingsDTO.modifications().hsb) {
                 SettingsDTO storedSettings = eepromStore.get();
                 storedSettings.reset();
                 const HSB storedHsb = storedSettings.hsb();
