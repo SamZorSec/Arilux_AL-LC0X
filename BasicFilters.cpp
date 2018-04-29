@@ -14,7 +14,7 @@ HSB BrightnessFilter::handleFilter(const uint32_t p_count,
         return _hsb;
     }
 
-    if (m_increase == 1 && _hsb.brightness() >= 1020 && _hsb.white1() >= 1020 && _hsb.white2() >= 1020) {
+    if (m_increase == 1 && _hsb.brightness() >= SBW_RANGE && _hsb.white1() >= SBW_RANGE && _hsb.white2() >= SBW_RANGE) {
         m_increase = 0;
         return _hsb;
     } else if (m_increase == -1 && _hsb.brightness() == 0 && _hsb.white1() == 0 && _hsb.white2() == 0) {
@@ -43,9 +43,9 @@ HSB BrightnessFilter::handleFilter(const uint32_t p_count,
     }
 
     return _hsb.toBuilder()
-           .white1(constrain(white1, 0, 1020))
-           .white2(constrain(white2, 0, 1020))
-           .brightness(constrain(brightness, 0, 1020))
+           .white1(constrain(white1, 0, SBW_RANGE))
+           .white2(constrain(white2, 0, SBW_RANGE))
+           .brightness(constrain(brightness, 0, SBW_RANGE))
            .build();
 }
 

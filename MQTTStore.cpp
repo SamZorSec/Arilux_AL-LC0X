@@ -35,7 +35,7 @@ void MQTTStore::storeHsb(const SettingsDTO& settings) {
            );
 
     if (m_stateInColorTopic) {
-        sprintf(payloadBuffer + strlen(payloadBuffer), " state=%s", settings.power() ? "ON" : "OFF");
+        sprintf(payloadBuffer + strlen(payloadBuffer), " state=%s", settings.power() ? STATE_ON : STATE_OFF);
     }
 
     publish(m_baseTopic, m_hsbTopic, payloadBuffer);
@@ -48,7 +48,7 @@ void MQTTStore::storeRemoteBase(const SettingsDTO& settings) {
 }
 
 void MQTTStore::storePower(const SettingsDTO& settings) {
-    publish(m_baseTopic, m_stateTopic, settings.power() ? "ON" : "OFF");
+    publish(m_baseTopic, m_stateTopic, settings.power() ? STATE_ON : STATE_OFF);
 
     if (m_stateInColorTopic) {
         storeHsb(settings);

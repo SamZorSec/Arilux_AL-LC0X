@@ -60,7 +60,7 @@ uint16_t HSB::cwhite2() const {
 
 void HSB::constantRGB(uint16_t colors[]) const {
     uint32_t r_temp, g_temp, b_temp;
-    uint16_t inverse_sat = 1020 - m_saturation;
+    uint16_t inverse_sat = SBW_RANGE - m_saturation;
     uint16_t index_mod = m_hue % 120;
 
     if (m_hue < 120) {
@@ -84,9 +84,9 @@ void HSB::constantRGB(uint16_t colors[]) const {
     r_temp = ((r_temp * m_saturation) / 120) + inverse_sat;
     g_temp = ((g_temp * m_saturation) / 120) + inverse_sat;
     b_temp = ((b_temp * m_saturation) / 120) + inverse_sat;
-    r_temp = (r_temp * m_brightness) / 1020;
-    g_temp = (g_temp * m_brightness) / 1020;
-    b_temp = (b_temp * m_brightness) / 1020;
+    r_temp = (r_temp * m_brightness) / SBW_RANGE;
+    g_temp = (g_temp * m_brightness) / SBW_RANGE;
+    b_temp = (b_temp * m_brightness) / SBW_RANGE;
     colors[0]   = r_temp;
     colors[1]   = g_temp;
     colors[2]   = b_temp;

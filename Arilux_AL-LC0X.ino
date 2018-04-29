@@ -87,13 +87,22 @@ volatile uint32_t currentMqttReconnect = 0;
 // we use this to not move to the main event loop
 volatile bool arduinoOTAInProgress = false;
 
+// Brightness where we define the lights are OFF
+// Used during startup
+#define STARTUP_MIN_BRIGHTNESS ((uint16_t)SBW_RANGE/100*PERCENT_STARTUP_MINIMUM_BRIGHTNESS)
+
+// Default brightness if we cannot find any
+#define DEFAULT_BRIGHTNESS_VALUE ((uint16_t)SBW_RANGE/100*PERCENT_DEFAULT_BRIGHTNESS)
+
 uint16_t waitingForStateCaptureAt = 1;
 
 // Holds the current working HSB color
-HSB workingHsb(0, 0, 255, 0, 0);
+HSB workingHsb(0, 0, DEFAULT_BRIGHTNESS_VALUE, 0, 0);
 
 // Hold´s the color of the last color generated and send to teh Arilux device
-HSB currentHsb(0, 0, 255, 0, 0);
+HSB currentHsb(0, 0, DEFAULT_BRIGHTNESS_VALUE, 0, 0);
+
+auto brightnessAtBoot = workingHsb.brightness();
 
 // Pointers to current effect and filter
 std::unique_ptr<Effect> currentEffect(new NoEffect());
@@ -133,7 +142,8 @@ enum BootSequenceStatus {
     UNSUBSCRIBESTATETOPIC,
     SUBSCRIBECOMMANDTOPIC,
     WAITFORCOMMANDCAPTURE,
-    END
+    SENDMQTTSTATE,
+    BOOTSEQUENCEEND
 };
 
 // Boot sequence setup
@@ -203,7 +213,7 @@ void publishToMQTT(const char* topic, const char* payload) {
  * Example 5: hsb=100,101,102 12,13,14,15,16
  */
 HSB hsbFromString(const HSB& hsb, const char* data) {
-    auto cstr1020 = [](float in) {
+    auto cstrSBW_RANGE = [](float in) {
         return constrain(in, 0.0, 100.0) * 10.2;
     };
     uint16_t h, s, b, w1, w2;
@@ -212,41 +222,41 @@ HSB hsbFromString(const HSB& hsb, const char* data) {
     b = hsb.brightness();
     w1 = hsb.white1();
     w2 = hsb.white1();
-    OptParser::get(data, [cstr1020, &h, &s, &b, &w1, &w2](OptValue f) {
+    OptParser::get(data, [cstrSBW_RANGE, &h, &s, &b, &w1, &w2](OptValue f) {
         if (strstr(f.key(), "hsb") != nullptr || strstr(f.key(), ",") != nullptr) {
-            OptParser::get(f.asChar(), ",", [cstr1020, &h, &s, &b, &w1, &w2](OptValue c) {
+            OptParser::get(f.asChar(), ",", [cstrSBW_RANGE, &h, &s, &b, &w1, &w2](OptValue c) {
                 switch (c.pos()) {
                     case 0:
                         h = constrain(c.asFloat(), 0, 359);
                         break;
 
                     case 1:
-                        s = cstr1020(c.asFloat());
+                        s = cstrSBW_RANGE(c.asFloat());
                         break;
 
                     case 2:
-                        b = cstr1020(c.asFloat());
+                        b = cstrSBW_RANGE(c.asFloat());
                         break;
 
                     case 3:
-                        w1 = cstr1020(c.asFloat());
+                        w1 = cstrSBW_RANGE(c.asFloat());
                         break;
 
                     case 4:
-                        w2 = cstr1020(c.asFloat());
+                        w2 = cstrSBW_RANGE(c.asFloat());
                         break;
                 }
             });
         } else if (strcmp(f.key(), "h") == 0) {
             h = constrain(f.asFloat(), 0, 359);
         } else if (strcmp(f.key(), "s") == 0) {
-            s = cstr1020(f.asFloat());
+            s = cstrSBW_RANGE(f.asFloat());
         } else if (strcmp(f.key(), "b") == 0) {
-            b = cstr1020(f.asFloat());
+            b = cstrSBW_RANGE(f.asFloat());
         } else if (strcmp(f.key(), "w1") == 0) {
-            w1 = cstr1020(f.asFloat());
+            w1 = cstrSBW_RANGE(f.asFloat());
         } else if (strcmp(f.key(), "w2") == 0) {
-            w2 = cstr1020(f.asFloat());
+            w2 = cstrSBW_RANGE(f.asFloat());
         }
     });
     return HSB(h, s, b, w1, w2);
@@ -272,24 +282,38 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     DEBUG_PRINTLN(topicPos);
     DEBUG_PRINT(F("Payload: "));
     DEBUG_PRINTLN(mqttBuffer);
+    const bool inBootSequence = !bootSequence->finnished();
 
     // Process topics
+    // We use strstr if we want to both handle state and commands
+    // we use strcmp if we just want to handle command topics
     if (strstr(topicPos, MQTT_COLOR_TOPIC) != nullptr) {
         workingHsb = hsbFromString(workingHsb, mqttBuffer);
-        bool power;
-        bool hasPowerValue = false;
-        OptParser::get(mqttBuffer, [&power, &hasPowerValue](OptValue v) {
-            if (strcmp(v.asChar(), "ON") == 0) {
-                hasPowerValue = true;
-                power = true;
-            } else if (strcmp(v.asChar(), "OFF") == 0) {
-                hasPowerValue = true;
-                power = false;
-            }
-        });
 
-        if (hasPowerValue && bootSequence->finnished()) {
-            settingsDTO.power(power);
+        if (inBootSequence) {
+            workingHsb = workingHsb.toBuilder().brightness(brightnessAtBoot).build();
+        } else {
+            bool power;
+            bool hasPowerValue = false;
+            OptParser::get(mqttBuffer, [&power, &hasPowerValue](OptValue v) {
+                if (strcmp(v.asChar(), STATE_ON) == 0) {
+                    hasPowerValue = true;
+                    power = true;
+                } else if (strcmp(v.asChar(), STATE_OFF) == 0) {
+                    hasPowerValue = true;
+                    power = false;
+                }
+            });
+
+            if (hasPowerValue && !inBootSequence) {
+                // When power was off and we turn power on
+                // we ensure that we have a brightness > 0
+                if (!settingsDTO.power() && power) {
+                    workingHsb = getOnState(workingHsb);
+                }
+
+                settingsDTO.power(power);
+            }
         }
     } else if (strstr(topicPos, MQTT_FILTER_TOPIC) != nullptr) {
         // Get variables from payload
@@ -312,7 +336,30 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
             // visible
             currentFilter.reset(new FadingFilter(currentHsb, alpha));
         }
-    } else if (strcmp(topicPos, MQTT_EFFECT_TOPIC) == 0) { // Intentionlly strcmp, we don´t want filters to start on reboot of app
+    } else if (strstr(topicPos, MQTT_REMOTE_TOPIC) != nullptr) {
+        const uint32_t base = atol(mqttBuffer);
+
+        if (base > 0) {
+            settingsDTO.remoteBase(base);
+        }
+    } else if (strstr(topicPos, MQTT_STATE_TOPIC) != nullptr) {
+        if (!inBootSequence) {
+            if (strcmp(mqttBuffer, STATE_ON) == 0) {
+                settingsDTO.power(true);
+                workingHsb = getOnState(workingHsb);
+            } else if (strcmp(mqttBuffer, STATE_OFF) == 0) {
+                settingsDTO.power(false);
+            }
+        }
+    }
+
+    if (inBootSequence) {
+        return;
+    }
+
+    // We absolutly never want to process any messages below here during bootup
+    // as they might have odd and unwanted side effects
+    if (strstr(topicPos, MQTT_EFFECT_TOPIC) != 0) {
         // Get variables from payload
         const char* name;
         int16_t pulse = -1;
@@ -325,15 +372,15 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
                 name = v.asChar();
             }
 
-            if (strcmp(v.key(), "period") == 0) {
+            if (strcmp(v.key(), FILTER_PERIOD) == 0) {
                 period = v.asInt();
             }
 
-            if (strcmp(v.key(), "pulse") == 0) {
+            if (strcmp(v.key(), FILTER_PULSE) == 0) {
                 pulse = v.asInt();
             }
 
-            if (strcmp(v.key(), "duration") == 0) {
+            if (strcmp(v.key(), FILTER_DURATION) == 0) {
                 duration = v.asLong();
             }
         });
@@ -356,27 +403,13 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
                 currentEffect.reset(new TransitionEffect(hsb, millis(), duration));
             }
         }
-    } else if (strstr(topicPos, MQTT_RESTART_TOPIC) != nullptr) {
+    } else if (strcmp(topicPos, MQTT_RESTART_TOPIC) == 0) {
         if (strcmp(mqttBuffer, "1") == 0) {
             ESP.restart();
         }
-    } else if (strstr(topicPos, MQTT_STATE_TOPIC) != nullptr) {
-        if (bootSequence->finnished()) {
-            if (strcmp(mqttBuffer, "ON") == 0) {
-                settingsDTO.power(true);
-            } else if (strcmp(mqttBuffer, "OFF") == 0) {
-                settingsDTO.power(false);
-            }
-        }
-    } else if (strstr(topicPos, MQTT_STORE_TOPIC) != nullptr) {
+    } else if (strcmp(topicPos, MQTT_STORE_TOPIC) == 0) {
         if (strcmp(mqttBuffer, "1") == 0) {
             eepromStore.store(settingsDTO, true);
-        }
-    } else if (strstr(topicPos, MQTT_REMOTE_TOPIC) != nullptr) {
-        const uint32_t base = atol(mqttBuffer);
-
-        if (base > 0) {
-            settingsDTO.remoteBase(base);
         }
     }
 }
@@ -396,7 +429,10 @@ HSB getOnState(const HSB& hsb) {
                .white2(settings.white2())
                // On state forces lights to go on, so we constrain it with a minimjm brightness value
                // as a saveguard
-               .brightness(constrain(settings.brightness(), 5, 1020))
+               .brightness(constrain(
+                               settings.brightness() < STARTUP_MIN_BRIGHTNESS ? STARTUP_MIN_BRIGHTNESS : settings.brightness()
+                               ,DEFAULT_BRIGHTNESS_VALUE
+                               ,SBW_RANGE))
                .build();
     }
 }
@@ -588,11 +624,11 @@ void handleRFRemote(void) {
                 break;
 
             case ARILUX_REMOTE_KEY_MODE_PLUS:
-                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() + 5, 0, 1020)).build();
+                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() + 5, 0, SBW_RANGE)).build();
                 break;
 
             case ARILUX_REMOTE_KEY_MODE_MINUS:
-                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() - 5, 0, 1020)).build();
+                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() - 5, 0, SBW_RANGE)).build();
                 break;
 
             default:
@@ -661,6 +697,7 @@ void setup() {
     settingsDTO.power(true);
     powerFilter.power(true);
     workingHsb = getOnState(settingsDTO.hsb().toBuilder().brightness(0).build());
+    brightnessAtBoot = workingHsb.brightness();
     currentHsb = workingHsb;
     uint16_t colors[3];
     workingHsb.constantRGB(colors);
@@ -717,7 +754,7 @@ void setup() {
 
 #endif
     // Start boot sequence
-    bootSequence.reset(new StateMachine<BootSequenceStatus>(ARRAY_SIZE(timedStates), timedStates, timeTimedStates2, END));
+    bootSequence.reset(new StateMachine<BootSequenceStatus>(ARRAY_SIZE(timedStates), timedStates, timeTimedStates2, BOOTSEQUENCEEND));
     bootSequence->advance();
 #ifdef IR_REMOTE
     // Start the IR receiver
@@ -841,7 +878,7 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             // If the brightness was set to 0
             // We get a stored brightness and use the new color
-            if (workingHsb.brightness() == 0 && settingsDTO.modified()) {
+            if (workingHsb.brightness() < 10 && settingsDTO.modifications().hsb) {
                 SettingsDTO storedSettings = eepromStore.get();
                 storedSettings.reset();
                 const HSB storedHsb = storedSettings.hsb();
@@ -857,6 +894,11 @@ void loop() {
             settingsDTO.reset();
             EEPROM.commit();
             bootSequence->handle();
+        } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
+            if (bootSequence->current() == SENDMQTTSTATE) {
+                mqttStore->store(settingsDTO, true);
+                bootSequence->advance();
+            }
         }
 
         const uint32_t thisDuration = (millis() - currentMillis);

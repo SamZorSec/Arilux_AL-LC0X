@@ -34,21 +34,16 @@ const char* Arilux::getColorString(void) const {
 }
 
 bool Arilux::setAll(const uint16_t p_red, const uint16_t p_green, const uint16_t p_blue, const uint16_t p_white1, const uint16_t p_white2) const {
-    if ((p_red > ARILUX_PWM_RANGE) ||
-        (p_green > ARILUX_PWM_RANGE) ||
-        (p_blue > ARILUX_PWM_RANGE) ||
-        (p_white1 > ARILUX_PWM_RANGE) ||
-        (p_white2 > ARILUX_PWM_RANGE)) {
-        return false;
-    }
-
-    analogWrite(m_redPin, p_red);
-    analogWrite(m_greenPin, p_green);
-    analogWrite(m_bluePin, p_blue);
+    auto clamp = [](uint16_t in) {
+        return in > ARILUX_PWM_MAX_RANGE_VALUE ? ARILUX_PWM_RANGE : in < ARILUX_PWM_MIN_RANGE_VALUE ? 0 : in;
+    };
+    analogWrite(m_redPin, clamp(p_red));
+    analogWrite(m_greenPin, clamp(p_green));
+    analogWrite(m_bluePin, clamp(p_blue));
 #if defined(RGBW) || defined(RGBWW)
-    analogWrite(m_white1Pin, p_white1);
+    analogWrite(m_white1Pin, clamp(p_white1));
 #ifdef RGBWW
-    analogWrite(m_white2Pin, p_white2);
+    analogWrite(m_white2Pin, clamp(p_white2));
 #endif
 #endif
     return true;

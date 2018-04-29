@@ -86,3 +86,7 @@ void Settings::store(SettingsDTO& settings, bool force) {
     m_startCommitTime = millis();
     m_modifications.reset();
 }
+
+const Modifications Settings::modifications() const {
+    return m_modifications;
+}

@@ -5,6 +5,8 @@
 
 class HSBBuilder;
 
+#define SBW_RANGE 1020
+
 class HSB {
 private:
     uint16_t m_hue;

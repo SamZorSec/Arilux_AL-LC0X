@@ -91,6 +91,7 @@ public:
     void store(SettingsDTO& settingsDTO);
     void store(SettingsDTO& settingsDTO, bool force);
     void reset();
+    const Modifications modifications() const;
 };
 
 

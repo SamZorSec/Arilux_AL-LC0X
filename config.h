@@ -142,7 +142,9 @@
 #define EFFECT_RAINBOW             "rainbow"
 #define TWIDTH                      "width"
 #define TNAME                       "name"
-#define TDURATION                   "duration"
+#define FILTER_DURATION                   "duration"
+#define FILTER_PULSE                   "pulse"
+#define FILTER_PERIOD                  "period"
 
 #define STATE                       "state"
 #define STATE_ON                         "ON"
@@ -162,5 +164,11 @@
 // Number of ms we wait untill we store to prevent storing to eeprom to many times
 #define EEPROM_COMMIT_BOUNCE_DELAY       5000
 #endif
+
+#define PERCENT_MINIMUM_BRIGHTNESS 1
+#define PERCENT_STARTUP_MINIMUM_BRIGHTNESS 5
+#define PERCENT_DEFAULT_BRIGHTNESS 15
+
+// Don't change anything below here
 
 #define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))

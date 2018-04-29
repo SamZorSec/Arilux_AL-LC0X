@@ -24,7 +24,7 @@ blobData_t EEPromStore::getBlob() const {
         return data;
     } else {
         DEBUG_PRINTLN(F("EEPromStore : CRC mismatch "));
-        return {0, 0, 50, 0, 0, 0, 0};
+        return {0, 0, 0, 0, 0, 0, 0};
     }
 }
 
