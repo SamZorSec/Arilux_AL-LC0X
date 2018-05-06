@@ -12,6 +12,6 @@ HSB RainbowEffect::handleEffect(const uint32_t p_count,
 HSB RainbowEffect::finalState(const uint32_t p_count,
                               const uint32_t p_time,
                               const HSB& hsb) const {
-    return HSB(p_count % 359, hsb.saturation(), hsb.brightness(), hsb.white1(), hsb.white2());
+    return hsb;
 }
 
