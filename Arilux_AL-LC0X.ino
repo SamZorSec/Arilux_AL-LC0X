@@ -804,7 +804,6 @@ void onceASecond() {
 #ifdef DEBUG_SERIAL || DEBUG_TELNET
     uint16_t colors[3];
     currentHsb.constantRGB(colors);
-    lastRefreshSecondTime += REFRESH_INTERVAL;
     char str[128];
     sprintf(str, "rgb %d,%d,%d", colors[0], colors[1], colors[2]);
     DEBUG_PRINTLN(str);
