@@ -26,12 +26,12 @@ MQTTStore::MQTTStore(
 void MQTTStore::storeHsb(const SettingsDTO& settings) {
     char payloadBuffer[64];
     const HSB hsb = settings.hsb();
-    sprintf(payloadBuffer, "hsb=%d,%.2f,%.2f,%.2f,%.2f",
+    sprintf(payloadBuffer, "hsb=%.2f,%.2f,%.2f,%.2f,%.2f",
             hsb.hue(),
-            (hsb.saturation() / 10.2),
-            (hsb.brightness() / 10.2),
-            (hsb.white1() / 10.2),
-            (hsb.white2() / 10.2)
+            (hsb.saturation()),
+            (hsb.brightness()),
+            (hsb.white1()),
+            (hsb.white2())
            );
 
     if (m_stateInColorTopic) {

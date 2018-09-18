@@ -3,14 +3,13 @@
 #include "Settings.h"
 #include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
-
 class MQTTStore final : public Settings {
 private:
-    PubSubClient m_mqttClient;
     const char* m_baseTopic;
     const char* m_hsbTopic;
     const char* m_remoteBaseTopic;
     const char* m_stateTopic;
+    PubSubClient m_mqttClient;
     bool m_stateInColorTopic;
 public:
     MQTTStore(

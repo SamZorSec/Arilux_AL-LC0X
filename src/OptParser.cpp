@@ -83,7 +83,7 @@ void OptParser::cleanUp(char* str, uint8_t pos) {
             s = &str[pos + 2];
         }
 
-        while ((*p++) = (*s++));
+        while (((*p++) = (*s++)) != '\0');
 
         cleanUp(str, pos);
     } else {

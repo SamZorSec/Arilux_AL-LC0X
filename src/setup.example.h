@@ -1,7 +1,4 @@
 
-#define DEVICE_MODEL                           "LC01"
-#define                                        RGB
-
 // Wi-Fi
 #define WIFI_SSID                              ""
 #define WIFI_PASSWORD                          ""

@@ -7,7 +7,7 @@
 #include "debug.h"
 
 #include <ESP8266WiFi.h>  // https://github.com/esp8266/Arduino
-
+#include <ESP8266mDNS.h>
 #include "config.h"
 
 #ifdef IR_REMOTE
@@ -89,12 +89,12 @@ volatile bool arduinoOTAInProgress = false;
 
 // Brightness where we define the lights are OFF
 // Used during startup
-#define STARTUP_MIN_BRIGHTNESS ((uint16_t)SBW_RANGE/100*PERCENT_STARTUP_MINIMUM_BRIGHTNESS)
+#define STARTUP_MIN_BRIGHTNESS ((float)PERCENT_STARTUP_MINIMUM_BRIGHTNESS)
 
-#define MIN_BRIGHTNESS ((uint16_t)SBW_RANGE/100*PERCENT_MINIMUM_BRIGHTNESS)
+#define MIN_BRIGHTNESS ((float)PERCENT_MINIMUM_BRIGHTNESS)
 
 // Default brightness if we cannot find any
-#define DEFAULT_BRIGHTNESS_VALUE ((uint16_t)SBW_RANGE/100*PERCENT_DEFAULT_BRIGHTNESS)
+#define DEFAULT_BRIGHTNESS_VALUE ((float)PERCENT_DEFAULT_BRIGHTNESS)
 
 uint16_t waitingForStateCaptureAt = 1;
 
@@ -115,7 +115,7 @@ BrightnessFilter brightnessFilter(25);
 PowerFilter powerFilter(true);
 
 // Arilux device interface
-Arilux arilux;
+Arilux arilux(RED_PIN, GREEN_PIN, BLUE_PIN, WHITE1_PIN, WHITE2_PIN);
 
 #ifdef RF_REMOTE
 RCSwitch rcSwitch = RCSwitch();
@@ -199,6 +199,29 @@ void publishToMQTT(const char* topic, const char* payload) {
     }
 }
 
+HSB getOffState(const HSB& hsb) {
+    return hsb.toBuilder().white1(0).white2(0).brightness(0).build();
+}
+
+HSB getOnState(const HSB& hsb) {
+    // If the light is already on, we ignore EEPROM settings
+    if (hsb.brightness() > 0) {
+        return hsb;
+    } else {
+        const HSB settings = eepromStore.get().hsb();
+        return hsb.toBuilder()
+               .white1(settings.white1())
+               .white2(settings.white2())
+               // On state forces lights to go on, so we constrain it with a minimjm brightness value
+               // as a saveguard
+               .brightness(constrain(
+                               settings.brightness() < STARTUP_MIN_BRIGHTNESS ? STARTUP_MIN_BRIGHTNESS : settings.brightness()
+                               ,DEFAULT_BRIGHTNESS_VALUE
+                               ,100.f))
+               .build();
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////
 //  MQTT
 ///////////////////////////////////////////////////////////////////////////
@@ -215,50 +238,47 @@ void publishToMQTT(const char* topic, const char* payload) {
  * Example 5: hsb=100,101,102 12,13,14,15,16
  */
 HSB hsbFromString(const HSB& hsb, const char* data) {
-    auto cstrSBW_RANGE = [](float in) {
-        return constrain(in, 0.0, 100.0) * 10.2;
-    };
-    uint16_t h, s, b, w1, w2;
+    float h, s, b, w1, w2;
     h = hsb.hue();
     s = hsb.saturation();
     b = hsb.brightness();
     w1 = hsb.white1();
     w2 = hsb.white1();
-    OptParser::get(data, [cstrSBW_RANGE, &h, &s, &b, &w1, &w2](OptValue f) {
+    OptParser::get(data, [&h, &s, &b, &w1, &w2](OptValue f) {
         if (strstr(f.key(), "hsb") != nullptr || strstr(f.key(), ",") != nullptr) {
-            OptParser::get(f.asChar(), ",", [cstrSBW_RANGE, &h, &s, &b, &w1, &w2](OptValue c) {
+            OptParser::get(f.asChar(), ",", [&h, &s, &b, &w1, &w2](OptValue c) {
                 switch (c.pos()) {
                     case 0:
-                        h = constrain(c.asFloat(), 0, 359);
+                        h = constrain(c.asFloat(), 0.f, 359.99f);
                         break;
 
                     case 1:
-                        s = cstrSBW_RANGE(c.asFloat());
+                        s = constrain(c.asFloat(), 0.f, 100.f);
                         break;
 
                     case 2:
-                        b = cstrSBW_RANGE(c.asFloat());
+                        b = constrain(c.asFloat(), 0.f, 100.f);
                         break;
 
                     case 3:
-                        w1 = cstrSBW_RANGE(c.asFloat());
+                        w1 = constrain(c.asFloat(), 0.f, 100.f);
                         break;
 
                     case 4:
-                        w2 = cstrSBW_RANGE(c.asFloat());
+                        w2 = constrain(c.asFloat(), 0.f, 100.f);
                         break;
                 }
             });
         } else if (strcmp(f.key(), "h") == 0) {
-            h = constrain(f.asFloat(), 0, 359);
+            h = constrain(f.asFloat(), 0.f, 359.99f);
         } else if (strcmp(f.key(), "s") == 0) {
-            s = cstrSBW_RANGE(f.asFloat());
+            s = constrain(f.asFloat(), 0.f, 100.f);
         } else if (strcmp(f.key(), "b") == 0) {
-            b = cstrSBW_RANGE(f.asFloat());
+            b = constrain(f.asFloat(), 0.f, 100.f);
         } else if (strcmp(f.key(), "w1") == 0) {
-            w1 = cstrSBW_RANGE(f.asFloat());
+            w1 = constrain(f.asFloat(), 0.f, 100.f);
         } else if (strcmp(f.key(), "w2") == 0) {
-            w2 = cstrSBW_RANGE(f.asFloat());
+            w2 = constrain(f.asFloat(), 0.f, 100.f);
         }
     });
     return HSB(h, s, b, w1, w2);
@@ -416,28 +436,7 @@ void callback(char* p_topic, byte* p_payload, uint16_t p_length) {
     }
 }
 
-HSB getOffState(const HSB& hsb) {
-    return hsb.toBuilder().white1(0).white2(0).brightness(0).build();
-}
 
-HSB getOnState(const HSB& hsb) {
-    // If the light is already on, we ignore EEPROM settings
-    if (hsb.brightness() > 0) {
-        return hsb;
-    } else {
-        const HSB settings = eepromStore.get().hsb();
-        return hsb.toBuilder()
-               .white1(settings.white1())
-               .white2(settings.white2())
-               // On state forces lights to go on, so we constrain it with a minimjm brightness value
-               // as a saveguard
-               .brightness(constrain(
-                               settings.brightness() < STARTUP_MIN_BRIGHTNESS ? STARTUP_MIN_BRIGHTNESS : settings.brightness()
-                               ,DEFAULT_BRIGHTNESS_VALUE
-                               ,SBW_RANGE))
-               .build();
-    }
-}
 
 void connectMQTTTopic() {
     if (mqttClient.connected()) {
@@ -617,20 +616,20 @@ void handleRFRemote(void) {
 
             case ARILUX_REMOTE_KEY_SPEED_PLUS:
                 // TODO: Implement some incremantal speedup filter
-                workingHsb = workingHsb.toBuilder().hue((workingHsb.hue() + 5 % 360)).build();
+                workingHsb = workingHsb.toBuilder().hue(fmod(workingHsb.hue() + 5, 360.f)).build();
                 break;
 
             case ARILUX_REMOTE_KEY_SPEED_MINUS:
                 // TODO: Implement some incremantal speedup filter
-                workingHsb = workingHsb.toBuilder().hue((workingHsb.hue() - 5 % 360)).build();
+                workingHsb = workingHsb.toBuilder().hue(fmod(workingHsb.hue() - 5, 360.f)).build();
                 break;
 
             case ARILUX_REMOTE_KEY_MODE_PLUS:
-                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() + 5, 0, SBW_RANGE)).build();
+                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() + 5, 0.f, 100.f)).build();
                 break;
 
             case ARILUX_REMOTE_KEY_MODE_MINUS:
-                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() - 5, 0, SBW_RANGE)).build();
+                workingHsb = workingHsb.toBuilder().saturation(constrain(workingHsb.saturation() - 5, 0.f, 100.f)).build();
                 break;
 
             default:
@@ -662,13 +661,14 @@ char* makeString(const char* format, ...) {
 void setup() {
     Serial.begin(9600);
     delay(50);
+    Serial.print("Starting");
     EEPROM.begin(32); // TODO make some way to get datasize from objects using eeprom
     // chipId : 00FF1234
     chipId = makeString("%08X", ESP.getChipId());
     // ARILUX00FF1234
     mqttClientID = makeString(HOSTNAME_TEMPLATE, chipId);
     // RGBW/00FF1234
-    mqttTopicPrefix = makeString(MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipId);
+    mqttTopicPrefix = makeString(MQTT_TOPIC_PREFIX_TEMPLATE, MQTT_PREFIX, chipId);
     // RGBW/00FF1234/lastwill
     mqttLastWillTopic = makeString(MQTT_LASTWILL_TOPIC_TEMPLATE, mqttTopicPrefix);
     //  RGBW/00FF1234/+
@@ -678,9 +678,9 @@ void setup() {
     // Calculate length of the subcriber topic
     mqttSubscriberTopicStrLength = strlen(mqttSubscriberTopic) - 2;
     // friendlyName : Arilux LC11 RGBW LED Controller 00FF1234
-    friendlyName = makeString("Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipId);
+    friendlyName = makeString("Arilux %s %s LED Controller %s", DEVICE_MODEL, MQTT_PREFIX, chipId);
     homeAssistantDiscoveryTopic = makeString(HOME_ASSISTANCE_MQTT_DISCOVERY_TOPIC_TEMPLATE,
-                                             HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, arilux.getColorString(), chipId);
+                                             HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX, DEVICE_MODEL, MQTT_PREFIX, chipId);
     // Hass Message for auto discovery
     homeAssistantDiscoveryMsg = makeString(MQTT_HASS_DISCOVERY_TEMPLATE,
                                            friendlyName,
@@ -693,7 +693,7 @@ void setup() {
     Serial.print("Hostname:");
     Serial.println(mqttClientID);
     // Init the Arilux LED controller
-    arilux.init();
+
     // set color from EEPROM to ensure we turn on light as quickly as possible
     settingsDTO = eepromStore.get();
     settingsDTO.power(true);
@@ -701,12 +701,18 @@ void setup() {
     workingHsb = getOnState(settingsDTO.hsb().toBuilder().brightness(0).build());
     brightnessAtBoot = workingHsb.brightness();
     currentHsb = workingHsb;
-    uint16_t colors[3];
+
+#ifndef PAUSE_FOR_OTA
+    arilux.init();
+    float colors[3];
     workingHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
+#endif
+
     // Setup Wi-Fi
     WiFi.hostname(mqttClientID);
     setupWiFi();
+    MDNS.begin(mqttClientID);
 #ifdef TLS
     // Check the fingerprint of CloudMQTT's SSL cert
     verifyFingerprint();
@@ -714,8 +720,10 @@ void setup() {
     // Start OTA
     ArduinoOTA.setHostname(mqttClientID);
     ArduinoOTA.onStart([]() {
+        // Disable outputs as this might interfere with OTA
+        arilux.setAll(0,0,0,0,0);
         arduinoOTAInProgress = true;
-        DEBUG_PRINTLN(F("OTA Beginning!"));
+        DEBUG_PRINTLN(F("OTA Beginning"));
     });
     ArduinoOTA.onError([](ota_error_t error) {
         DEBUG_PRINT("ArduinoOTA Error[");
@@ -739,22 +747,20 @@ void setup() {
     // Start the Telnet server
     startTelnet();
 #endif
+
 #ifdef PAUSE_FOR_OTA
+    arilux.init();
     uint16_t i = 0;
 
     do {
         yield();
-        uint16_t colors[3];
-        HSB hsb(i, 255 * 4, 255, 0, 0);
-        hsb.constantRGB(colors);
-        arilux.setAll(colors[0], colors[1], colors[2], 0, 0);
         ArduinoOTA.handle();
         yield();
         delay(10);
         i++;
-    } while (i < 360 * 2 || arduinoOTAInProgress);
-
+    } while (i < 750 /*|| arduinoOTAInProgress*/);
 #endif
+
     // Start boot sequence
     bootSequence.reset(new StateMachine<BootSequenceStatus>(ARRAY_SIZE(timedStates), timedStates, timeTimedStates2, BOOTSEQUENCEEND));
     bootSequence->advance();
@@ -765,9 +771,9 @@ void setup() {
 #ifdef DEBUG_TELNET
     handleTelnet();
 #endif
-#ifdef RF_REMOTE
+#ifdef RF_PIN
     // Start the RF receiver
-    rcSwitch.enableReceive(ARILUX_RF_PIN);
+    rcSwitch.enableReceive(RF_PIN);
 #endif
     mqttStore.reset(new MQTTStore(
                         mqttTopicPrefix,
@@ -794,21 +800,21 @@ void handleEffects() {
     settingsDTO.hsb(currentHsb);
     currentHsb = powerFilter.handleFilter(transitionCounter, currentMillies, currentHsb);
     currentHsb = currentFilter->handleFilter(transitionCounter, currentMillies, currentHsb);
-    uint16_t colors[3];
+    float colors[3];
     currentHsb.constantRGB(colors);
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
 }
 
 
 void onceASecond() {
-#ifdef DEBUG_SERIAL || DEBUG_TELNET
-    uint16_t colors[3];
+#if defined(DEBUG_SERIAL) || defined(DEBUG_TELNET)
+    float colors[3];
     currentHsb.constantRGB(colors);
     char str[128];
-    sprintf(str, "rgb %d,%d,%d", colors[0], colors[1], colors[2]);
+    sprintf(str, "rgb %.2f,%.2f,%.2f", colors[0], colors[1], colors[2]);
     DEBUG_PRINTLN(str);
     currentHsb.getHSB(colors);
-    sprintf(str, "hsb %d,%d,%d w %d,%d", colors[0], colors[1], colors[2], currentHsb.white1(), currentHsb.white2());
+    sprintf(str, "hsb %.2f,%.2f,%.2f w %.2f,%.2f", colors[0], colors[1], colors[2], currentHsb.white1(), currentHsb.white2());
     DEBUG_PRINTLN(str);
 #endif
 }

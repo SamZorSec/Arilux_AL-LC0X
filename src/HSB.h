@@ -5,33 +5,36 @@
 
 class HSBBuilder;
 
-#define SBW_RANGE 1020
 
 class HSB {
 private:
-    uint16_t m_hue;
-    uint16_t m_saturation;
-    uint16_t m_brightness;
+    float m_hue;
+    float m_saturation;
+    float m_brightness;
 
-    uint16_t m_white1;
-    uint16_t m_white2;
+    float m_white1;
+    float m_white2;
 public:
-    explicit HSB(const uint16_t p_hue, const uint16_t p_saturation, const uint16_t p_brightness, const uint16_t p_white1, const uint16_t p_white2);
+    explicit HSB(const float p_hue, const float p_saturation, const float p_brightness, const float p_white1, const float p_white2);
     HSB(const HSB& hsb);
     HSBBuilder toBuilder() const;
 
-    void getHSB(uint16_t colors[]) const;
+    void getHSB(float colors[]) const;
 
-    uint16_t hue() const;
-    uint16_t saturation() const;
-    uint16_t brightness() const;
+    float hue() const;
+    float saturation() const;
+    float brightness() const;
 
-    uint16_t white1() const;
-    uint16_t white2() const;
+    float white1() const;
+    float white2() const;
 
-    uint16_t cwhite1() const;
-    uint16_t cwhite2() const;
-    void constantRGB(uint16_t colors[]) const;
+    float cwhite1() const;
+    float cwhite2() const;
+
+    /**
+     * Create rgb colors 0..255
+     */
+    void constantRGB(float colors[]) const;
 
     /**
      * Calculate shortest path from one hue to the next hue
@@ -56,7 +59,7 @@ public:
      *  Fix a hue if it´s outside of the range <0 will get
      *  360 added and >360 will get 360 substracted
      */
-    static uint16_t fixHue(uint16_t hue) {
+    static float fixHue(uint16_t hue) {
         return (hue < 0 ? hue + 360 : hue > 360 ? hue - 360 : hue) % 360;
     }
 
@@ -65,7 +68,7 @@ public:
      *  360 added and >360 will get 360 substracted
      */
     static float fixHue(float hue) {
-        return fmod((hue < 0.0 ? hue + 360.0 : hue > 360.0 ? hue - 360.0 : hue), 360.0);
+        return fmod((hue < 0.f ? hue + 360.f : hue > 360.f ? hue - 360.f : hue), 360.f);
     }
 
     bool operator ==(const HSB& rhs) const;
@@ -76,12 +79,12 @@ public:
 
 class HSBBuilder {
 private:
-    uint16_t m_hue;
-    uint16_t m_saturation;
-    uint16_t m_brightness;
+    float m_hue;
+    float m_saturation;
+    float m_brightness;
 
-    uint16_t m_white1;
-    uint16_t m_white2;
+    float m_white1;
+    float m_white2;
 public:
     HSBBuilder() :
         m_hue(0),    m_saturation(0), m_brightness(0), m_white1(0), m_white2(0) {
@@ -95,27 +98,27 @@ public:
         m_white2(hsb.white2()) {
     }
 
-    explicit HSBBuilder(uint16_t p_hue, uint16_t p_saturation, uint16_t p_brightness, uint16_t p_white1, uint16_t p_white2) :
+    explicit HSBBuilder(float p_hue, float p_saturation, float p_brightness, float p_white1, float p_white2) :
         m_hue(p_hue), m_saturation(p_saturation), m_brightness(p_brightness), m_white1(p_white1), m_white2(p_white2) {
     }
 
-    HSBBuilder& hue(uint16_t p_hue) {
+    HSBBuilder& hue(float p_hue) {
         m_hue = p_hue;
         return *this;
     }
-    HSBBuilder& saturation(uint16_t p_saturation) {
+    HSBBuilder& saturation(float p_saturation) {
         m_saturation = p_saturation;
         return *this;
     }
-    HSBBuilder& brightness(uint16_t p_brightness) {
+    HSBBuilder& brightness(float p_brightness) {
         m_brightness = p_brightness;
         return *this;
     }
-    HSBBuilder& white1(uint16_t p_white1) {
+    HSBBuilder& white1(float p_white1) {
         m_white1 = p_white1;
         return *this;
     }
-    HSBBuilder& white2(uint16_t p_white2) {
+    HSBBuilder& white2(float p_white2) {
         m_white2 = p_white2;
         return *this;
     }

@@ -19,7 +19,7 @@ private:
 public:
     /**
      * hsb     : Starting HSB value
-     * p_alpha : How quickly we change to the final value 0.05 is a good start
+     * p_alpha : How quickly we change to the final value 0.f5 is a good start
      */
     FadingFilter(const HSB _hsb, const float p_alpha);
 

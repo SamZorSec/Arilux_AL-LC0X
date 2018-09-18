@@ -6,34 +6,6 @@
 #include <IRremoteESP8266.h> // https://github.com/markszabo/IRremoteESP8266
 #endif
 
-#if defined(RGBWW)
-#define ARILUX_RED_PIN 5
-#define ARILUX_GREEN_PIN 4
-#define ARILUX_BLUE_PIN 14
-#define ARILUX_WHITE1_PIN 12
-#define ARILUX_WHITE2_PIN 13
-#define ARILUX_COLOR_STRING "RGBWW"
-#elif defined(RGBW)
-//FF2143 (Other)
-#define ARILUX_RED_PIN 5
-#define ARILUX_GREEN_PIN 14
-//1F162E
-//#define ARILUX_RED_PIN            14
-//#define ARILUX_GREEN_PIN          5
-
-#define ARILUX_BLUE_PIN 12
-#define ARILUX_WHITE1_PIN 13
-#define ARILUX_COLOR_STRING "RGBW"
-#else
-#define ARILUX_RED_PIN 14
-#define ARILUX_GREEN_PIN 5
-#define ARILUX_BLUE_PIN 12
-#define ARILUX_COLOR_STRING "RGB"
-#endif
-
-#define ARILUX_IR_PIN 4
-#define ARILUX_RF_PIN 4
-
 #define ARILUX_PWM_RANGE 1023
 
 // Value at which we set to max PWM range
@@ -134,20 +106,16 @@
 #endif
 
 class Arilux {
-public:
-    Arilux();
-    bool init(void) const;
-    bool setAll(const uint16_t p_red, const uint16_t p_green, const uint16_t p_blue, const uint16_t p_white1, const uint16_t p_white2) const;
-    const char* getColorString(void) const;
-
 private:
     const uint8_t m_redPin;
     const uint8_t m_greenPin;
     const uint8_t m_bluePin;
-#if defined(RGBW) || defined(RGBWW)
     const uint8_t m_white1Pin;
-#ifdef RGBWW
     const uint8_t m_white2Pin;
-#endif
-#endif
+
+public:
+    Arilux(const uint8_t red_pin, const uint8_t green_pin, const uint8_t blue_pin, const uint8_t white1_pin, const uint8_t white2_pin);
+    bool init(void) const;
+    bool setAll(const float p_red, const float p_green, const float p_blue, const float p_white1, const float p_white2) const;
+
 };

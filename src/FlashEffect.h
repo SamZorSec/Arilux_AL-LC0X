@@ -9,10 +9,10 @@
  */
 class FlashEffect final : public Effect {
 private:
+    const HSB m_hsb;
     const uint32_t m_currentCount;
     const uint8_t m_period;
     const uint8_t m_pulseWidth;
-    const HSB m_hsb;
 
 public:
     FlashEffect(const HSB p_hsb,

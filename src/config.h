@@ -1,22 +1,33 @@
 #include "setup.h"
 
+#ifndef RED_PIN
+#define RED_PIN 0
+#endif
 
-// #define DEVICE_MODEL                           "LC01"
-// #define DEVICE_MODEL                           "LC02"
-// #define DEVICE_MODEL                           "LC03"
-// #define DEVICE_MODEL                           "LC04"
-// #define DEVICE_MODEL                           "LC08"
-// #define DEVICE_MODEL                           "LC09"
-// #define DEVICE_MODEL                           "LC10"
-// #define DEVICE_MODEL                           "LC11"
+#ifndef GREEN_PIN
+#define GREEN_PIN 0
+#endif
+
+#ifndef BLUE_PIN
+#define BLUE_PIN 0
+#endif
+
+#ifndef WHITE1_PIN
+#define WHITE1_PIN 0
+#endif
+
+#ifndef WHITE2_PIN
+#define WHITE2_PIN 0
+#endif
+
+#ifndef MQTT_PREFIX
+#define MQTT_PREFIX                    "UNDEFINED"
+#endif
 
 #ifndef DEVICE_MODEL
-#define DEVICE_MODEL                           "LC01"
+#define DEVICE_MODEL                    "UNDEFINED"
 #endif
 
-#ifndef RGB || RGBW || RGBWW
-#define RGB
-#endif
 
 // #define IR_REMOTE
 // #define RF_REMOTE
@@ -132,7 +143,7 @@
 #define FILTER_NONE                 "none"
 #define FILTER_FADING               "fading"
 #define FALPHA                      "alpha"
-#define FILTER_FADING_ALPHA         0.04
+#define FILTER_FADING_ALPHA         0.1f
 
 #define EFFECT                  "effect"
 #define ENAME                  "name"
@@ -153,9 +164,6 @@
 #define MQTT_LASTWILL_ONLINE       "online"
 #define MQTT_LASTWILL_OFFLINE      "offline"
 
-#define BRIGHTNESS_INCREASE     100
-#define BRIGHTNESS_DECREASE     -100
-
 #ifndef EEPROM_COMMIT_WAIT_DELAY
 // Number of milli seconds to wait untill we commit to EEPROM
 #define EEPROM_COMMIT_WAIT_DELAY       300000
@@ -165,9 +173,9 @@
 #define EEPROM_COMMIT_BOUNCE_DELAY       5000
 #endif
 
-#define PERCENT_MINIMUM_BRIGHTNESS 1
-#define PERCENT_STARTUP_MINIMUM_BRIGHTNESS 5
-#define PERCENT_DEFAULT_BRIGHTNESS 15
+#define PERCENT_MINIMUM_BRIGHTNESS 1.f
+#define PERCENT_STARTUP_MINIMUM_BRIGHTNESS 5.f
+#define PERCENT_DEFAULT_BRIGHTNESS 15.f
 
 // Don't change anything below here
 

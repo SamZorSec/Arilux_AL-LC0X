@@ -1,5 +1,5 @@
 #include "BasicFilters.h"
-#include <Arduino.h> // for constrain
+#include "constrain.h"
 
 BrightnessFilter::BrightnessFilter(const float p_increaseBy) :
     Filter(),
@@ -14,7 +14,7 @@ HSB BrightnessFilter::handleFilter(const uint32_t p_count,
         return _hsb;
     }
 
-    if (m_increase == 1 && _hsb.brightness() >= SBW_RANGE && _hsb.white1() >= SBW_RANGE && _hsb.white2() >= SBW_RANGE) {
+    if (m_increase == 1 && _hsb.brightness() >= 100.f && _hsb.white1() >= 100.f && _hsb.white2() >= 100.f) {
         m_increase = 0;
         return _hsb;
     } else if (m_increase == -1 && _hsb.brightness() == 0 && _hsb.white1() == 0 && _hsb.white2() == 0) {
@@ -28,24 +28,26 @@ HSB BrightnessFilter::handleFilter(const uint32_t p_count,
         m_brightness = m_increaseBy;
     } else if (m_increase == -1) {
         m_brightness = - m_increaseBy;
+    } else {
+      m_brightness = 0;
     }
 
     m_increase = 0;
-    float brightness = _hsb.brightness() + _hsb.brightness() / 100.0 * m_brightness;
-    float white1 = _hsb.white1() + _hsb.white1() / 100.0 * m_brightness;
-    float white2 = _hsb.white2() + _hsb.white2() / 100.0 * m_brightness;
+    float brightness = _hsb.brightness() + _hsb.brightness() / 100.f * m_brightness;
+    float white1 = _hsb.white1() + _hsb.white1() / 100.f * m_brightness;
+    float white2 = _hsb.white2() + _hsb.white2() / 100.f * m_brightness;
 
     // Don´t allow to turn off with brightness controls
     // This has the side effect that we cannot turn on or if we do we don´t
     // know anymore what leds where on.
-    if (white1 < 10.0 && white2 < 10.0 && brightness < 10.0) {
+    if (white1 < 10.f && white2 < 10.f && brightness < 10.f) {
         return _hsb;
     }
 
     return _hsb.toBuilder()
-           .white1(constrain(white1, 0, SBW_RANGE))
-           .white2(constrain(white2, 0, SBW_RANGE))
-           .brightness(constrain(brightness, 0, SBW_RANGE))
+           .white1(Helpers::constrain(white1, 0.f, 100.f))
+           .white2(Helpers::constrain(white2, 0.f, 100.f))
+           .brightness(Helpers::constrain(brightness, 0.f, 100.f))
            .build();
 }
 
@@ -74,9 +76,9 @@ HSB PowerFilter::handleFilter(const uint32_t p_count,
                               const uint32_t p_time,
                               const HSB& _hsb) {
     return _hsb.toBuilder()
-           .white1(m_power ? _hsb.white1() : 0)
-           .white2(m_power ? _hsb.white2() : 0)
-           .brightness(m_power ? _hsb.brightness() : 0)
+           .white1(m_power ? _hsb.white1() : 0.f)
+           .white2(m_power ? _hsb.white2() : 0.f)
+           .brightness(m_power ? _hsb.brightness() : 0.f)
            .build();
 }
 

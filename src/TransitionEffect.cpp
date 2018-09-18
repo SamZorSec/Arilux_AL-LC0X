@@ -31,13 +31,13 @@ bool TransitionEffect::isCompleted(const uint32_t p_count,
 HSB TransitionEffect::calcHSB(const uint32_t p_count,
                               const uint32_t p_time,
                               const HSB& _hsb) const {
-    const uint16_t percent = ((p_time - m_startMillis) * 1000) / m_duration;
-    const uint16_t m_hsbsPath = HSB::hueShortestPath(_hsb.hue(), m_hsb.hue());
-    const uint16_t newHue = map(percent, 0, 1000, _hsb.hue(), m_hsbsPath);
+    const float percent = ((p_time - m_startMillis) * 100) / m_duration;
+    const float m_hsbsPath = HSB::hueShortestPath(_hsb.hue(), m_hsb.hue());
+    const float newHue = map(percent, 0.f, 100.f, _hsb.hue(), m_hsbsPath);
     return HSB(
                HSB::fixHue(newHue),
-               map(percent, 0, 1000, _hsb.saturation(), m_hsb.saturation()),
-               map(percent, 0, 1000, _hsb.brightness(), m_hsb.brightness()),
-               map(percent, 0, 1000, _hsb.white1(), m_hsb.white1()),
-               map(percent, 0, 1000, _hsb.white2(), m_hsb.white2()));
+               map(percent, 0.f, 100.f, _hsb.saturation(), m_hsb.saturation()),
+               map(percent, 0.f, 100.f, _hsb.brightness(), m_hsb.brightness()),
+               map(percent, 0.f, 100.f, _hsb.white1(), m_hsb.white1()),
+               map(percent, 0.f, 100.f, _hsb.white2(), m_hsb.white2()));
 }

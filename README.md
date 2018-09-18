@@ -40,7 +40,7 @@ IDeas
 
 ## Todo
 
- - Configure using some form of web based interface, eg, no need to configure for each device using the setup.h file
+ - Configure using some form of web based interface,ard eg, no need to configure for each device using the setup.h file
  - ASync TCP / MQTT client
  - Store and reload the current active Filter in EEPROM/MQTT so the device comes back up correctly after reboot
  - Check if we can use a better way of debugging lines
@@ -58,7 +58,7 @@ The controllers are also known to sell under different manufacturer names such a
 **WARNING: DUE TO A NEW PINOUT, THIS FIRMWARE SEEMS TO BE NOT MORE COMPATIBLE WITH THE NEWEST MODELS (PCB version > 1.4).**
 
 
-![Arilux](images/Arilux.png)
+![Arilux](../images/Arilux.png)
 
 ## Features
 - Remote control over the MQTT protocol via individual topics
@@ -84,7 +84,7 @@ The controllers are also known to sell under different manufacturer names such a
 
 ## Demonstration
 
-[![Arilux AL-LC03 + IR + MQTT + Home Assistant](images/Youtube.png)](https://www.youtube.com/watch?v=IKh0inaLvAU "Arilux AL-LC03 + IR + MQTT + Home Assistant")
+[![Arilux AL-LC03 + IR + MQTT + Home Assistant](../images/Youtube.png)](https://www.youtube.com/watch?v=IKh0inaLvAU "Arilux AL-LC03 + IR + MQTT + Home Assistant")
 
 ## Flash the firmware
 Whichever flashing option you choose, ensure your Arduino IDE settings match the following:
@@ -124,15 +124,15 @@ If you are unable or don't know how to solder try option 2 below which can be ac
 
 The FTDI from the left gives power and it's connected to an USB charger (VCC, GND). The FTDI from the right is connected to the computer and is used to reprogram the ESP8266 (RX, TX, GND).
 
-![ESP-12F Layout](images/ESP12-F_pinout3.jpg)
+![ESP-12F Layout](../images/ESP12-F_pinout3.jpg)
 
-![Layout](images/Layout.JPG)
+![Layout](../images/Layout.JPG)
 
 ### Option 2
 Using the following image, connect RX, TX and GND of a single FTDI to the shown pins on the underside of the board. Plug in the wall power supply and flash using the above settings.
 It helps to have another person able to plug in the device and start the upload while you hold the pins.
 
-![Option 2 Layout](images/option2.jpg)
+![Option 2 Layout](../images/option2.jpg)
 
 ## Updating
 OTA is enabled on this firmware. Assuming the device is plugged in you should find the device as a Port option in the Arduino IDE. Make sure you are using the settings listed above.
@@ -218,7 +218,7 @@ Considarations:
    
    | Parameter  | type     | default  | Description          |
    | ---------- | -------- | -------- | -------------------- |
-   | alpha      | float    | 0.05     | Speed of fading, keep this between 0.001 and 0.99   |
+   | alpha      | float    | 0.f5     | Speed of fading, keep this between 0.f01 and 0.99   |
 
    ##### Example
    ```
