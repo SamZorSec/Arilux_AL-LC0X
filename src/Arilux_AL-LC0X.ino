@@ -243,7 +243,7 @@ HSB hsbFromString(const HSB& hsb, const char* data) {
     s = hsb.saturation();
     b = hsb.brightness();
     w1 = hsb.white1();
-    w2 = hsb.white1();
+    w2 = hsb.white2();
     OptParser::get(data, [&h, &s, &b, &w1, &w2](OptValue f) {
         if (strstr(f.key(), "hsb") != nullptr || strstr(f.key(), ",") != nullptr) {
             OptParser::get(f.asChar(), ",", [&h, &s, &b, &w1, &w2](OptValue c) {
@@ -494,6 +494,11 @@ void connectMQTT(void) {
                 DEBUG_PRINTLN(MQTT_SERVER);
             }
         }
+    }
+    // A bit of a hack for now, when WIFI is not connected and mqtt things it´s connected
+    // we disconnect the pubsubclient
+    if (WiFi.status() != WL_CONNECTED && mqttClient.connected()) {
+        mqttClient.disconnect();
     }
 }
 

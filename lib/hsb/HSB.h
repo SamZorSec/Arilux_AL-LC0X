@@ -43,7 +43,6 @@ public:
     template<typename T>
     static T hueShortestPath(T fromHue, T toHue) {
         const T distance = toHue - fromHue;
-
         if (distance > -180 && distance <= 180) {
             return toHue;
         } else {
@@ -59,7 +58,7 @@ public:
      *  Fix a hue if it´s outside of the range <0 will get
      *  360 added and >360 will get 360 substracted
      */
-    static float fixHue(uint16_t hue) {
+    static uint16_t fixHue_int16_t(int16_t hue) {
         return (hue < 0 ? hue + 360 : hue > 360 ? hue - 360 : hue) % 360;
     }
 
