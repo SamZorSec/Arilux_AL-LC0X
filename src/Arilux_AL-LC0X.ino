@@ -472,6 +472,13 @@ void connectMQTT(void) {
         if (millis() - currentMqttReconnect > 1000) {
             currentMqttReconnect = millis();
 
+            // A bit of a hack for now, when WIFI is not connected and mqtt things it´s connected
+            // we disconnect the pubsubclient
+            if (WiFi.status() != WL_CONNECTED && mqttClient.connected()) {
+                mqttClient.disconnect();
+                return; // return and wait 1000ms for the next try
+            }
+
             if (mqttClient.connect(mqttClientID, MQTT_USER, MQTT_PASS, mqttLastWillTopic, 0, 1, MQTT_LASTWILL_OFFLINE)) {
                 publishToMQTT(mqttLastWillTopic, MQTT_LASTWILL_ONLINE);
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
@@ -494,11 +501,6 @@ void connectMQTT(void) {
                 DEBUG_PRINTLN(MQTT_SERVER);
             }
         }
-    }
-    // A bit of a hack for now, when WIFI is not connected and mqtt things it´s connected
-    // we disconnect the pubsubclient
-    if (WiFi.status() != WL_CONNECTED && mqttClient.connected()) {
-        mqttClient.disconnect();
     }
 }
 
