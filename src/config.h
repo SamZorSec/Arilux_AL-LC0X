@@ -79,8 +79,6 @@
 #define MQTT_LASTWILL_TOPIC_TEMPLATE           "%s/lastwill"
 
 #define MQTT_SUBSCRIBER_TOPIC_TEMPLATE          "%s/+"
-#define MQTT_COLOR_TOPIC_TEMPLATE               "%s/color"
-#define MQTT_SUBSCRIBER_STATE_TOPIC_TEMPLATE    "%s/+/state"
 #define MQTT_LASTWILL_TOPIC_TEMPLATE            "%s/lastwill"
 
 // State Topics
@@ -132,7 +130,7 @@
 #endif
 
 // Enable console output via telnet OR SERIAL
-// #define DEBUG_TELNET
+// #define ARILUX_DEBUG_TELNET
 // #define DEBUG_SERIAL
 
 // When set we will pause for any OTA messages before we startup, no commands are handled in this time
@@ -173,9 +171,9 @@
 #define EEPROM_COMMIT_BOUNCE_DELAY       5000
 #endif
 
-#define PERCENT_MINIMUM_BRIGHTNESS 1.f
-#define PERCENT_STARTUP_MINIMUM_BRIGHTNESS 5.f
-#define PERCENT_DEFAULT_BRIGHTNESS 15.f
+// Brights at starup when the device was in a off state
+// Bright ness to be considered to be the minimum stored in EEPROM
+#define STARTUP_MIN_BRIGHTNESS 5.f
 
 // Don't change anything below here
 

@@ -4,8 +4,8 @@
 #include <ESP8266WiFi.h>  // https://github.com/esp8266/Arduino
 
 // in a terminal: telnet arilux.local
-#if defined DEBUG_TELNET || defined DEBUG_SERIAL
-#ifdef DEBUG_TELNET
+#if defined ARILUX_DEBUG_TELNET || defined DEBUG_SERIAL
+#ifdef ARILUX_DEBUG_TELNET
 extern WiFiServer telnetServer;
 extern WiFiClient telnetClient;
 

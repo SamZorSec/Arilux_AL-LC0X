@@ -7,7 +7,7 @@
    Function called to handle Telnet clients
    https://www.youtube.com/watch?v=j9yW10OcahI
 */
-#if defined DEBUG_TELNET
+#if defined ARILUX_DEBUG_TELNET
 
 WiFiServer telnetServer(23);
 WiFiClient telnetClient;
