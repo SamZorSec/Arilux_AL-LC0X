@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "Settings.h"
-#include "PubSubClient.h" // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
+#include <PubSubClient.h> // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
 class MQTTStore final : public Settings {
 private:
@@ -22,8 +22,10 @@ public:
         const bool p_stateInColorTopic);
 
 private:
-    virtual void storeHsb(const SettingsDTO& settings) override;
-    virtual void storeRemoteBase(const SettingsDTO& settings) override;
-    virtual void storePower(const SettingsDTO& settings) override;
+    virtual void store(const SettingsDTO& settings) override;
+
+    virtual void storeHsb(const SettingsDTO& settings);
+    virtual void storeRemoteBase(const SettingsDTO& settings);
+    virtual void storePower(const SettingsDTO& settings);
     void publish(const char* baseTopic, const char* topic, const char* payload);
 };

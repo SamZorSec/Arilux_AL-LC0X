@@ -1,77 +1,58 @@
 #pragma once
 
 #include <stdint.h>
-#include "HSB.h"
+#include <HSB.h>
 
 #define SETTINGS_PROPERTY(typeIn,name) \
+    private: \
+    typeIn m_##name; \
+    typeIn l_##name; \
+    public: \
     typeIn name() const {return m_##name;} \
-    void name(const typeIn& value){m_modifications.name = m_modifications.name || value != m_##name; m_##name = value;}
+    void name(const typeIn& value){m_##name = value;}
 
-struct Modifications {
-    Modifications() : hsb(false), remoteBase(false), filter(false), power(false) {}
-    Modifications(bool p_Hsb, bool p_RemoteBase, bool p_Filter, bool p_Power) :
-        hsb(p_Hsb), remoteBase(p_RemoteBase), filter(p_Filter), power(p_Power) {}
-    bool hsb;
-    bool remoteBase;
-    bool filter;
-    bool power;
-    void reset() {
-        hsb = false;
-        remoteBase = false;
-        filter = false;
-        power = false;
-    }
-    bool modified() const {
-        return hsb || power || remoteBase || filter;
-    }
-    Modifications& operator|(const Modifications& m) {
-        hsb = hsb || m.hsb;
-        remoteBase = remoteBase || m.remoteBase;
-        filter = filter || m.filter;
-        power = power || m.power;
-        return *this;
-    }
-
-    Modifications& operator = (const Modifications& rhs) {
-        if (&rhs == this) {
-            return *this;
-        }
-
-        hsb = rhs.hsb;
-        remoteBase = rhs.remoteBase;
-        filter = rhs.filter;
-        power = rhs.power;
-        return *this;
-    }
-};
 
 class SettingsDTO final {
-private:
-    HSB m_hsb;
-    uint32_t m_remoteBase;
-    uint8_t m_filter;
-    bool m_power;
-
-    Modifications m_modifications;
-public:
-    explicit SettingsDTO();
-    SettingsDTO(const HSB& p_hsb,
-                const uint32_t p_remoteBase,
-                const uint8_t p_filters,
-                const bool p_power);
-
+    
     SETTINGS_PROPERTY(HSB, hsb)
-    SETTINGS_PROPERTY(bool, power)
-    SETTINGS_PROPERTY(uint8_t, filter)
     SETTINGS_PROPERTY(uint32_t, remoteBase)
+    SETTINGS_PROPERTY(uint8_t, filter)
+    SETTINGS_PROPERTY(bool, power)
+    SETTINGS_PROPERTY(float, brightness)
 
-    const Modifications& modifications() const {
-        return m_modifications;
+public:
+    SettingsDTO(const HSB& p_hsb,
+                         const uint32_t p_remoteBase,
+                         const uint8_t p_filter,
+                         const bool p_power,
+                         const float p_brightness) :
+    m_hsb(p_hsb),l_hsb(p_hsb),
+    m_remoteBase(p_remoteBase),l_remoteBase(p_remoteBase),
+    m_filter(p_filter),l_filter(p_filter),
+    m_power(p_power),l_power(p_power),
+    m_brightness(l_brightness),l_brightness(p_brightness) {
     }
 
-    bool modified() const;
+    SettingsDTO() : SettingsDTO(HSB(0, 0, 50, 0, 0), 0, 0, true, 50) {
+    }
 
-    void reset();
+
+    bool modified() const {
+        return l_hsb != m_hsb || 
+        l_remoteBase != m_remoteBase || 
+        l_filter != m_filter ||
+        l_power != m_power ||
+        l_brightness != m_brightness;
+    }
+
+    void reset() {
+        l_hsb = m_hsb;
+        l_remoteBase = m_remoteBase;
+        l_filter = m_filter;
+        l_power = m_power;
+        l_brightness = m_brightness;
+    }
+
 };
 
 class Settings {
@@ -80,18 +61,14 @@ private:
     const uint32_t m_commitWaitTime;
     uint32_t m_startCommitTime;
     uint32_t m_startDebounceTime;
-    Modifications m_modifications;
 private:
-    virtual void storeHsb(const SettingsDTO& settings) = 0;
-    virtual void storeRemoteBase(const SettingsDTO& settings) = 0;
-    virtual void storePower(const SettingsDTO& settings) = 0;
+    virtual void store(const SettingsDTO& settings) = 0;
 public:
     Settings(const uint32_t p_debounceWaitTime, const uint32_t p_startDebounceTime);
     bool handle(SettingsDTO& settingsDTO);
-    void store(SettingsDTO& settingsDTO);
-    void store(SettingsDTO& settingsDTO, bool force);
+    void save(SettingsDTO& settingsDTO);
+    void save(SettingsDTO& settingsDTO, bool force);
     void reset();
-    const Modifications modifications() const;
 };
 
 

@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "Filter.h"
-#include "HSB.h"
+#include <HSB.h>
 
 /**
  * Transitions nicely between two HSB values

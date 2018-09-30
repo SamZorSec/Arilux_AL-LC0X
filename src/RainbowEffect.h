@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "Effect.h"
-#include "HSB.h"
+#include <HSB.h>
 
 /**
  * Cycle between all colors of the rainbow

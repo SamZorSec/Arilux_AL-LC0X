@@ -22,6 +22,11 @@ MQTTStore::MQTTStore(
     m_stateInColorTopic(p_stateInColorTopic) {
 }
 
+void MQTTStore::store(const SettingsDTO& settings) {
+    storeHsb(settings);
+    storeRemoteBase(settings);
+    storePower(settings);
+}
 
 void MQTTStore::storeHsb(const SettingsDTO& settings) {
     char payloadBuffer[64];
