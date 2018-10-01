@@ -30,13 +30,14 @@ blobData_t EEPromStore::getBlob() const {
 
 void EEPromStore::store(const SettingsDTO& settings) {
     const HSB hsb = settings.hsb();
-    blobData_t data = getBlob();
+    blobData_t data;
     data.m_hue = hsb.hue();
     data.m_saturation = hsb.saturation();
     data.m_brightness = hsb.brightness();
     data.m_white1 = hsb.white1();
     data.m_white2 = hsb.white2();
 
+    data.m_filters = 0;
     data.m_remoteBase = settings.remoteBase();
     data.m_power = settings.power();
     data.m_onBrightness = settings.brightness();
@@ -71,6 +72,8 @@ void EEPromStore::storeBlob(const blobData_t& p_blob) const {
     uint16_t crc = crc16(reinterpret_cast<uint8_t*>(&data), sizeof(blobData_t));
     EEPROM.put(m_eepromAddress, p_blob);
     EEPROM.put(m_eepromAddress + sizeof(blobData_t), crc);
+    DEBUG_PRINTLN(F("EEPromStore : Commit"));
+    EEPROM.commit();
 }
 
 uint16_t EEPromStore::crc16(uint8_t* a, uint16_t length) const {
