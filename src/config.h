@@ -175,6 +175,37 @@
 // Bright ness to be considered to be the minimum stored in EEPROM
 #define STARTUP_MIN_BRIGHTNESS 5.f
 
+// PWM Range
+#define ARILUX_PWM_RANGE 1023
+
+// Value at which we set to max AND MIN PWM range using
+// n > ARILUX_PWM_MAX_RANGE_VALUE ? ARILUX_PWM_RANGE : in < ARILUX_PWM_MIN_RANGE_VALUE ? 0 : in;
+
+#define ARILUX_PWM_MAX_RANGE_VALUE 1023
+#define ARILUX_PWM_MIN_RANGE_VALUE 0
+
+// Ranges on which we maximum set each PWM channel
+// This can be used as a cheap calibration (curveless)
+// or to reduce power output to each LED
+#ifndef ARILUX_RED_PWM_RANGE
+#define ARILUX_RED_PWM_RANGE  1023
+#endif
+#ifndef ARILUX_BLUE_PWM_RANGE
+#define ARILUX_BLUE_PWM_RANGE  1023
+#endif
+#ifndef ARILUX_GREEN_PWM_RANGE
+#define ARILUX_GREEN_PWM_RANGE  1023
+#endif
+#ifndef ARILUX_WHITE1_PWM_RANGE
+#define ARILUX_WHITE1_PWM_RANGE  1023
+#endif
+#ifndef ARILUX_WHITE2_PWM_RANGE
+#define ARILUX_WHITE2_PWM_RANGE  1023
+#endif
+
+#define ARILUX_PWM_FREQUENCY 225
+
+
 // Don't change anything below here
 
 #define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))

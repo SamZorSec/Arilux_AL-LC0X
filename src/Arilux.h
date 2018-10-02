@@ -6,14 +6,6 @@
 #include <IRremoteESP8266.h> // https://github.com/markszabo/IRremoteESP8266
 #endif
 
-#define ARILUX_PWM_RANGE 1023
-
-// Value at which we set to max PWM range
-// Underlaying driver just might stop the PWM to save energy
-#define ARILUX_PWM_MAX_RANGE_VALUE 1000
-#define ARILUX_PWM_MIN_RANGE_VALUE 10
-
-#define ARILUX_PWM_FREQUENCY 225
 
 /*
    IR Remote

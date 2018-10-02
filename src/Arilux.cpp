@@ -32,14 +32,14 @@ bool Arilux::setAll(const float p_red, const float p_green, const float p_blue, 
     auto clamp = [](uint16_t in) {
         return in > ARILUX_PWM_MAX_RANGE_VALUE ? ARILUX_PWM_RANGE : in < ARILUX_PWM_MIN_RANGE_VALUE ? 0 : in;
     };
-    analogWrite(m_redPin, clamp(map(p_red, 0.f, 100.f, 0, ARILUX_PWM_RANGE)));
-    analogWrite(m_greenPin, clamp(map(p_green, 0.f, 100.f, 0, ARILUX_PWM_RANGE)));
-    analogWrite(m_bluePin, clamp(map(p_blue, 0.f, 100.f, 0, ARILUX_PWM_RANGE)));
+    analogWrite(m_redPin, clamp(map(p_red, 0.f, 100.f, 0, ARILUX_RED_PWM_RANGE)));
+    analogWrite(m_greenPin, clamp(map(p_green, 0.f, 100.f, 0, ARILUX_GREEN_PWM_RANGE)));
+    analogWrite(m_bluePin, clamp(map(p_blue, 0.f, 100.f, 0, ARILUX_BLUE_PWM_RANGE)));
     if (m_white1Pin!=0) {
-    analogWrite(m_white1Pin, clamp(map(p_white1, 0.f, 100.f, 0, ARILUX_PWM_RANGE)));
+        analogWrite(m_white1Pin, clamp(map(p_white1, 0.f, 100.f, 0, ARILUX_WHITE1_PWM_RANGE)));
     }
     if (m_white2Pin!=0) {
-        analogWrite(m_white2Pin, clamp(map(p_white2, 0.f, 100.f, 0, ARILUX_PWM_RANGE)));
+        analogWrite(m_white2Pin, clamp(map(p_white2, 0.f, 100.f, 0, ARILUX_WHITE2_PWM_RANGE)));
     }
     return true;
 }
