@@ -13,7 +13,7 @@
 
 
 class SettingsDTO final {
-    
+
     SETTINGS_PROPERTY(HSB, hsb)
     SETTINGS_PROPERTY(uint32_t, remoteBase)
     SETTINGS_PROPERTY(uint8_t, filter)
@@ -38,8 +38,8 @@ public:
 
 
     bool modified() const {
-        return l_hsb != m_hsb || 
-        l_remoteBase != m_remoteBase || 
+        return l_hsb != m_hsb ||
+        l_remoteBase != m_remoteBase ||
         l_filter != m_filter ||
         l_power != m_power ||
         l_brightness != m_brightness;
@@ -61,6 +61,7 @@ private:
     const uint32_t m_commitWaitTime;
     uint32_t m_startCommitTime;
     uint32_t m_startDebounceTime;
+    bool m_modified;
 private:
     virtual void store(const SettingsDTO& settings) = 0;
 public:

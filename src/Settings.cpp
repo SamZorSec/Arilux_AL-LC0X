@@ -5,20 +5,23 @@ Settings::Settings(const uint32_t p_debounceWaitTime, const uint32_t p_commitWai
     m_debounceWaitTime(p_debounceWaitTime),
     m_commitWaitTime(p_commitWaitTime),
     m_startCommitTime(millis() - p_commitWaitTime),
-    m_startDebounceTime(millis()) {
+    m_startDebounceTime(millis()),
+    m_modified(false) {
 }
 
 bool Settings::handle(SettingsDTO& settings) {
     bool didStore = false;
 
+    m_modified = m_modified || settings.modified();
     if (m_debounceWaitTime == 0) {
-        if (settings.modified() &&
+        if (m_modified &&
             millis() - m_startCommitTime > m_commitWaitTime) {
             store(settings);
             didStore = true;
+            m_modified = false;
         }
     } else {
-        if (settings.modified()) {
+        if (m_modified) {
             m_startDebounceTime = millis();
         } else {
             // Only write HSB to EEPROM if
@@ -30,6 +33,7 @@ bool Settings::handle(SettingsDTO& settings) {
                 millis() - m_startCommitTime > m_commitWaitTime) {
                 save(settings);
                 didStore = true;
+                m_modified = false;
             }
         }
     }
