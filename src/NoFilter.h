@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "Filter.h"
-#include <HSB.h>
+#include <hsb.h>
 
 /**
  * Filter for color value

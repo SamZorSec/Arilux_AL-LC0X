@@ -1,7 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-extern long unsigned int millis();
 
 template<class T> class StateMachine {
 private:
@@ -51,14 +50,15 @@ public:
         delete m_isOrWasWaiting;
     }
 
-    void handle() {
+    bool handle(uint32_t millis) {
         if (m_waitTime > 0) {
-            if (millis() - m_startTime > m_waitTime) {
+            if (millis - m_startTime > m_waitTime) {
                 m_startTime = 0;
                 m_waitTime = 0;
-                advance();
+                advance(millis);
             }
         }
+        return false;
     }
 
     T current() const {
@@ -75,7 +75,7 @@ public:
         return m_bootSequenceFinnished;
     }
 
-    void advance() {
+    void advance(uint32_t millis) {
         if (m_status == m_lastItem) {
             m_bootSequenceFinnished = true;
             return;
@@ -95,10 +95,11 @@ public:
             if (m_isOrWasWaiting[waiterLoc] == false) {
                 m_isOrWasWaiting[waiterLoc] = true;
                 m_waitTime = m_timeToWait[waiterLoc];
-                m_startTime = millis();
+                m_startTime = millis;
             } else {
-                advance();
+                advance(millis);
             }
         }
+        return;
     }
 };

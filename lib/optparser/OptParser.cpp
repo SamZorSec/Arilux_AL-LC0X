@@ -1,5 +1,5 @@
 
-#include "OptParser.h"
+#include "optparser.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -37,10 +37,12 @@ void OptParser::get(const char* p_options, TValueFunction f) {
     get(p_options, " ", f);
 }
 
-void OptParser::get(const char* p_options, const char* m_sep, TValueFunction callBack) {
+
+void OptParser::get(const char* p_options, const char *m_sep, TValueFunction callBack) {
     char* token;
     char* work = strdup(p_options);
-    cleanUp(work, 0);
+    work = trimwhitespace(work);
+    cleanUp(false, m_sep[0], work, strlen(work), 0);
     uint8_t pos = 0;
 
     while ((token = strsep(&work, m_sep)) != NULL) {
@@ -54,28 +56,22 @@ void OptParser::get(const char* p_options, const char* m_sep, TValueFunction cal
         }
     }
 
-    delete(work);
+    free(work);
 }
 
-void OptParser::cleanUp(char* str, uint8_t pos) {
-    if (pos >= strlen(str)) {
-        return;
+bool OptParser::cleanUp(bool didCleanup, const char m_sep, char* str,  size_t length, size_t pos) {
+    if (pos >= length) {
+        return didCleanup;
     }
 
-    /*
-    if (str[pos] == '\'') {
-        char* p=&str[pos+1];
-        while( str[pos++]!= '\'');
-    }*/
-
-    if ((str[pos] == '=' && str[pos + 1] == ' ') ||
-        (str[pos] == ' ' && str[pos + 1] == ' ') ||
+    if (
+        (str[pos] == '=' && str[pos + 1] == ' ') ||
         (str[pos] == ' ' && str[pos + 1] == '=')
        ) {
         char* p;
         char* s;
 
-        if (str[pos + 1] == '=') {
+        if (str[pos + 1] == '=' || str[pos + 1] == m_sep) {
             p = &str[pos + 0];
             s = &str[pos + 1];
         } else {
@@ -85,8 +81,38 @@ void OptParser::cleanUp(char* str, uint8_t pos) {
 
         while (((*p++) = (*s++)) != '\0');
 
-        cleanUp(str, pos);
+        return cleanUp(true, m_sep, str, strlen(str), pos);
     } else {
-        cleanUp(str, pos + 1);
+        return cleanUp(didCleanup, m_sep, str, length, pos + 1);
     }
+}
+
+bool OptParser::isNext(char* str, char find) {
+    size_t length = strlen(str);
+    size_t pos = 0;
+    while (str[pos++] == ' ' && pos < length);
+    return str[pos] == find;
+}
+
+char *OptParser::trimwhitespace(char *str)
+{
+    if (str == nullptr) {
+        return nullptr;
+    }
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
 }

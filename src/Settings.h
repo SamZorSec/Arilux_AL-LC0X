@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <HSB.h>
+#include <hsb.h>
 
 #define SETTINGS_PROPERTY(typeIn,name) \
     private: \

@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "Effect.h"
-#include <HSB.h>
+#include <hsb.h>
 
 /**
  * Flash/Strobe between two different colors

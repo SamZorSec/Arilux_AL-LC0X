@@ -1,6 +1,6 @@
 #pragma once
 #include "Filter.h"
-#include <HSB.h>
+#include <hsb.h>
 #include <stdint.h>
 
 /**
