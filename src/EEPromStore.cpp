@@ -5,10 +5,7 @@
 
 #define HSB_START_ADDRESS 0
 
-EEPromStore::EEPromStore(const uint16_t p_eepromAddress,
-                         const uint32_t p_debounceWaitTime,
-                         const uint32_t p_commitWaitTime) :
-    Settings(p_debounceWaitTime, p_commitWaitTime),
+EEPromStore::EEPromStore(const uint16_t p_eepromAddress) :
     m_eepromAddress(p_eepromAddress) {
 }
 
@@ -28,7 +25,7 @@ blobData_t EEPromStore::getBlob() const {
     }
 }
 
-void EEPromStore::store(const SettingsDTO& settings) {
+void EEPromStore::save(const SettingsDTO& settings) {
     const HSB hsb = settings.hsb();
     blobData_t data;
     data.m_hue = hsb.hue();

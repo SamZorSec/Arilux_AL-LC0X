@@ -162,15 +162,6 @@
 #define MQTT_LASTWILL_ONLINE       "online"
 #define MQTT_LASTWILL_OFFLINE      "offline"
 
-#ifndef EEPROM_COMMIT_WAIT_DELAY
-// Number of milli seconds to wait untill we commit to EEPROM
-#define EEPROM_COMMIT_WAIT_DELAY       300000
-#endif
-#ifndef EEPROM_COMMIT_BOUNCE_DELAY
-// Number of ms we wait untill we store to prevent storing to eeprom to many times
-#define EEPROM_COMMIT_BOUNCE_DELAY       5000
-#endif
-
 // Brights at starup when the device was in a off state
 // Bright ness to be considered to be the minimum stored in EEPROM
 #define STARTUP_MIN_BRIGHTNESS 5.f

@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
-#include "Settings.h"
+#include "SettingsDTO.h"
 #include <PubSubClient.h> // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
-class MQTTStore final : public Settings {
+class MQTTStore final {
 private:
     const char* m_baseTopic;
     const char* m_hsbTopic;
@@ -18,14 +18,14 @@ public:
         const char* p_remoteBaseTopic,
         const char* p_stateTopic,
         const PubSubClient& p_mqttClient,
-        const uint32_t p_debounceWaitTime,
         const bool p_stateInColorTopic);
 
-private:
-    virtual void store(const SettingsDTO& settings) override;
+        void save(const SettingsDTO& settings);
 
-    virtual void storeHsb(const SettingsDTO& settings);
-    virtual void storeRemoteBase(const SettingsDTO& settings);
-    virtual void storePower(const SettingsDTO& settings);
+private:
+
+    void storeHsb(const SettingsDTO& settings);
+    void storeRemoteBase(const SettingsDTO& settings);
+    void storePower(const SettingsDTO& settings);
     void publish(const char* baseTopic, const char* topic, const char* payload);
 };

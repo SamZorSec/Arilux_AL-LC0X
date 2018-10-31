@@ -55,21 +55,3 @@ public:
 
 };
 
-class Settings {
-private:
-    const uint32_t m_debounceWaitTime;
-    const uint32_t m_commitWaitTime;
-    uint32_t m_startCommitTime;
-    uint32_t m_startDebounceTime;
-    bool m_modified;
-private:
-    virtual void store(const SettingsDTO& settings) = 0;
-public:
-    Settings(const uint32_t p_debounceWaitTime, const uint32_t p_startDebounceTime);
-    bool handle(SettingsDTO& settingsDTO);
-    void save(SettingsDTO& settingsDTO);
-    void save(SettingsDTO& settingsDTO, bool force);
-    void reset();
-};
-
-

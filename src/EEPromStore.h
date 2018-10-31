@@ -1,5 +1,5 @@
 #pragma once
-#include "Settings.h"
+#include "SettingsDTO.h"
 #include "stdint.h"
 
 struct blobData_t {
@@ -14,16 +14,16 @@ struct blobData_t {
     float m_onBrightness;
 };
 
-class EEPromStore final : public Settings {
+class EEPromStore final {
 private:
     const uint16_t m_eepromAddress;
 
 public:
-    EEPromStore(const uint16_t p_eepromAddress, const uint32_t p_debounceWaitTime, const uint32_t p_commitWaitTime);
+    EEPromStore(const uint16_t p_eepromAddress);
     SettingsDTO get() const;
+    void save(const SettingsDTO& settings);
 
 private:
-    virtual void store(const SettingsDTO& settings) override;
 
     blobData_t getBlob() const;
     void storeBlob(const blobData_t& p_blob) const;

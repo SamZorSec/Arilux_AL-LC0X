@@ -11,9 +11,7 @@ MQTTStore::MQTTStore(
     const char* p_remoteBaseTopic,
     const char* p_stateTopic,
     const PubSubClient& p_mqttClient,
-    const uint32_t p_debounceWaitTime,
     const bool p_stateInColorTopic) :
-    Settings(0, p_debounceWaitTime),
     m_baseTopic(p_baseTopic),
     m_hsbTopic(p_hsbTopic),
     m_remoteBaseTopic(p_remoteBaseTopic),
@@ -22,7 +20,7 @@ MQTTStore::MQTTStore(
     m_stateInColorTopic(p_stateInColorTopic) {
 }
 
-void MQTTStore::store(const SettingsDTO& settings) {
+void MQTTStore::save(const SettingsDTO& settings) {
     storeHsb(settings);
     storeRemoteBase(settings);
     storePower(settings);
