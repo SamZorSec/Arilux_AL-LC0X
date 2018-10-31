@@ -1,6 +1,8 @@
 #!/bin/bash
 echo "WRITING CONFIGURATION FILE"
 
+touch src/setup.h
+
 echo -e "#define DEVICE_MODEL \"Travis\"\n$(cat config.example.h)" > config.h
 
 echo "Wrote Travis device model to config.h"

@@ -31,22 +31,22 @@
 // #define MQTT_MAX_TRANSFER_SIZE 128
 #include <PubSubClient.h> // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
-#include "settings.h"
+#include <settings.h>
 #include "EEPromStore.h"
 #include "MQTTStore.h"
 #include <optparser.h>
 #include <statemachine.h>
 
 // Effects
-#include "NoEffect.h"
-#include "FlashEffect.h"
-#include "RainbowEffect.h"
-#include "TransitionEffect.h"
+#include <NoEffect.h>
+#include <FlashEffect.h>
+#include <RainbowEffect.h>
+#include <TransitionEffect.h>
 
 // Filters
-#include "NoFilter.h"
-#include "FadingFilter.h"
-#include "BasicFilters.h"
+#include <NoFilter.h>
+#include <FadingFilter.h>
+#include <BasicFilters.h>
 
 // Number of ms per effect transistion, 20ms == 50 Hz
 #define FRAMES_PER_SECOND        50

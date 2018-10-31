@@ -1,6 +1,6 @@
 #pragma once
+#include <stdint.h>
 #include "SettingsDTO.h"
-#include "stdint.h"
 
 struct blobData_t {
     float m_hue;
