@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "SettingsDTO.h"
+#include "settingsdto.h"
 #include <PubSubClient.h> // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
 class MQTTStore final {

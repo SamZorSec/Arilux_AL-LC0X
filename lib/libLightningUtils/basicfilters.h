@@ -1,5 +1,5 @@
 #pragma once
-#include "Filter.h"
+#include "filter.h"
 #include <hsb.h>
 #include <stdint.h>
 

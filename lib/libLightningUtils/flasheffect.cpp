@@ -1,4 +1,4 @@
-#include "FlashEffect.h"
+#include "flasheffect.h"
 
 FlashEffect::FlashEffect(const HSB p_hsb,
                          const uint32_t p_currentCount,

@@ -1,4 +1,4 @@
-#include "RainbowEffect.h"
+#include "rainboweffect.h"
 
 RainbowEffect::RainbowEffect() : Effect() {
 }

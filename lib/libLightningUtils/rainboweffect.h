@@ -1,19 +1,22 @@
 #pragma once
 #include <stdint.h>
 
-#include "Effect.h"
+#include "effect.h"
 #include <hsb.h>
 
-class NoEffect final : public Effect {
+/**
+ * Cycle between all colors of the rainbow
+ */
+class RainbowEffect final : public Effect {
 private:
 public:
-    NoEffect();
+    RainbowEffect();
 
     virtual HSB handleEffect(const uint32_t p_count,
                              const uint32_t p_time,
-                             const HSB& p_hsb);
+                             const HSB& hsb);
 
     virtual HSB finalState(const uint32_t p_count,
                            const uint32_t p_time,
-                           const HSB& p_hsb) const;
+                           const HSB& hsb) const;
 };

@@ -18,11 +18,11 @@
 #endif
 
 #include <ArduinoOTA.h>
-#include <EEPROM.h>
+#include <eeprom.h>
 
 
 
-#include "Arilux.h"
+#include "arilux.h"
 #include <hsb.h>
 
 // Included in code so we can increase packet size
@@ -32,21 +32,21 @@
 #include <PubSubClient.h> // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
 
 #include <settings.h>
-#include "EEPromStore.h"
-#include "MQTTStore.h"
+#include "eepromstore.h"
+#include "mqttstore.h"
 #include <optparser.h>
 #include <statemachine.h>
 
 // Effects
-#include <NoEffect.h>
-#include <FlashEffect.h>
-#include <RainbowEffect.h>
-#include <TransitionEffect.h>
+#include <noeffect.h>
+#include <flasheffect.h>
+#include <rainboweffect.h>
+#include <transitioneffect.h>
 
 // Filters
-#include <NoFilter.h>
-#include <FadingFilter.h>
-#include <BasicFilters.h>
+#include <nofilter.h>
+#include <fadingfilter.h>
+#include <basicfilters.h>
 
 // Number of ms per effect transistion, 20ms == 50 Hz
 #define FRAMES_PER_SECOND        50

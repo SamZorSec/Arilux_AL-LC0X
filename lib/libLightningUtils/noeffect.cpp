@@ -1,4 +1,4 @@
-#include "NoEffect.h"
+#include "noeffect.h"
 
 NoEffect::NoEffect() : Effect() {
 }

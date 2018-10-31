@@ -1,4 +1,4 @@
-#include "TransitionEffect.h"
+#include "transitioneffect.h"
 #include "Arduino.h" // Can we do better then addign Arduino.h ? This is needed for map()
 
 TransitionEffect::TransitionEffect(const HSB& p_hsb,

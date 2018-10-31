@@ -1,4 +1,4 @@
-#include "NoFilter.h"
+#include "nofilter.h"
 
 NoFilter::NoFilter() : Filter() {
 }

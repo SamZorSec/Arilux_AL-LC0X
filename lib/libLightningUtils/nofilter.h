@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#include "Filter.h"
+#include "filter.h"
 #include <hsb.h>
 
 /**

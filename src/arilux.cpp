@@ -1,4 +1,4 @@
-#include "Arilux.h"
+#include "arilux.h"
 
 Arilux::Arilux(const uint8_t red_pin,
         const uint8_t green_pin,

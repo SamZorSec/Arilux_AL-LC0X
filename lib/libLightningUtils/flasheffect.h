@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#include "Effect.h"
+#include "effect.h"
 #include <hsb.h>
 
 /**
