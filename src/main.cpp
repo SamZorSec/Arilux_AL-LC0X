@@ -18,7 +18,7 @@
 #endif
 
 #include <ArduinoOTA.h>
-#include <eeprom.h>
+#include <EEPROM.h>
 
 
 
