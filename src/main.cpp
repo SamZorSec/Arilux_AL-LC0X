@@ -125,7 +125,7 @@ SettingsDTO settingsDTO;
 EEPromStore eepromStore(0);
 Settings eepromSaveHandler(
     500,
-    30000, 
+    30000,
     []() {eepromStore.save(settingsDTO);},
     []() {return settingsDTO.modified();}
 );
@@ -136,7 +136,7 @@ std::unique_ptr<MQTTStore> mqttStore(nullptr);
 // mqtt updates as quickly as possible with a maximum frequence of MQTT_STATE_UPDATE_DELAY
 Settings mqttSaveHandler(
     1,
-    MQTT_STATE_UPDATE_DELAY, 
+    MQTT_STATE_UPDATE_DELAY,
     []() {mqttStore->save(settingsDTO);},
     []() {return settingsDTO.modified();}
 );
@@ -616,7 +616,7 @@ void generateMqttTopicStrings() {
 
 
 void setup() {
-    
+
     BOOTSEQUENCESTART = new State([](){
         return TESTMQTTCONNECTION;
     });
@@ -631,7 +631,7 @@ void setup() {
                 mqttClient.disconnect();
             }
             return DELAYEDMQTTCONNECTION;
-        }   
+        }
         return CONNECTMQTT;
     });
 
@@ -663,7 +663,7 @@ void setup() {
         if (mqttClient.subscribe(mqttSubscriberTopic, 0)) {
             DEBUG_PRINT(F("INFO: Connected to topic : "));
             return WAITFORCOMMANDCAPTURE;
-        } 
+        }
         DEBUG_PRINT(F("ERROR: Failed to connect to topic : "));
         mqttClient.disconnect();
         return DELAYEDMQTTCONNECTION;
@@ -694,7 +694,7 @@ void setup() {
     Serial.println(mqttClientID);
 
     // set color from EEPROM to ensure we turn on light as quickly as possible
-    EEPROM.begin(512); 
+    EEPROM.begin(512);
     settingsDTO = eepromStore.get();
     if (settingsDTO.brightness() < STARTUP_MIN_BRIGHTNESS) {
         settingsDTO.brightness(STARTUP_MIN_BRIGHTNESS);
@@ -717,14 +717,14 @@ void setup() {
     // Setup Wi-Fi
     setupWiFi();
 
-#ifdef TLS
-    // Check the fingerprint of CloudMQTT's SSL cert
-    verifyFingerprint();
-#endif
+  #ifdef TLS
+      // Check the fingerprint of CloudMQTT's SSL cert
+      verifyFingerprint();
+  #endif
 
     // Start OTA
     ArduinoOTA.setHostname(mqttClientID);
-    
+
     ArduinoOTA.onStart([]() {
         // Disable outputs as this might interfere with OTA
         arilux.setAll(0,0,0,0,0);
@@ -771,7 +771,7 @@ void setup() {
     arilux.setAll(colors[0], colors[1], colors[2], currentHsb.cwhite1(), currentHsb.cwhite2());
 #endif
 
-    
+
 
 #ifdef IR_REMOTE
     // Start the IR receiver
@@ -844,7 +844,7 @@ void loop() {
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {
             // This might 'overshoot' the effect by a littie due to the number of slots, do we accept that?
             if (currentEffect->isCompleted(transitionCounter, currentMillis, workingHsb)) {
-                workingHsb = currentEffect->finalState(transitionCounter, millis(), workingHsb);
+                workingHsb = currentEffect->finalState(transitionCounter, currentMillis, workingHsb);
                 currentEffect.reset(new NoEffect());
             }
         } else if (transitionCounter % NUMBER_OF_SLOTS == slot++) {

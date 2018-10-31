@@ -1,16 +1,13 @@
-[![Build Status](https://travis-ci.org/mertenats/Arilux_AL-LC0X.svg?branch=master)](https://travis-ci.org/mertenats/Arilux_AL-LC0X)
 
-# Alternative - Alternative firmware for Arilux LED controllers
+# LEDstrip firmware for esp8266 
 
 This is an alternative version of the [Alternative firmware] for Arilux LED Controllers with a few modifications and enhancements.
-This firmware has been partially tested with both OpenHAB and Home Assistance.
+This firmware has been tested with both OpenHAB and just a bit om Home Assistance.
 - In OpenHAB both brightness, color ON/OFF will work because OpenHAB understands both HSB and RGB color model.
-- In Home Assistant brightness and ON/OFF will work. Note: RGB to HSB model needs to be added to the example of Home Assistant.
+- In Home Assistant brightness and ON/OFF will work. Note: RGB to HSB model needs to be added to the example of Home Assistant, let me know if somebody is really interested. I don´ run HA myself so I have very limited knowledge.
 
-Differences are between the original Arilux alternative firmware:
-- Only support for HSB
-- Only support for plain text mqtt messages
-- Almost complete rewrite of the code
+Differences are between the original (from Martenats) firmware:
+- Took the Martenats as my original to get into esp8266, but rewrote it mostly.
 
 Enhancements are:
 - Fade from any color to any other color smoothly without apparent brightness changes
@@ -18,6 +15,7 @@ Enhancements are:
 - Easy to make new effects, See Effect.h and some of the including Effects
 - You can send partial updates for the color, for example just can just send he hue, brightness or white values
 - After startup the LED will always turn on as a safety feature (handy if the arilux is behind a switch, mqtt down, wifi down etc..)
+- Solid reconnect to mosquitto 
 
 Current effects are:
 - Rainbow: Will keep fading over the rainbow of colors
@@ -28,7 +26,7 @@ Current effects are:
 Old functionality to be re-added
 - IR Remote control
 
-IDeas
+Ideas
 - instead of using remote use a config topic to store specific configurations
 
 ## Remote Controle changes
@@ -371,6 +369,7 @@ The below config will also allow you to say to Siri when Homekit is configured o
  - etc...
 
 Most simple configuration would be as follows:
+UPDATE: I have new scripts, let m know if I should post them
 
 File: ``items/default.items``
 ```
