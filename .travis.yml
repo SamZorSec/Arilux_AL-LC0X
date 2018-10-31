@@ -31,4 +31,5 @@ install:
 
 script:
     - echo "Run desktop (native) tests on Travis.CI Linux machine"
+    - touch src/setup.h
     - platformio run

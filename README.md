@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/rvt/Arilux_AL-LC0X.svg?branch=master)](https://travis-ci.org/rvt/Arilux_AL-LC0X)
 
 # LEDstrip firmware for esp8266 
 

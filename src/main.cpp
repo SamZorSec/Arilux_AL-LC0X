@@ -782,7 +782,7 @@ void setup() {
     handleTelnet();
 #endif
 
-#ifdef RF_PIN
+#if RF_REMOTE
     // Start the RF receiver
     rcSwitch.enableReceive(RF_PIN);
 #endif
