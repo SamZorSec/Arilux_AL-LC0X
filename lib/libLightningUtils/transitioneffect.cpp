@@ -1,5 +1,10 @@
 #include "transitioneffect.h"
-#include "Arduino.h" // Can we do better then addign Arduino.h ? This is needed for map()
+
+#ifndef UNIT_TEST
+    #include <Arduino.h>
+#else
+    extern "C" uint32_t millis();
+#endif
 
 TransitionEffect::TransitionEffect(const HSB& p_hsb,
                                    const uint32_t p_startMillis,
