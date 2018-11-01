@@ -1,13 +1,13 @@
 #include "settings.h"
 
 #ifndef UNIT_TEST
-    #include <arduino.h>
+    #include <Arduino.h>
 #else
     extern "C" uint32_t millis();
 #endif
 
 Settings::Settings(
-        const uint32_t p_debounceWaitTime, 
+        const uint32_t p_debounceWaitTime,
         const uint32_t p_minWaitCommitTime,
         SaveFunction p_save,
         ModifiedFunction p_modified
@@ -45,7 +45,7 @@ void Settings::save() {
 
 void Settings::save(bool force) {
     const uint32_t currentMillis = millis();
-    if (force || (m_modifiedLatch && 
+    if (force || (m_modifiedLatch &&
         currentMillis - m_startCommitTime >= m_minWaitCommitTime)) {
         m_startCommitTime = currentMillis;
         m_callSave();
