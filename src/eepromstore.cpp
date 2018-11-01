@@ -70,7 +70,6 @@ void EEPromStore::storeBlob(const blobData_t& p_blob) const {
     EEPROM.put(m_eepromAddress, p_blob);
     EEPROM.put(m_eepromAddress + sizeof(blobData_t), crc);
     DEBUG_PRINTLN(F("EEPromStore : Commit"));
-    EEPROM.commit();
 }
 
 uint16_t EEPromStore::crc16(uint8_t* a, uint16_t length) const {

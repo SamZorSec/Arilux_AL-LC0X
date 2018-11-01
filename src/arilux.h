@@ -1,10 +1,6 @@
 #pragma once
-#include "config.h"
-#include <ESP8266WiFi.h> // https://github.com/esp8266/Arduino
+#include <stdint.h>
 
-#ifdef IR_REMOTE
-#include <IRremoteESP8266.h> // https://github.com/markszabo/IRremoteESP8266
-#endif
 
 
 /*
