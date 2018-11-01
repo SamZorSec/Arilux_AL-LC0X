@@ -36,6 +36,11 @@
 #define REMOTE_CODE                            0x000000
 #endif
 
+// Pin where RF is connected to
+#ifndef RF_PIN
+#define RF_PIN                                  4
+#endif
+
 // Wi-Fi
 #ifndef WIFI_SSID
 #define WIFI_SSID                              ""
