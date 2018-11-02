@@ -1,6 +1,7 @@
 #include "eepromstore.h"
 
-#include <EEPROM.h>
+#include <string.h>
+#include <ESP_EEPROM.h>
 #include "debug.h"
 
 #define HSB_START_ADDRESS 0

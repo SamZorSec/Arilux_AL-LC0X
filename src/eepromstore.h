@@ -22,7 +22,9 @@ public:
     EEPromStore(const uint16_t p_eepromAddress);
     SettingsDTO get() const;
     void save(const SettingsDTO& settings);
-
+    static size_t requestedSize() {
+        return sizeof(blobData_t) + sizeof(uint16_t);
+    }
 private:
 
     blobData_t getBlob() const;
