@@ -1,0 +1,8 @@
+Color  Item_001F162E_Color "Backyard Wall" <light> ["Lighting"] {mqtt="<[mosquittor:RGBW/001F162E/color/state:state:JS(esp8266ToHsb.js)],>[mosquittor:RGBW/001F162E/color:command:*:default]"}
+Dimmer Item_001F162E_Brightness "Backyard Wall" <light> ["Lighting"] {mqtt="<[mosquittor:RGBW/001F162E/color/state:state:JS(esp8266ToB.js)],>[mosquittor:RGBW/001F162E/color:command:*:JS(bToEsp8266.js)]"}
+Dimmer Item_001F162E_white "Backyard Wall" <light> ["Lighting"] {mqtt="<[mosquittor:RGBW/001F162E/color/state:state:JS(esp8266ToW1.js)],>[mosquittor:RGBW/001F162E/color:command:*:JS(w1ToEsp8266.js)]"}
+Switch Item_001F162E_power "Backyard Wall" <light> ["Lighting"] {mqtt="<[mosquittor:RGBW/001F162E/color/state:state:JS(esp8266ToP.js)],>[mosquittor:RGBW/001F162E/color:command:*:default]"}
+
+Color  Item_00879231_Color "Garden Spotlight" <light> ["Lighting"] {mqtt="<[mosquittor:SPOTLIGHT/00879231/color/state:state:JS(esp8266ToHsb.js)],>[mosquittor:SPOTLIGHT/00879231/color:command:*:default]"}
+Dimmer Item_00879231_Brightness "Garden Spotlight" <light> ["Lighting"] {mqtt="<[mosquittor:SPOTLIGHT/00879231/color/state:state:JS(esp8266ToB.js)],>[mosquittor:SPOTLIGHT/00879231/color:command:*:JS(bToEsp8266.js)]"}
+Switch Item_00879231_power "Garden Spot Light" <light> ["Lighting"] {mqtt="<[mosquittor:SPOTLIGHT/00879231/color/state:state:JS(esp8266ToP.js)],>[mosquittor:SPOTLIGHT/00879231/color:command:*:default]"}

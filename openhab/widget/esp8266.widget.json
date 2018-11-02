@@ -1,0 +1,39 @@
+{
+    "name": "esp8266 Color Picker",
+    "author": "R. van Twisk",
+    "settings": [
+        {
+            "type": "string",
+            "id": "name",
+            "label": "Name",
+            "default": "Color Light",
+            "description": "Title of the widget"
+        },
+        {
+            "type": "item",
+            "id": "color",
+            "label": "Color",
+            "description": "Color if this item"
+        },
+        {
+            "type": "item",
+            "id": "brightness",
+            "label": "Brightness Item",
+            "description": "Dimmer item for light brightness"
+        },
+        {
+            "type": "item",
+            "id": "power",
+            "label": "Power Item",
+            "description": "Power of this item"
+        },
+        {
+            "type": "item",
+            "id": "white1",
+            "label": "White Item",
+            "description": "White setting for this item"
+        }
+    ],
+    "template": "<style>\n  .esp8266 .rounded-border widget-icon {\n    pointer-events:none;\n  }\n</style>\n\n<div class=\"esp8266\" oc-lazy-load=\"['../static/static/long-press.js']\" ng-init=\"angular.module('', ['pr.longpress'])\">\n  <p ng-show=\"config.name\">{{config.name}}</p>\n\n  <div class=\"rounded-border\" on-long-press=\"openModal('tmplEsp8266', true, 'lg')\" ng-init='onoff={\"name\": \"OnOff\",\n                               \"item\": config.power,\n                               \"hidelabel\": true,\n                               \"hideonoff\": true,\n                               \"iconset\": \"smarthome-set\",\n                               \"icon\": \"bulb\",\n                               \"icon_size\": \"36\" }'>\n    <widget-switch ng-model=\"onoff\" />\n  </div>\n\n  <br/>\n  <br/>\n\n  <!--a ng-click=\"openModal('tmplEsp8266', true, 'lg')\" class=\"badge badge-pill badge-dark\">Configure</a-->\n</div>\n\n\n\n<script type=\"text/ng-template\" class=\"modal fade\" id=\"tmplEsp8266\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\" aria-hidden=\"true\">\n  <div class=\"modal-header\">\n    <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\" ng-click=\"$close()\">&times;</button>\n    <h4 class=\"modal-title\">--- {{config.name}} ---</h4>\n  </div>\n\n  <div class=\"modal-body\">\n    <div class=\"row\" >\n\n      <!-- Left -->\n      <div class=\"col-md-10\">\n        <div class=\"row \">\n          <div class=\"col-md-2\">\n            <h4 style=\"margin-top:40px\">Brightness</h4>\n          </div>\n          <div class=\"col-md-10\">\n            <div ng-init='brightnessModel={\n                                     \"name\": \"\",\n                                     \"item\": config.brightness,\n                                     \"floor\" : 0,\n                                     \"ceil\": 100,\n                                     \"step\": 1,\n                                     \"hidelabel\" : \"true\",\n                                     \"hidelimits\": \"true\" };\n                                     '>\n              <widget-slider ng-model=\"brightnessModel\"/>\n            </div>\n          </div>\n        </div>\n\n        <div class=\"row \">\n          <div class=\"col-md-2\">\n            <h4 style=\"margin-top:40px\">White</h4>\n          </div>\n          <div class=\"col-md-10\">\n            <div ng-init='whiteModel1={\n                                   \"name\": \"\",\n                                   \"item\": config.white1,\n                                   \"floor\" : 0,\n                                   \"ceil\": 100,\n                                   \"step\": 1,\n                                   \"hidelabel\" : \"true\",\n                                   \"hidelimits\": \"true\" };\n                                   '>\n              <widget-slider ng-model=\"whiteModel1\"/>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <!-- Right color picker -->\n      <div class=\"col-md-2\">\n        <div class=\"row\">\n          <div class=\"col-md-12\">\n            <div ng-init='colorModel = {\n            \"name\": \"\",\n            \"item\": config.color,\n            \"style\": \"aCKolor\"\n            };'>\n              <widget-colorpicker ng-model=\"colorModel\"></widget-colorpicker>\n            </div>\n          </div>\n        </div>\n      </div>\n    </div>\n  </div>\n  <div class=\"modal-footer\">\n    <button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\" ng-click=\"$close()\">Close</button>\n  </div>\n</script><!-- /.modal -->\n",
+    "description": "Light control for ESP8266 (https://github.com/rvt/Arilux_AL-LC0X)"
+}

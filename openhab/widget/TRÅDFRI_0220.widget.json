@@ -1,0 +1,33 @@
+{
+    "name": "TRÅDFRI 0220 Light",
+    "author": "R. van Twisk",
+    "settings": [
+        {
+            "type": "string",
+            "id": "name",
+            "label": "Name",
+            "default": "Color Light",
+            "description": "Title of the widget"
+        },
+        {
+            "type": "item",
+            "id": "temperature",
+            "label": "Temperature",
+            "description": "Temperature if this item"
+        },
+        {
+            "type": "item",
+            "id": "brightness",
+            "label": "Brightness Item",
+            "description": "Dimmer item for light brightness"
+        },
+        {
+            "type": "item",
+            "id": "power",
+            "label": "Power Item",
+            "description": "Power of this item"
+        }
+    ],
+    "template": "<style>\n  .tradfri .rounded-border widget-icon {\n    pointer-events:none;\n  }\n</style>\n\n<div class=\"tradfri\" oc-lazy-load=\"['../static/static/long-press.js']\" ng-init=\"angular.module('', ['pr.longpress'])\">\n  <p ng-show=\"config.name\">{{config.name}}</p>\n  <div class=\"rounded-border\" on-long-press=\"openModal('tmplTradfri_0220', true, 'lg')\" \n       \t\t\t\t\t\t\t\t\t\t\t\tng-init='onoff={\"name\": \"OnOff\",\n                          \t\t   \"item\": config.power,\n                          \t\t\t \"hidelabel\": true,\n                                 \"hideonoff\": true,\n                          \t\t   \"iconset\": \"smarthome-set\",\n                          \t\t\t \"icon\": \"bulb\",\n                          \t\t\t \"icon_size\": \"36\" }'>\n    <widget-switch   ng-model=\"onoff\" />\n  </div>\n  <!--\n  <br/>\n  <br/>\n  <a ng-click=\"openModal('tmplTradfri_0220', true, 'lg')\" class=\"badge badge-pill badge-dark\">Configure</a>\n-->\n</div>\n\n\n\n<script type=\"text/ng-template\" class=\"modal fade\" id=\"tmplTradfri_0220\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"myModalLabel\" aria-hidden=\"true\">\n  <div class=\"modal-header\">\n    <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\" ng-click=\"$close()\">&times;</button>\n    <h4 class=\"modal-title\">--- {{config.name}} ---</h4>\n  </div>\n\n  <div class=\"modal-body\">\n      <div class=\"row \">\n        <div class=\"col-md-2\">\n          <h4 style=\"margin-top:40px\">Brightness</h4>\n        </div>\n        <div class=\"col-md-10\">\n          <div ng-init='brightnessModel={\n                                   \"name\": \"\",\n                                   \"item\": config.brightness,\n                                   \"floor\" : 0,\n                                   \"ceil\": 100,\n                                   \"step\": 1,\n                                   \"hidelabel\" : \"true\",\n                                   \"hidelimits\": \"true\" };\n                                   '>\n            <widget-slider ng-model=\"brightnessModel\"/>\n          </div>\n        </div>\n      </div>\n\n      <div class=\"row \">\n        <div class=\"col-md-2\">\n          <h4 style=\"margin-top:40px\">Temperature</h4>\n        </div>\n        <div class=\"col-md-10\">\n          <div ng-init='temperatureModel={\n                                 \"name\": \"\",\n                                 \"item\": config.temperature,\n                                 \"floor\" : 0,\n                                 \"ceil\": 100,\n                                 \"step\": 1,\n                                 \"hidelabel\" : \"true\",\n                                 \"hidelimits\": \"true\" };\n                                 '>\n            <widget-slider ng-model=\"temperatureModel\"/>\n          </div>\n        </div>\n      </div>\n    </div>\n  \n  <div class=\"modal-footer\">\n    <button type=\"button\" class=\"btn btn-default\" data-dismiss=\"modal\" ng-click=\"$close()\">Close</button>\n  </div>\n</script><!-- /.modal -->\n",
+    "description": "TRÅDFRI With Color Temperature"
+}
