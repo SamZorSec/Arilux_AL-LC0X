@@ -184,7 +184,7 @@ void verifyFingerprint() {
 
 /**
  * Publish a message to mqtt
- */ 
+ */
 void publishToMQTT(const char* topic, const char* payload) {
     if (mqttClient.publish(topic, payload, true)) {
         DEBUG_PRINT(F("INFO: MQTT message publish succeeded. Topic: "));
@@ -374,6 +374,7 @@ void mqttCommandCallback(char* p_topic, byte* p_payload, uint16_t p_length) {
         int16_t pulse = -1;
         int16_t period = -1;
         int32_t duration = -1;
+        float m_speed = -1.f;
         const HSB hsb = hsbFromString(workingHsb, mqttReceiveBuffer);
         OptParser::get(mqttReceiveBuffer, [&name, &period, &pulse, &duration](OptValue v) {
             // Get variables from filter
@@ -397,13 +398,17 @@ void mqttCommandCallback(char* p_topic, byte* p_payload, uint16_t p_length) {
         if (strcmp(name, EFFECT_NONE) == 0) {
             currentEffect.reset(new NoEffect());
         } else if (strcmp(name, EFFECT_RAINBOW) == 0) {
-            currentEffect.reset(new RainbowEffect());
+            if (duration>0) {
+                currentEffect.reset(new RainbowEffect(currentHsb.hue(), duration, millis()));
+            } else {
+                currentEffect.reset(new RainbowEffect());
+            }
         } else if (strcmp(name, EFFECT_FLASH) == 0) {
             period = period < 2 ? FRAMES_PER_SECOND : period;
             pulse = pulse < period && pulse > 0 ? pulse : period >> 1;
 
             if (hsb == workingHsb) {
-                currentEffect.reset(new FlashEffect(workingHsb.toBuilder().brightness(0).build(), transitionCounter, period, pulse));
+                currentEffect.reset(new FlashEffect(currentHsb.toBuilder().brightness(0).build(), transitionCounter, period, pulse));
             } else {
                 currentEffect.reset(new FlashEffect(hsb, transitionCounter, period, pulse));
             }

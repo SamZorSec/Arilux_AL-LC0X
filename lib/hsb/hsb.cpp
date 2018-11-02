@@ -60,7 +60,7 @@ float HSB::cwhite2() const {
 
 void HSB::constantRGB(float colors[]) const {
     float r_temp, g_temp, b_temp;
-    float inverse_sat = 100.0 - m_saturation;
+    float inverse_sat = 100.f - m_saturation;
     float m_brightness_mod = m_brightness / 100.f;
     float m_saturation_mod = m_saturation / 120.f;
     float index_mod = fmod(m_hue, 120.f);
