@@ -18,7 +18,7 @@
 #endif
 
 #include <ArduinoOTA.h>
-#include <EEPROM.h>
+#include <ESP_EEPROM.h>
 
 #include "arilux.h"
 #include <hsb.h>
@@ -759,7 +759,7 @@ void setup() {
                         STATE_IN_COLOR_TOPIC
                     ));
 
-    EEPROM.begin(512);
+    EEPROM.begin(EEPromStore::requestedSize());
     initialiseAfterStartup();
 
     startOTA();
@@ -780,6 +780,7 @@ void setup() {
     #if defined(ARILUX_DEBUG_TELNET)
         // Start the Telnet server
         startTelnet();
+        handleTelnet();
     #endif
 
     #if defined(PAUSE_FOR_OTA)
@@ -800,10 +801,6 @@ void setup() {
     #if defined(IR_REMOTE)
         // Start the IR receiver
         irRecv.enableIRIn();
-    #endif
-
-    #if defined(ARILUX_DEBUG_TELNET)
-        handleTelnet();
     #endif
 
     #if defined(RF_REMOTE)
