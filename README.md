@@ -60,7 +60,7 @@ The controllers are also known to sell under different manufacturer names such a
 **WARNING: DUE TO A NEW PINOUT, THIS FIRMWARE SEEMS TO BE NOT MORE COMPATIBLE WITH THE NEWEST MODELS (PCB version > 1.4).**
 
 
-![Arilux](../images/Arilux.png)
+![Arilux](images/Arilux.png)
 
 ## Features
 - Remote control over the MQTT protocol via individual topics
@@ -86,7 +86,7 @@ The controllers are also known to sell under different manufacturer names such a
 
 ## Demonstration
 
-[![Arilux AL-LC03 + IR + MQTT + Home Assistant](../images/Youtube.png)](https://www.youtube.com/watch?v=IKh0inaLvAU "Arilux AL-LC03 + IR + MQTT + Home Assistant")
+[![Arilux AL-LC03 + IR + MQTT + Home Assistant](images/Youtube.png)](https://www.youtube.com/watch?v=IKh0inaLvAU "Arilux AL-LC03 + IR + MQTT + Home Assistant")
 
 ## Flash the firmware
 Whichever flashing option you choose, ensure your Arduino IDE settings match the following:
@@ -126,15 +126,15 @@ If you are unable or don't know how to solder try option 2 below which can be ac
 
 The FTDI from the left gives power and it's connected to an USB charger (VCC, GND). The FTDI from the right is connected to the computer and is used to reprogram the ESP8266 (RX, TX, GND).
 
-![ESP-12F Layout](../images/ESP12-F_pinout3.jpg)
+![ESP-12F Layout](images/ESP12-F_pinout3.jpg)
 
-![Layout](../images/Layout.JPG)
+![Layout](images/Layout.JPG)
 
 ### Option 2
 Using the following image, connect RX, TX and GND of a single FTDI to the shown pins on the underside of the board. Plug in the wall power supply and flash using the above settings.
 It helps to have another person able to plug in the device and start the upload while you hold the pins.
 
-![Option 2 Layout](../images/option2.jpg)
+![Option 2 Layout](images/option2.jpg)
 
 ## Updating
 OTA is enabled on this firmware. Assuming the device is plugged in you should find the device as a Port option in the Arduino IDE. Make sure you are using the settings listed above.
@@ -192,13 +192,15 @@ Considarations:
    If you are have Home Assistant MQTT Discovery enabled, the `light.mqtt_json` platform will be loaded by Home Assistant instead of the `light.mqtt` platform.
 
    Topic: ``/color``
-   | Name             | format                | Example                | Description                                                                                                                                                                              |
-   |------------------|---------------------- | ---------------------- |-------------------------------------------------------------------------------------------|
+
+   | Name             | format                | Example                | Description                                                                               |
+   |------------------|-----------------------|------------------------|-----------------------------------------------------------------------------------------|
    | `simple format`  | int,float,float       | 0,100,100              | Set Hue, Saturation and Brightness                                                        |
    | `hsb`            | hsb=int,float,float   | hsb=0,100,100          | Set Hue, Saturation and Brightnes with assignment                                         |
    | `hsb`            | hsb=int,float,float,float,float   | hsb=0,100,100,20,30          | Set Hue, Saturation and Brightness white1 and white 2 with assignment   |
    | `seperate`       | h=int s=float b=float w1=float w2=float | h=0 s=100 w1=25 w2=100 | Set as separate assignments  |
    | `combined`       | hsb=int,float,float b=float         | hsb=0,100,100 b=25     | Wil take brightness as 25  |
+
 
    ## Available Filters
 
@@ -244,9 +246,15 @@ Considarations:
    Topic: ``/effect`` name=``rainbow``
    
    Smoothly fades between all colors
+
+   | Parameter  | type     | default  | Description          |
+   | ---------- | -------- | -------- | -------------------- |
+   | duration   | long     | 1        | Total time in s it takes to do a full color palette   |
+
    ##### Example
    ```
-   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=rainbow'
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=rainbow' # Default 10 seconds
+   mosquitto_pub -t "RGBW/001F162E/effect" -m 'name=rainbow duration=300' # 5 Minute rotation
    ```
 
    #### Flash

@@ -32,7 +32,7 @@ public:
     float cwhite2() const;
 
     /**
-     * Create rgb colors 0..255
+     * Create rgb colors 0..100
      */
     void constantRGB(float colors[]) const;
 
