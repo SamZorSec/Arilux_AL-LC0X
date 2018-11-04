@@ -17,32 +17,39 @@ TransitionEffect::TransitionEffect(const HSB& p_hsb,
 
 HSB TransitionEffect::handleEffect(const uint32_t p_count,
                                    const uint32_t p_time,
-                                   const HSB& _hsb) {
-    return calcHSB(p_count, p_time, _hsb);
+                                   const HSB& p_hsb) {
+    return calcHSB(p_count, p_time, p_hsb);
 }
 
 HSB TransitionEffect::finalState(const uint32_t p_count,
                                  const uint32_t p_time,
-                                 const HSB& _hsb) const {
-    return calcHSB(p_count, m_endMillis, _hsb);
+                                 const HSB& p_hsb) const {
+    return calcHSB(p_count, m_endMillis, p_hsb);
 }
 
 bool TransitionEffect::isCompleted(const uint32_t p_count,
                                    const uint32_t p_time,
-                                   const HSB& hsb) const {
+                                   const HSB& p_hsb) const {
     return p_time > m_endMillis;
 }
 
 HSB TransitionEffect::calcHSB(const uint32_t p_count,
                               const uint32_t p_time,
-                              const HSB& _hsb) const {
+                              const HSB& p_hsb) const {
     const float percent = ((p_time - m_startMillis) * 100) / m_duration;
-    const float m_hsbsPath = HSB::hueShortestPath(_hsb.hue(), m_hsb.hue());
-    const float newHue = map(percent, 0.f, 100.f, _hsb.hue(), m_hsbsPath);
+    const float m_hsbsPath = HSB::hueShortestPath(p_hsb.hue(), m_hsb.hue());
+    const float newHue = map(percent, 0.f, 100.f, p_hsb.hue(), m_hsbsPath);
+
+    auto fmap = [](float x, float in_min, float in_max, float out_min, float out_max)
+    {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    };
+
+
     return HSB(
                HSB::fixHue(newHue),
-               map(percent, 0.f, 100.f, _hsb.saturation(), m_hsb.saturation()),
-               map(percent, 0.f, 100.f, _hsb.brightness(), m_hsb.brightness()),
-               map(percent, 0.f, 100.f, _hsb.white1(), m_hsb.white1()),
-               map(percent, 0.f, 100.f, _hsb.white2(), m_hsb.white2()));
+               fmap(percent, 0.f, 100.f, p_hsb.saturation(), m_hsb.saturation()),
+               fmap(percent, 0.f, 100.f, p_hsb.brightness(), m_hsb.brightness()),
+               fmap(percent, 0.f, 100.f, p_hsb.white1(), m_hsb.white1()),
+               fmap(percent, 0.f, 100.f, p_hsb.white2(), m_hsb.white2()));
 }
