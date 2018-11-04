@@ -44,6 +44,23 @@ TEST_CASE( "Should get ints from floats", "[optparser]" ) {
     REQUIRE(calls == 2);
 }
 
+TEST_CASE( "Should call with one item", "[optparser]" ) {
+    int calls=0;
+    OptParser::get("oneitem",  ",", [&calls](OptValue f) {
+        REQUIRE( std::strcmp( f.key(), "oneitem" ) == 0 );
+        calls++;
+    });
+    REQUIRE(calls == 1);
+}
+
+TEST_CASE( "Should not call when empty", "[optparser]" ) {
+    int calls=0;
+    OptParser::get("",  ",", [&calls](OptValue f) {
+            calls++;
+    });
+    REQUIRE(calls == 0);
+}
+
 TEST_CASE( "Should handle variabel names", "[optparser]" ) {
     int calls=0;
     OptParser::get("abc=1,2,3     w =400.123 xyz=abc   ", [&calls](OptValue f) {

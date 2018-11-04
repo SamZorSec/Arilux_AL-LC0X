@@ -2,18 +2,9 @@
 #include <stdint.h>
 #include <iostream>
 #include <settings.h>
+#include "arduinostubs.hpp"
 
-#ifndef millis
-uint32_t millisStubbed = 0;
-uint32_t millis() {
-    return millisStubbed;
-};
-#endif
-
-/**
- * Test if request for modification gets called
- */
-void should_shouldCallModifiedFunction() {
+TEST_CASE( "Should check for modifications", "[settings]" ) {
     millisStubbed = 0;
     bool calledModified = false;
     Settings settings(
@@ -23,15 +14,13 @@ void should_shouldCallModifiedFunction() {
         [&calledModified]() {calledModified = true;return false;}
     );
 
-    TEST_ASSERT_FALSE(calledModified);
+    REQUIRE(calledModified == false);
     settings.handle();        
-    TEST_ASSERT_TRUE(calledModified);
+    REQUIRE(calledModified == true);
+
 }
 
-/**
- * Tests that we never call save if nothing was modified
- */ 
-void should_testDontStoreIfNotModified() {
+TEST_CASE( "Should never call save function when not modified", "[settings]" ) {
     millisStubbed = 0;
     bool calledSaved = false;
     Settings settings(
@@ -41,19 +30,16 @@ void should_testDontStoreIfNotModified() {
         []() {return false;}
     );
 
-    // Repeated calls to handle will not store 
+    // Repeated calls to handle test with timings
     for (int i=0;i<2000;i+=100) {
         millisStubbed=i;
         settings.handle();        
-        TEST_ASSERT_FALSE(calledSaved);
+        REQUIRE(calledSaved == false);
     }
 }
 
-/**
- * Test that we wil call save but only after debounce time
- */
-void should_storeAfterDebounceButWaitMinTime() {
-    millisStubbed = 0;
+TEST_CASE( "Should call save after debounce", "[settings]" ) {
+     millisStubbed = 0;
     bool modified = false;
     bool calledSaved = false;
     Settings settings(
@@ -69,33 +55,33 @@ void should_storeAfterDebounceButWaitMinTime() {
     modified = true; 
     millisStubbed=195;
     settings.handle();       
-    TEST_ASSERT_FALSE(calledSaved);
+    REQUIRE(calledSaved == false);
     modified = false; 
 
     // at 200 debounce is over and should save 
     millisStubbed=200;
     settings.handle();
-    TEST_ASSERT_TRUE(calledSaved);
+    REQUIRE(calledSaved == true);
     calledSaved=false;
 
     // At 500ms modified again, should not save
     modified = true; 
     millisStubbed=500;
     settings.handle();
-    TEST_ASSERT_FALSE(calledSaved);
+    REQUIRE(calledSaved == false);
     modified = false; 
 
     // at 800ms still modified, but we wait for min wait time
     modified = true; 
     millisStubbed=800;
     settings.handle();
-    TEST_ASSERT_FALSE(calledSaved);
+    REQUIRE(calledSaved == false);
     modified = false; 
 
     // at 1200ms we will save as min wait time is over
     millisStubbed=1200;
     settings.handle();
-    TEST_ASSERT_TRUE(calledSaved);
+    REQUIRE(calledSaved == true);
     calledSaved = false;
 
     // try againmin wait time
@@ -105,13 +91,13 @@ void should_storeAfterDebounceButWaitMinTime() {
     modified = false;
     millisStubbed=2000;
     settings.handle();
-    TEST_ASSERT_FALSE(calledSaved);
+    REQUIRE(calledSaved == false);
     millisStubbed=2200;
     settings.handle();
-    TEST_ASSERT_TRUE(calledSaved);
+    REQUIRE(calledSaved == true);
 }
 
-void should_shouldSaveAtForce() {
+TEST_CASE( "Should call save when we force", "[settings]" ) {
         millisStubbed = 0;
     bool calledSaved = false;
     Settings settings(
@@ -121,9 +107,9 @@ void should_shouldSaveAtForce() {
         []() {return false;}
     );
 
-    TEST_ASSERT_FALSE(calledSaved);
+    REQUIRE(calledSaved == false);
     settings.save(true);        
-    TEST_ASSERT_TRUE(calledSaved);
+    REQUIRE(calledSaved == true);
 }
 
 void show_showMinWaitTimeInAction(){
@@ -142,17 +128,4 @@ void show_showMinWaitTimeInAction(){
         settings.handle();
         std::cerr << "\n";
     }
-}
-
-int main(int argc, char **argv) {
-    UNITY_BEGIN();
-    RUN_TEST(should_shouldCallModifiedFunction);
-    RUN_TEST(should_testDontStoreIfNotModified);
-    RUN_TEST(should_storeAfterDebounceButWaitMinTime);
-    RUN_TEST(should_shouldSaveAtForce);
-    UNITY_END();
-
-    show_showMinWaitTimeInAction();
-
-    return 0;
 }

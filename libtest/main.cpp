@@ -5,6 +5,7 @@
 
 #include "catch2/catch.hpp"
 
+
 #include "src/test_HSB.hpp"
 #include "src/test_optparser.hpp"
 #include "src/test_settings.hpp"

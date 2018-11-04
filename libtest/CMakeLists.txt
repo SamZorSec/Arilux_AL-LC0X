@@ -13,6 +13,8 @@ set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 
+ADD_DEFINITIONS(-DUNIT_TEST) 
+
 set(LIB_SOURCES
     ../lib/hsb/hsb.cpp
     ../lib/optparser/optparser.cpp
@@ -27,5 +29,5 @@ set(LIB_HEADERS
 include_directories(catch2 ${LIB_HEADERS})
 
 # Make test executable
-add_executable(tests main.cpp ${LIB_SOURCES})
+add_executable(tests main.cpp src/arduinostubs.hpp ${LIB_SOURCES})
 target_link_libraries(tests Catch)

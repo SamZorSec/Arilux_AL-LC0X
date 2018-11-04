@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <functional>
 
-
 class Settings final {
 public:
     typedef std::function<const void (void)> SaveFunction;
