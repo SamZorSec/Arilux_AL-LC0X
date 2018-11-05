@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "effect.h"
+
 #include <hsb.h>
 
 /**
@@ -21,7 +22,7 @@ public:
 
     virtual HSB handleEffect(const uint32_t p_count,
                              const uint32_t p_time,
-                             const HSB& hsb);
+                             const HSB& hsb) const;
 
     virtual bool isCompleted(const uint32_t p_count,
                              const uint32_t p_time,

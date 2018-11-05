@@ -10,3 +10,4 @@
 #include "src/test_optparser.hpp"
 #include "src/test_settings.hpp"
 #include "src/test_statemachine.hpp"
+#include "src/test_rainbowfilter.hpp"

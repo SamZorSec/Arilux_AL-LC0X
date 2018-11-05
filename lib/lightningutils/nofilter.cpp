@@ -1,4 +1,5 @@
 #include "nofilter.h"
+#include <hsb.h>
 
 NoFilter::NoFilter() : Filter() {
 }

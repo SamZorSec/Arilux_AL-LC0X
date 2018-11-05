@@ -1,4 +1,5 @@
 #include "flasheffect.h"
+#include <hsb.h>
 
 FlashEffect::FlashEffect(const HSB p_hsb,
                          const uint32_t p_currentCount,
@@ -13,7 +14,7 @@ FlashEffect::FlashEffect(const HSB p_hsb,
 
 HSB FlashEffect::handleEffect(const uint32_t p_count,
                               const uint32_t p_time,
-                              const HSB& p_hsb) {
+                              const HSB& p_hsb) const {
     const uint32_t cc = p_count % m_period;
 
     if (cc < m_pulseWidth) {

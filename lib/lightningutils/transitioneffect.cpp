@@ -1,4 +1,5 @@
 #include "transitioneffect.h"
+#include <hsb.h>
 
 #ifndef UNIT_TEST
     #include <Arduino.h>
@@ -17,7 +18,7 @@ TransitionEffect::TransitionEffect(const HSB& p_hsb,
 
 HSB TransitionEffect::handleEffect(const uint32_t p_count,
                                    const uint32_t p_time,
-                                   const HSB& p_hsb) {
+                                   const HSB& p_hsb) const {
     return calcHSB(p_count, p_time, p_hsb);
 }
 

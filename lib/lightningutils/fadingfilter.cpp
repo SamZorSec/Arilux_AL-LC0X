@@ -1,4 +1,5 @@
 #include "fadingfilter.h"
+#include <hsb.h>
 
 FadingFilter::FadingFilter(const HSB _hsb, const float p_alpha) : Filter(),
     m_alpha(p_alpha),

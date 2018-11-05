@@ -401,7 +401,7 @@ void mqttCommandCallback(char* p_topic, byte* p_payload, uint16_t p_length) {
             if (duration>0) {
                 currentEffect.reset(new RainbowEffect(currentHsb.hue(), duration, millis()));
             } else {
-                currentEffect.reset(new RainbowEffect());
+                currentEffect.reset(new RainbowEffect(millis()));
             }
         } else if (strcmp(name, EFFECT_FLASH) == 0) {
             period = period < 2 ? FRAMES_PER_SECOND : period;

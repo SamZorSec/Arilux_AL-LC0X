@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-
 #include "filter.h"
-#include <hsb.h>
+
+class HSB;
 
 /**
  * Transitions nicely between two HSB values

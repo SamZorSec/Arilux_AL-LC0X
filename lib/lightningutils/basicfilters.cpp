@@ -1,5 +1,6 @@
 #include "basicfilters.h"
 #include "constrain.h"
+#include <hsb.h>
 
 BrightnessFilter::BrightnessFilter(const float p_increaseBy) :
     Filter(),

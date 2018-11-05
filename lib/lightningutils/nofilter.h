@@ -1,8 +1,8 @@
 #pragma once
 #include <stdint.h>
-
 #include "filter.h"
-#include <hsb.h>
+
+class HSB;
 
 /**
  * Filter for color value

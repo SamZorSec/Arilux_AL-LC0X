@@ -1,7 +1,8 @@
 #pragma once
-#include "filter.h"
-#include <hsb.h>
 #include <stdint.h>
+#include "filter.h"
+
+class HSB;
 
 /**
  * ALter the brightness of a HSB value

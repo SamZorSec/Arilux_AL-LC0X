@@ -1,6 +1,7 @@
 #pragma once
-#include <hsb.h>
 #include <stdint.h>
+
+class HSB;
 
 /**
  * Base effect class
@@ -12,7 +13,7 @@ public:
        */
     virtual HSB handleEffect(const uint32_t p_count,
                              const uint32_t p_time,
-                             const HSB& p_hsb);
+                             const HSB& p_hsb) const = 0;
 
     /*
        * Should return true of the effect has been complated

@@ -20,12 +20,14 @@ set(LIB_SOURCES
     ../lib/optparser/optparser.cpp
     ../lib/settings/settings.cpp
     ../lib/statemachine/statemachine.cpp
+    ../lib/lightningutils/rainboweffect.cpp
 )
 set(LIB_HEADERS
     ../lib/hsb
     ../lib/optparser
     ../lib/settings
     ../lib/statemachine
+    ../lib/lightningutils
 )
 
 include_directories(catch2 ${LIB_HEADERS})
