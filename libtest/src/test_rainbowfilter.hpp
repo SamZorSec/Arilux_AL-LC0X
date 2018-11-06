@@ -2,7 +2,7 @@
 #include <catch2/catch.hpp>
 #include <hsb.h>
 
-SCENARIO( "Colors will change based on time", "[rainbow]" ) {
+SCENARIO( "Raimboweffect will change based on time", "[rainbow]" ) {
     GIVEN( "A rainbow filter at 300 seconds" ) {
 
         RainbowEffect rainbow(0.f, 300, 1000000);

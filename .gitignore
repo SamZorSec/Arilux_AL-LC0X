@@ -10,5 +10,4 @@ setup.h
 .vscode/launch.json
 src/setup.h
 src/setup_.h
-
-ls | while read upName; do loName=`echo "${upName}" | tr '[:upper:]' '[:lower:]'`; git mv "$upName" "$loName"; done
+build

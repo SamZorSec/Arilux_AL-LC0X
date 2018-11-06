@@ -31,5 +31,5 @@ HSB RainbowEffect::calculateHsb(const uint32_t p_time, const HSB& hsb) const {
     // rotationSec will count up to 360 in one second
     float rotationSec = ((float)(p_time-m_startTime)) * (360.f / 1000.f);
     float hue = fmod( rotationSec / m_secPerRotation + m_startHue, 360.f);
-    return HSB(hue, hsb.saturation(), hsb.brightness(), hsb.white1(), hsb.white2());              
+    return HSB(hue, hsb.saturation(), hsb.brightness(), hsb.white1(), hsb.white2());
 }

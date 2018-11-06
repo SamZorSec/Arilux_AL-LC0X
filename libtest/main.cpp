@@ -11,3 +11,4 @@
 #include "src/test_settings.hpp"
 #include "src/test_statemachine.hpp"
 #include "src/test_rainbowfilter.hpp"
+#include "src/test_colorseffect.hpp"

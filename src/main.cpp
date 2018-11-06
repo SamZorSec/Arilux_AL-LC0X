@@ -40,6 +40,7 @@
 #include <flasheffect.h>
 #include <rainboweffect.h>
 #include <transitioneffect.h>
+#include <colorseffect.h>
 
 // Filters
 #include <nofilter.h>

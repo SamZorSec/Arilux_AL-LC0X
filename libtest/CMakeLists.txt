@@ -21,6 +21,7 @@ set(LIB_SOURCES
     ../lib/settings/settings.cpp
     ../lib/statemachine/statemachine.cpp
     ../lib/lightningutils/rainboweffect.cpp
+    ../lib/lightningutils/colorseffect.cpp
 )
 set(LIB_HEADERS
     ../lib/hsb
