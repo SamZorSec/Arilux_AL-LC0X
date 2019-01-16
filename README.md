@@ -8,6 +8,7 @@ The controllers are also known to sell under different manufacturer names such a
 
 **WARNING: DUE TO A NEW PINOUT, THIS FIRMWARE SEEMS TO BE NOT MORE COMPATIBLE WITH THE NEWEST MODELS (PCB version > 1.4).**
 
+**ANOTHER FIRMWARE IS AVAILABLE [HERE](https://github.com/mertenats/Open-Home-Automation/tree/master/ha_mqtt_light_arilux), WHICH WRAPS THE [WS2812FX](https://github.com/kitesurfer1404/WS2812FX) LIBRARY AND OFFERS MANY EFFECTS**
 
 ![Arilux](images/Arilux.png)
 
