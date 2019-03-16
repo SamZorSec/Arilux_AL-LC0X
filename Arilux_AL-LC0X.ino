@@ -6,16 +6,18 @@
 
 #include "config.h"
 #include <ESP8266WiFi.h>        // https://github.com/esp8266/Arduino
-#include <PubSubClient.h>       // https://github.com/knolleary/pubsubclient/releases/tag/v2.6
+#include <PubSubClient.h>       // https://github.com/knolleary/pubsubclient - v2.7
 #ifdef IR_REMOTE
-#include <IRremoteESP8266.h>  // https://github.com/markszabo/IRremoteESP8266
+#include <IRremoteESP8266.h>    // https://github.com/markszabo/IRremoteESP8266 - v2.5.4
+#include <IRrecv.h>
+#include <IRutils.h>
 #endif
 #ifdef RF_REMOTE
-#include <RCSwitch.h>         // https://github.com/sui77/rc-switch
+#include <RCSwitch.h>           // https://github.com/sui77/rc-switch
 #endif
 #include <ArduinoOTA.h>
 #if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined(HOME_ASSISTANT_MQTT_ATTRIBUTES) || defined (JSON)
-  #include <ArduinoJson.h>
+  #include <ArduinoJson.h>      // https://github.com/bblanchon/ArduinoJson - Version 6.9.1
 #endif
 #include "Arilux.h"
 
@@ -68,16 +70,12 @@ char   ARILUX_MQTT_STATUS_TOPIC[44];
 
 // MQTT buffer
 char msgBuffer[32];
-char outgoingJsonBuffer[120];
 
 char friendlyName[32];
 char discoveryBuf[512];
 char attributesBuf[512];
-#ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
-  StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_ATTRIBUTES_CONFIG;
-#endif
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-  StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
+  StaticJsonDocument<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
 #endif
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
@@ -182,7 +180,7 @@ void publishToMQTT(const char* topic, const char* payload) {
 
 #ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
   void publishAttributes(void) {
-    JsonObject& root = HOME_ASSISTANT_MQTT_ATTRIBUTES_CONFIG.createObject();
+    DynamicJsonDocument root(9);
     root["Hostname"] = MQTT_CLIENT_ID;
     root["Model"] = DEVICE_MODEL;
     root["IP Address"] = WiFi.localIP();
@@ -197,8 +195,9 @@ void publishToMQTT(const char* topic, const char* payload) {
     #elif defined(RF_REMOTE)
       root["Remote Type"] = "Radio Frequency (RF)";
     #endif
-    root.printTo(attributesBuf, sizeof(attributesBuf));
-    publishToMQTT(HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC, attributesBuf);
+    char outgoingJsonBuffer[12];
+    serializeJson(root, outgoingJsonBuffer);
+    publishToMQTT(HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC, outgoingJsonBuffer);
   }
 #endif
 
@@ -400,12 +399,14 @@ void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
   // Handle the MQTT topic of the received message
   #ifdef JSON
     if (String(ARILUX_MQTT_JSON_COMMAND_TOPIC).equals(p_topic)) {
-      DynamicJsonBuffer incomingJsonPayload;
-      JsonObject& root = incomingJsonPayload.parseObject(payload);
-      if (!root.success()) {
-        DEBUG_PRINTLN("parseObject() failed");
+      DynamicJsonDocument doc(1024);
+      auto error = deserializeJson(doc, payload);
+      if (error) {
+        DEBUG_PRINT(F("parseObject() failed with code "));
+        DEBUG_PRINTLN(error.c_str());
         return;
       }
+      JsonObject root = doc.as<JsonObject>();
 
       if (root.containsKey("color")) {
         startFade = true;
@@ -531,7 +532,7 @@ void connectMQTT(void) {
         DEBUG_PRINTLN(F("INFO: The client is successfully connected to the MQTT broker"));
         publishToMQTT(ARILUX_MQTT_STATUS_TOPIC, "alive");
         #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
-          JsonObject& root = HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG.createObject();
+          DynamicJsonDocument root(JSON_OBJECT_SIZE(14));
           root["name"] = friendlyName;
           #ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
             root["attributes_topic"] = HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC;
@@ -555,7 +556,7 @@ void connectMQTT(void) {
             root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
             root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
           #endif
-          root.printTo(discoveryBuf, sizeof(discoveryBuf));
+          serializeJson(root, discoveryBuf);
           publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, discoveryBuf);
         #endif
         flashSuccess(true);
@@ -719,7 +720,7 @@ void handleIRRemote(void) {
         break;
       default:
         DEBUG_PRINT(F("ERROR: IR code not defined: "));
-        DEBUG_PRINTLN_WITH_FMT(results.value, HEX);
+        DEBUG_PRINTLN(uint64ToString(results.value, HEX));
         break;
     }
     irRecv.resume();
@@ -841,18 +842,18 @@ void handleRFRemote(void) {
 void handleCMD(void) {
   #ifdef JSON
   if (cmd != ARILUX_CMD_NOT_DEFINED) {
-      DynamicJsonBuffer outgoingJsonPayload;
-      JsonObject& root = outgoingJsonPayload.createObject();
+      DynamicJsonDocument root(JSON_OBJECT_SIZE(7));
       String stringState = arilux.getState() ? "ON" : "OFF";
       root["state"] = stringState;
       root["brightness"] = arilux.getBrightness();
       // root["transition"] =
       root["white_value"] = arilux.getWhite1Value();
-      JsonObject& color = root.createNestedObject("color");
+      JsonObject color = root.createNestedObject("color");
       color["r"] = arilux.getRedValue();
       color["g"] = arilux.getGreenValue();
       color["b"] = arilux.getBlueValue();
-      root.printTo(outgoingJsonBuffer);
+      char outgoingJsonBuffer[12];
+      serializeJson(root, outgoingJsonBuffer);
       publishToMQTT(ARILUX_MQTT_JSON_STATE_TOPIC, outgoingJsonBuffer);
   };
   #else
