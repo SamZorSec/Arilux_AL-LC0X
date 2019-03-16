@@ -71,7 +71,7 @@ char   ARILUX_MQTT_STATUS_TOPIC[44];
 // MQTT buffer
 char msgBuffer[32];
 
-char friendlyName[32];
+char friendlyName[64];
 
 volatile uint8_t cmd = ARILUX_CMD_NOT_DEFINED;
 
@@ -191,6 +191,10 @@ void publishToMQTT(const char* topic, const char* payload) {
     #endif
     root["RSSI"] = WiFi.RSSI();
     root["SSID"] = WiFi.SSID();
+    root["Telnet Logging Enabled"] = false;
+    #if defined(DEBUG_TELNET)
+      root["Telnet Logging Enabled"] = true;
+    #endif
     char outgoingJsonBuffer[512];
     serializeJson(root, outgoingJsonBuffer);
     publishToMQTT(HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC, outgoingJsonBuffer);
@@ -903,20 +907,20 @@ void handleCMD(void) {
 void setupWiFi() {
   delay(10);
 
-  Serial.print(F("INFO: Connecting to: "));
-  Serial.println(WIFI_SSID);
+  DEBUG_PRINT(F("INFO: Connecting to: "));
+  DEBUG_PRINTLN(WIFI_SSID);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    DEBUG_PRINT(".");
   }
   randomSeed(micros());
-  Serial.println();
-  Serial.println(F("INFO: WiFi connected"));
-  Serial.print(F("INFO: IP address: "));
-  Serial.println(WiFi.localIP());
+  DEBUG_PRINTLN();
+  DEBUG_PRINTLN(F("INFO: WiFi connected"));
+  DEBUG_PRINT(F("INFO: IP address: "));
+  DEBUG_PRINTLN(WiFi.localIP());
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -934,9 +938,9 @@ void setup() {
 
   sprintf(chipid, "%08X", ESP.getChipId());
   sprintf(MQTT_CLIENT_ID, HOST, chipid);
-  sprintf(friendlyName, "Arilux %s %s LED Controller %s", DEVICE_MODEL, arilux.getColorString(), chipid);
-  Serial.print("Hostname:");
-  Serial.println(MQTT_CLIENT_ID);
+  sprintf(friendlyName, "Arilux %s %s LED Controller (%s)", DEVICE_MODEL, arilux.getColorString(), chipid);
+  DEBUG_PRINT("Hostname:");
+  DEBUG_PRINTLN(MQTT_CLIENT_ID);
   WiFi.hostname(MQTT_CLIENT_ID);
 
   // Setup Wi-Fi
