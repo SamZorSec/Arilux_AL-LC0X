@@ -14,7 +14,7 @@
 #include <RCSwitch.h>         // https://github.com/sui77/rc-switch
 #endif
 #include <ArduinoOTA.h>
-#if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined (JSON)
+#if defined(HOME_ASSISTANT_MQTT_DISCOVERY) || defined(HOME_ASSISTANT_MQTT_ATTRIBUTES) || defined (JSON)
   #include <ArduinoJson.h>
 #endif
 #include "Arilux.h"
@@ -44,6 +44,9 @@ char   MQTT_TOPIC_PREFIX[32];
 
 // MQTT topics
 char   ARILUX_MQTT_STATUS_TOPIC[44];
+#ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
+  char   HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC[44];
+#endif
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
   char   HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC[56];
 #endif
@@ -68,7 +71,11 @@ char msgBuffer[32];
 char outgoingJsonBuffer[120];
 
 char friendlyName[32];
-char configBuf[512];
+char discoveryBuf[512];
+char attributesBuf[512];
+#ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
+  StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_ATTRIBUTES_CONFIG;
+#endif
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
   StaticJsonBuffer<512> HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG;
 #endif
@@ -172,6 +179,28 @@ void publishToMQTT(const char* topic, const char* payload) {
     DEBUG_PRINTLN(F("ERROR: MQTT message publish failed, either connection lost, or message too large"));
   }
 }
+
+#ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
+  void publishAttributes(void) {
+    JsonObject& root = HOME_ASSISTANT_MQTT_ATTRIBUTES_CONFIG.createObject();
+    root["Hostname"] = MQTT_CLIENT_ID;
+    root["Model"] = DEVICE_MODEL;
+    root["IP Address"] = WiFi.localIP();
+    root["MAC Address"] = WiFi.macAddress();
+    root["RSSI"] = WiFi.RSSI();
+    root["SSID"] = WiFi.SSID();
+    root["BSSID"] = WiFi.BSSID();
+    root["LED Strip Type"] = arilux.getColorString();
+    root["Remote Type"] = "None";
+    #if defined(IR_REMOTE)
+      root["Remote Type"] = "Infrared (IR)";
+    #elif defined(RF_REMOTE)
+      root["Remote Type"] = "Radio Frequency (RF)";
+    #endif
+    root.printTo(attributesBuf, sizeof(attributesBuf));
+    publishToMQTT(HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC, attributesBuf);
+  }
+#endif
 
 #ifndef JSON
   void publishStateChange(void) {
@@ -324,7 +353,7 @@ void handleEffects(void) {
       stepG = calculateStep(grnVal, realGreen);
       stepB = calculateStep(bluVal, realBlue);
       arilux.setFadeToColor(realRed, realGreen, realBlue);
-      
+
       inFade = true;
     }
   }
@@ -504,6 +533,9 @@ void connectMQTT(void) {
         #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
           JsonObject& root = HOME_ASSISTANT_MQTT_DISCOVERY_CONFIG.createObject();
           root["name"] = friendlyName;
+          #ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
+            root["attributes_topic"] = HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC;
+          #endif
           #ifdef JSON
             root["platform"] = "mqtt_json";
             root["state_topic"] = ARILUX_MQTT_JSON_STATE_TOPIC;
@@ -523,8 +555,8 @@ void connectMQTT(void) {
             root["payload_on"] = MQTT_STATE_ON_PAYLOAD;
             root["payload_off"] = MQTT_STATE_OFF_PAYLOAD;
           #endif
-          root.printTo(configBuf, sizeof(configBuf));
-          publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, configBuf);
+          root.printTo(discoveryBuf, sizeof(discoveryBuf));
+          publishToMQTT(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC, discoveryBuf);
         #endif
         flashSuccess(true);
       } else {
@@ -919,6 +951,10 @@ void setup() {
   sprintf(MQTT_TOPIC_PREFIX, MQTT_TOPIC_PREFIX_TEMPLATE, arilux.getColorString(), chipid);
 
   sprintf(ARILUX_MQTT_STATUS_TOPIC, MQTT_STATUS_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+
+#ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
+  sprintf(HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC, HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC_TEMPLATE, MQTT_TOPIC_PREFIX);
+#endif
 
 #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
   sprintf(HOME_ASSISTANT_MQTT_DISCOVERY_TOPIC,"%s/light/ARILUX_%s_%s_%s/config",HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX,DEVICE_MODEL,arilux.getColorString(),chipid);
