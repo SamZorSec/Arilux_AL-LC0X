@@ -528,17 +528,18 @@ volatile unsigned long lastmqttreconnect = 0;
 void connectMQTT(void) {
   if (!mqttClient.connected()) {
     if (lastmqttreconnect + 1000 < millis()) {
-      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS, ARILUX_MQTT_STATUS_TOPIC, 0, 1, "dead")) {
+      if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS, ARILUX_MQTT_STATUS_TOPIC, 0, 1, "offline")) {
         DEBUG_PRINTLN(F("INFO: The client is successfully connected to the MQTT broker"));
-        publishToMQTT(ARILUX_MQTT_STATUS_TOPIC, "alive");
+        publishToMQTT(ARILUX_MQTT_STATUS_TOPIC, "online");
         #ifdef HOME_ASSISTANT_MQTT_DISCOVERY
           DynamicJsonDocument root(JSON_OBJECT_SIZE(14));
           root["name"] = friendlyName;
+          root["availability_topic"] = ARILUX_MQTT_STATUS_TOPIC;
           #ifdef HOME_ASSISTANT_MQTT_ATTRIBUTES
             root["attributes_topic"] = HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC;
           #endif
           #ifdef JSON
-            root["platform"] = "mqtt_json";
+            root["schema"] = "json";
             root["state_topic"] = ARILUX_MQTT_JSON_STATE_TOPIC;
             root["command_topic"] = ARILUX_MQTT_JSON_COMMAND_TOPIC;
             root["brightness"] = true;
