@@ -881,13 +881,16 @@ void handleCMD(void) {
         break;
       case ARILUX_CMD_BRIGHTNESS_CHANGED:
         publishBrightnessChange();
+        publishStateChange();
         break;
       case ARILUX_CMD_COLOR_CHANGED:
         publishColorChange();
+        publishStateChange();
         break;
       #if defined(RGBW) || defined (RGBWW)
         case ARILUX_CMD_WHITE_CHANGED:
           publishWhiteChange();
+          publishStateChange();
           break;
       #endif
       default:
