@@ -74,6 +74,10 @@
 #define HOME_ASSISTANT_MQTT_DISCOVERY
 #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 
+// Enable Home Assistant JSON Attributes support. Requires ArduinoJSON library to be installed.
+// #define HOME_ASSISTANT_MQTT_ATTRIBUTES
+// #define HOME_ASSISTANT_MQTT_ATTRIBUTES_TOPIC_TEMPLATE   "%s/attributes"
+
 // Enable JSON. Requires ArduinoJSON library to be installed.
 // Home Assistant supports more features such as transitions, effects and flashing via JSON only.
 // #define JSON

@@ -103,7 +103,7 @@ This firmware can work with MQTT in one of two ways. To cut down on firmware siz
 1. JSON mode. Only one topic will be published and subscribed to (as well as the Last Will and Testament topic). The payload for both will be/is expected to be a JSON object with all properties listed below in it. If a property is missing, the state of that property will change.
    JSON is great because it reduces roundtrips across the network. For example, if you wanted to turn the light on, set it to full brightness, and make it red, you would have to publish to the `state` topic, the `brightness` topic and the `color` topic.
    JSON also allows effects and transitions to be specified. No properties are required. **You must have the [ArduinoJson] library installed for this to work.**
-   If you are have Home Assistant MQTT Discovery enabled, the `light.mqtt_json` platform will be loaded by Home Assistant instead of the `light.mqtt` platform.
+   If you are have Home Assistant MQTT Discovery enabled, the `light.mqtt` platform will be loaded by Home Assistant with `schema` set to `json`.
    To enable JSON mode, uncomment `#define JSON` in `config.h`.
 
    ##### JSON properties
@@ -175,6 +175,27 @@ There are a few one time steps that you need to take to get this working.
 
 From now on your device will announce itself to Home Assistant with all of the proper configuration information.
 
+#### Attributes
+
+Installing the [ArduinoJSON] library and uncommenting `HOME_ASSISTANT_MQTT_ATTRIBUTES` in your `config.h` will cause device specific attributes to be published. These can be consumed by Home Assistant
+to improve the display of the light, as well as provide some useful debugging information. The attributes payload looks like this:
+
+```json
+{
+  "BSSID": "AA:BB:CC:DD:EE:FF",
+  "Chip ID": "000AAB12",
+  "Hostname": "ARILUX000AAB12",
+  "IP Address": "192.168.1.2",
+  "LED Strip Type": "RGB",
+  "MAC Address": "GG:HH:II:JJ:KK:LL",
+  "Model": "LC01",
+  "Remote Type": "None",
+  "RSSI": -68,
+  "SSID": "my-funny-wifi-name",
+  "Telnet Logging Enabled": true
+}
+```
+
 ### Configuration for Home Assistant
 configuration.yaml
 ```yaml
@@ -188,12 +209,16 @@ mqtt:
 light:
   - platform: mqtt
     name: 'Arilux RGB Led Controller'
-    state_topic: 'rgb(w/ww)/<chipid>/state/state'
-    command_topic: 'rgb(w/ww)/<chipid>/state/set'
-    brightness_state_topic: 'rgb(w/ww)/<chipid>/brightness/state'
+    availability_topic: 'rgb(w/ww)/<chipid>/status'
     brightness_command_topic: 'rgb(w/ww)/<chipid>/brightness/set'
-    rgb_state_topic: 'rgb(w/ww)/<chipid>/color/state'
+    brightness_state_topic: 'rgb(w/ww)/<chipid>/brightness/state'
+    command_topic: 'rgb(w/ww)/<chipid>/state/set'
+    json_attributes_topic: 'rgb(w/ww)/<chipid>/attributes'
     rgb_command_topic: 'rgb(w/ww)/<chipid>/color/set'
+    rgb_state_topic: 'rgb(w/ww)/<chipid>/color/state'
+    state_topic: 'rgb(w/ww)/<chipid>/state/state'
+    white_value_command_topic: 'rgb(w/ww)/<chipid>/white/set'
+    white_value_state_topic: 'rgb(w/ww)/<chipid>/white/state'
 ```
 
 ## Todo
