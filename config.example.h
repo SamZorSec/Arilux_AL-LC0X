@@ -71,8 +71,8 @@
 #define MQTT_STATUS_TOPIC_TEMPLATE             "%s/status"
 
 // Enable Home Assistant MQTT discovery support. Requires ArduinoJSON library to be installed.
-#define HOME_ASSISTANT_MQTT_DISCOVERY
-#define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
+// #define HOME_ASSISTANT_MQTT_DISCOVERY
+// #define HOME_ASSISTANT_MQTT_DISCOVERY_PREFIX   "homeassistant"
 
 // Enable Home Assistant JSON Attributes support. Requires ArduinoJSON library to be installed.
 // #define HOME_ASSISTANT_MQTT_ATTRIBUTES
